@@ -11,22 +11,22 @@
   <link rel="stylesheet" href="<?= \Core\app_url('/assets/css/app.css') ?>">
 </head>
 
-<div class="guest-shell container py-5">
-  <div class="guest-card card shadow-lg border-0">
-    <div class="guest-brand">
-      <span class="brand-mark">IA</span>
-      <h1 class="brand-name">IAProg</h1>
-      <p class="brand-sub">Plataforma de algoritmos com visual institucional inspirado no iSACI</p>
-    </div>
-    <div class="guest-card__body">
-      <p class="brand-sub">Aprendizado de Algoritmos com IA</p>
+<body class="guest-layout">
+  <div class="guest-shell container py-5">
+    <div class="guest-card card shadow-lg border-0">
+      <div class="guest-brand">
+        <span class="brand-mark">IA</span>
+        <h1 class="brand-name">IAProg</h1>
+        <p class="brand-sub">Plataforma de algoritmos com visual institucional inspirado no iSACI</p>
+      </div>
+      <div class="guest-card__body">
+        <?= $content ?>
+      </div>
     </div>
   </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<?= $content ?>
-</div>
-<script src="<?= \Core\app_url('/assets/js/app.js') ?>"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="<?= \Core\app_url('/assets/js/app.js') ?>"></script>
 </body>
 
 </html>

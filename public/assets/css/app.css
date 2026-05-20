@@ -49,10 +49,13 @@ a:hover {
 
 .app-shell {
   min-height: 100vh;
+  display: flex;
+  align-items: stretch;
 }
 
 .sidebar {
   width: var(--sidebar-w);
+  flex: 0 0 var(--sidebar-w);
   min-height: 100vh;
   padding: 1.5rem;
   background:
@@ -134,11 +137,16 @@ a:hover {
 }
 
 .main-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: calc(100% - var(--sidebar-w));
   padding: 2rem 1.5rem 3rem;
 }
 
 .content-shell {
+  width: 100%;
   max-width: 1240px;
+  margin: 0 auto;
 }
 
 .guest-layout {
@@ -676,6 +684,8 @@ a:hover {
   }
 
   .main-content {
+    width: 100%;
+    min-width: 100%;
     padding-top: 1.25rem;
   }
 }
