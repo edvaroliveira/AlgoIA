@@ -26,9 +26,10 @@
     var attemptId = ta.dataset.attempt;
     var questionId = ta.dataset.question;
     var csrf = ta.dataset.csrf;
+    var saveUrl = ta.dataset.saveUrl;
     var answer = ta.value.trim();
 
-    if (!answer || !attemptId) return;
+    if (!answer || !attemptId || !saveUrl) return;
 
     var body = new URLSearchParams({
       _csrf_token: csrf,
@@ -36,12 +37,16 @@
       answer: ta.value,
     });
 
-    fetch("/student/attempts/" + attemptId + "/answer", {
+    fetch(saveUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: body.toString(),
     })
       .then(function (r) {
+        if (!r.ok) {
+          throw new Error("autosave_failed");
+        }
+
         return r.json();
       })
       .then(function (data) {

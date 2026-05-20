@@ -112,6 +112,7 @@ if ($attemptId && $inProgress && (int) $inProgress['id'] === $attemptId):
             data-question="<?= $q['id'] ?>"
             data-attempt="<?= $attemptId ?>"
             data-csrf="<?= \Core\View::e($session->csrfToken()) ?>"
+            data-save-url="<?= \Core\app_url('/student/attempts/' . $attemptId . '/answer') ?>"
             rows="5"
             placeholder="Digite sua resposta aqui..."
             required><?= \Core\View::e($saved['student_answer'] ?? '') ?></textarea>
