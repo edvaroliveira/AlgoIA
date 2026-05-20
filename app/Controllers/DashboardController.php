@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Models\Exercise;
 use App\Models\Turma;
 use App\Models\Attempt;
+use App\Models\User;
 use Core\Auth;
 use Core\View;
 
@@ -19,6 +20,7 @@ class DashboardController
     $teacherId = Auth::id();
     $exercises = new Exercise();
     $turmas    = new Turma();
+    $users     = new User();
 
     $myTurmas    = $turmas->findByTeacher($teacherId);
     $myExercises = $exercises->findByTeacher($teacherId);
@@ -29,10 +31,12 @@ class DashboardController
     $now      = time();
     $openExs  = array_filter($myExercises, fn($e) => strtotime($e['opens_at']) <= $now && strtotime($e['closes_at']) >= $now);
     $recentExs = array_slice($myExercises, 0, 5);
+    $recentStudents = $users->getRecentStudentsByTeacher((int) $teacherId, 6);
 
     View::render('teacher/dashboard', [
       'turmas'        => $myTurmas,
       'exercises'     => $recentExs,
+      'recentStudents' => $recentStudents,
       'pendingTotal'  => $pendingTotal,
       'activeTotal'   => $activeTotal,
       'openCount'     => count($openExs),

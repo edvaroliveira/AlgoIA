@@ -56,4 +56,19 @@ class Answer extends Model
       [$attemptId, $questionId]
     );
   }
+
+  public function findMapByAttempt(int $attemptId): array
+  {
+    $rows = $this->db->fetchAll(
+      "SELECT * FROM answers WHERE attempt_id = ?",
+      [$attemptId]
+    );
+
+    $map = [];
+    foreach ($rows as $row) {
+      $map[(int) $row['question_id']] = $row;
+    }
+
+    return $map;
+  }
 }
