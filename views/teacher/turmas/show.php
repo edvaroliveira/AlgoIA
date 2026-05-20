@@ -3,13 +3,13 @@ global $session; ?>
 
 <div class="page-header">
   <h1><?= \Core\View::e($turma['name']) ?></h1>
-  <a href="/teacher/turmas" class="btn btn--ghost">← Turmas</a>
+  <a href="<?= \Core\app_url('/teacher/turmas') ?>" class="btn btn--ghost">← Turmas</a>
 </div>
 
 <div class="card card--key">
   <p>Chave de acesso para os alunos:</p>
   <div class="big-key"><?= \Core\View::e($turma['access_key']) ?></div>
-  <form method="POST" action="/teacher/turmas/<?= $turma['id'] ?>/key"
+  <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/key') ?>"
     onsubmit="return confirm('Gerar nova chave? A chave atual deixará de funcionar para novos cadastros.');">
     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
     <button type="submit" class="btn btn--ghost btn--sm">↻ Gerar nova chave</button>
@@ -36,11 +36,11 @@ global $session; ?>
             <td><?= \Core\View::e($s['email']) ?></td>
             <td><?= date('d/m/Y H:i', strtotime($s['joined_at'])) ?></td>
             <td class="td-actions">
-              <form method="POST" action="/teacher/turmas/<?= $turma['id'] ?>/approve/<?= $s['id'] ?>" style="display:inline">
+              <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/approve/' . $s['id']) ?>" style="display:inline">
                 <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                 <button class="btn btn--success btn--sm">Aprovar</button>
               </form>
-              <form method="POST" action="/teacher/turmas/<?= $turma['id'] ?>/reject/<?= $s['id'] ?>"
+              <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/reject/' . $s['id']) ?>"
                 style="display:inline"
                 onsubmit="return confirm('Rejeitar este aluno?');">
                 <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
@@ -76,7 +76,7 @@ global $session; ?>
             <td><?= \Core\View::e($s['email']) ?></td>
             <td><?= date('d/m/Y', strtotime($s['joined_at'])) ?></td>
             <td>
-              <form method="POST" action="/teacher/turmas/<?= $turma['id'] ?>/reject/<?= $s['id'] ?>"
+              <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/reject/' . $s['id']) ?>"
                 onsubmit="return confirm('Remover este aluno da turma?');">
                 <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                 <button class="btn btn--danger btn--sm">Remover</button>

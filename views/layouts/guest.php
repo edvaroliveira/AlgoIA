@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= \Core\View::e($pageTitle ?? 'IAProg') ?></title>
-  <link rel="stylesheet" href="/assets/css/app.css">
+  <link rel="stylesheet" href="<?= \Core\app_url('/assets/css/app.css') ?>">
 </head>
 
 <body class="guest-layout">
@@ -17,7 +17,7 @@
     </div>
     <?= $content ?>
   </div>
-  <script src="/assets/js/app.js"></script>
+  <script src="<?= \Core\app_url('/assets/js/app.js') ?>"></script>
 </body>
 
 </html>

@@ -3,7 +3,7 @@ global $session; ?>
 
 <div class="page-header">
   <h1>Nova Turma</h1>
-  <a href="/teacher/turmas" class="btn btn--ghost">← Voltar</a>
+  <a href="<?= \Core\app_url('/teacher/turmas') ?>" class="btn btn--ghost">← Voltar</a>
 </div>
 
 <?php if (isset($error)): ?>
@@ -11,7 +11,7 @@ global $session; ?>
 <?php endif; ?>
 
 <div class="card card--narrow">
-  <form method="POST" action="/teacher/turmas" class="form">
+  <form method="POST" action="<?= \Core\app_url('/teacher/turmas') ?>" class="form">
     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
 
     <div class="form-group">
@@ -23,7 +23,7 @@ global $session; ?>
 
     <div class="form-actions">
       <button type="submit" class="btn btn--primary">Criar turma</button>
-      <a href="/teacher/turmas" class="btn btn--ghost">Cancelar</a>
+      <a href="<?= \Core\app_url('/teacher/turmas') ?>" class="btn btn--ghost">Cancelar</a>
     </div>
   </form>
 </div>

@@ -5,7 +5,7 @@ $isBest    = $bestScore !== null && abs((float) $attempt['total_score'] - (float
 
 <div class="page-header">
   <h1>Resultado</h1>
-  <a href="/student/exercises/<?= $attempt['exercise_id'] ?>" class="btn btn--ghost">← Exercício</a>
+  <a href="<?= \Core\app_url('/student/exercises/' . $attempt['exercise_id']) ?>" class="btn btn--ghost">← Exercício</a>
 </div>
 
 <div class="result-summary <?= $isBest ? 'result-summary--best' : '' ?>">

@@ -56,3 +56,52 @@ function env(string $key, mixed $default = null): mixed
   $val = $_ENV[$key] ?? getenv($key);
   return ($val !== false && $val !== null) ? $val : $default;
 }
+
+function app_base_path(): string
+{
+  $scriptName = $_SERVER['SCRIPT_NAME'] ?? $_SERVER['PHP_SELF'] ?? '';
+
+  if (is_string($scriptName) && $scriptName !== '') {
+    $path = str_replace('\\', '/', dirname($scriptName));
+    if ($path === '/' || $path === '.' || $path === '\\') {
+      return '';
+    }
+
+    return '/' . trim($path, '/');
+  }
+
+  $appUrl = (string) env('APP_URL', '');
+  $path   = $appUrl !== '' ? (string) parse_url($appUrl, PHP_URL_PATH) : '';
+  $path   = '/' . trim($path, '/');
+
+  return $path === '/' ? '' : rtrim($path, '/');
+}
+
+function app_request_path(): string
+{
+  $uri = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
+  $uri = is_string($uri) && $uri !== '' ? $uri : '/';
+
+  $basePath = app_base_path();
+  if ($basePath !== '' && ($uri === $basePath || str_starts_with($uri, $basePath . '/'))) {
+    $uri = substr($uri, strlen($basePath)) ?: '/';
+  }
+
+  $uri = '/' . trim($uri, '/');
+  return $uri === '//' ? '/' : $uri;
+}
+
+function app_url(string $path = ''): string
+{
+  if ($path !== '' && preg_match('#^[a-z][a-z0-9+.-]*://#i', $path)) {
+    return $path;
+  }
+
+  $basePath = app_base_path();
+  if ($path === '' || $path === '/') {
+    return $basePath !== '' ? $basePath . '/' : '/';
+  }
+
+  $normalized = '/' . ltrim($path, '/');
+  return ($basePath !== '' ? $basePath : '') . $normalized;
+}
