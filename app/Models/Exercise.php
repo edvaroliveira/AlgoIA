@@ -77,6 +77,7 @@ class Exercise extends Model
 
   public function update(
     int     $id,
+    int     $turmaId,
     string  $title,
     ?string $description,
     string  $opensAt,
@@ -85,9 +86,9 @@ class Exercise extends Model
   ): void {
     $this->db->execute(
       "UPDATE exercises
-             SET title = ?, description = ?, opens_at = ?, closes_at = ?, max_attempts = ?
+             SET turma_id = ?, title = ?, description = ?, opens_at = ?, closes_at = ?, max_attempts = ?
              WHERE id = ?",
-      [$title, $description, $opensAt, $closesAt, $maxAttempts, $id]
+      [$turmaId, $title, $description, $opensAt, $closesAt, $maxAttempts, $id]
     );
   }
 

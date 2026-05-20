@@ -9,6 +9,7 @@
 </head>
 
 <body class="layout">
+  <?php global $session; ?>
 
   <aside class="sidebar">
     <div class="sidebar__brand">
@@ -30,13 +31,15 @@
 
     <div class="sidebar__footer">
       <span class="user-name"><?= \Core\View::e(\Core\Auth::user()['name'] ?? '') ?></span>
-      <a href="/logout" class="logout-link">Sair</a>
+      <form method="POST" action="/logout">
+        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+        <button type="submit" class="logout-link">Sair</button>
+      </form>
     </div>
   </aside>
 
   <main class="main-content">
     <?php
-    global $session;
     $flash_success = $session->getFlash('success');
     $flash_error   = $session->getFlash('error');
     ?>

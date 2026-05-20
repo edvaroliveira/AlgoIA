@@ -11,6 +11,7 @@ use App\Models\Answer;
 use App\Models\Turma;
 use App\Services\OpenAIService;
 use Core\Auth;
+use Core\Database;
 use Core\Request;
 use Core\View;
 
@@ -84,7 +85,14 @@ class AttemptController
     $studentAnswer = trim((string) ($_POST['answer'] ?? ''));
 
     if ($questionId <= 0 || $studentAnswer === '') {
+      header('Content-Type: application/json');
       exit(json_encode(['ok' => false]));
+    }
+
+    if (!$this->questions->belongsToExercise($questionId, (int) $attempt['exercise_id'])) {
+      http_response_code(400);
+      header('Content-Type: application/json');
+      exit(json_encode(['ok' => false, 'error' => 'Questão inválida para esta tentativa.']));
     }
 
     $this->answers->saveOrUpdate((int) $id, $questionId, $studentAnswer);
@@ -120,15 +128,18 @@ class AttemptController
     // Evaluate with OpenAI
     $ai         = new OpenAIService();
     $totalScore = 0.0;
+    $db         = Database::getInstance();
 
-    foreach ($questions as $q) {
-      $ans = $this->answers->findByAttemptAndQuestion((int) $id, (int) $q['id']);
+    try {
+      $db->beginTransaction();
 
-      if (!$ans || trim($ans['student_answer']) === '') {
-        continue;
-      }
+      foreach ($questions as $q) {
+        $ans = $this->answers->findByAttemptAndQuestion((int) $id, (int) $q['id']);
 
-      try {
+        if (!$ans || trim($ans['student_answer']) === '') {
+          continue;
+        }
+
         $result = $ai->evaluateAnswer(
           $q['text'],
           $q['expected_answer_hint'],
@@ -145,17 +156,22 @@ class AttemptController
         );
 
         $totalScore += $result['score'];
-      } catch (\RuntimeException $e) {
-        error_log("OpenAI evaluation failed for answer {$ans['id']}: " . $e->getMessage());
-        $this->answers->updateAiResult(
-          (int) $ans['id'],
-          0.0,
-          'Não foi possível avaliar esta resposta automaticamente. O docente será notificado.'
-        );
       }
+
+      $this->attempts->submit((int) $id, $totalScore);
+      $db->commit();
+    } catch (\RuntimeException $e) {
+      if (method_exists($db, 'rollback')) {
+        $db->rollback();
+      }
+
+      error_log("OpenAI evaluation failed for attempt {$id}: " . $e->getMessage());
+
+      global $session;
+      $session->flash('error', 'A avaliação automática está temporariamente indisponível. Sua tentativa foi preservada para nova submissão.');
+      View::redirect("/student/exercises/{$attempt['exercise_id']}?attempt={$id}");
     }
 
-    $this->attempts->submit((int) $id, $totalScore);
     View::redirect("/student/attempts/{$id}/result");
   }
 

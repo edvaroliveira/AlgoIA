@@ -118,7 +118,7 @@ class ExerciseController
       return;
     }
 
-    $this->exercises->update((int) $id, $title, $description, $opensAt, $closesAt, $maxAttempts);
+    $this->exercises->update((int) $id, $turmaId, $title, $description, $opensAt, $closesAt, $maxAttempts);
     View::redirect("/teacher/exercises/{$id}");
   }
 
@@ -163,7 +163,8 @@ class ExerciseController
     $attCount     = $attModel->countSubmitted($studentId, (int) $id);
     $inProgress   = $attModel->getInProgress($studentId, (int) $id);
     $bestScore    = $attModel->getBestScore($studentId, (int) $id);
-    $canAttempt   = $exercise['max_attempts'] === 0 || $attCount < $exercise['max_attempts'];
+    $maxAttempts  = (int) $exercise['max_attempts'];
+    $canAttempt   = $maxAttempts === 0 || $attCount < $maxAttempts;
     $isOpen       = $this->exercises->isOpen($exercise);
 
     View::render('student/exercises/show', compact(
