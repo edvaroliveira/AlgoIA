@@ -54,10 +54,15 @@ $isBest    = $bestScore !== null && abs((float) $attempt['total_score'] - (float
         </div>
       <?php endif; ?>
 
-      <?php if ($isClosed && $ans['expected_answer_hint']): ?>
+      <?php if ($showReferenceAnswer && $ans['expected_answer_hint']): ?>
+        <div class="feedback-block feedback-block--ok">
+          <strong>Resposta esperada:</strong>
+          <p><?= nl2br(\Core\View::e($ans['expected_answer_hint'])) ?></p>
+        </div>
+      <?php elseif (!$showReferenceAnswer && $ans['expected_answer_hint']): ?>
         <details class="hint-details">
-          <summary>Ver gabarito esperado</summary>
-          <p class="hint-text"><?= nl2br(\Core\View::e($ans['expected_answer_hint'])) ?></p>
+          <summary>Resposta esperada indisponível por enquanto</summary>
+          <p class="hint-text">Ela será exibida quando o exercício fechar ou quando você atingir o limite de tentativas.</p>
         </details>
       <?php endif; ?>
     </div>

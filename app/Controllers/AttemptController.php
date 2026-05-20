@@ -192,13 +192,17 @@ class AttemptController
     $isClosed   = strtotime($attempt['closes_at']) < time();
     $maxScore   = array_sum(array_column($answers, 'max_score'));
     $bestScore  = $this->attempts->getBestScore($studentId, (int) $attempt['exercise_id']);
+    $usedTries  = $this->attempts->countSubmitted($studentId, (int) $attempt['exercise_id']);
+    $maxTries   = (int) ($attempt['max_attempts'] ?? 0);
+    $showReferenceAnswer = $isClosed || ($maxTries > 0 && $usedTries >= $maxTries);
 
     View::render('student/results/show', compact(
       'attempt',
       'answers',
       'isClosed',
       'maxScore',
-      'bestScore'
+      'bestScore',
+      'showReferenceAnswer'
     ));
   }
 
