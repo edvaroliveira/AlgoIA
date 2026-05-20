@@ -12,6 +12,9 @@ use Core\View;
 
 class AuthController
 {
+  private const LOGIN_MAX_ATTEMPTS = 5;
+  private const LOGIN_LOCK_SECONDS = 300;
+
   private User $users;
 
   public function __construct()
@@ -31,31 +34,55 @@ class AuthController
   {
     Request::validateCsrf();
 
+    global $session;
+
+    if ($this->isLoginLocked()) {
+      View::render('auth/login', [
+        'error' => 'Muitas tentativas de login. Aguarde alguns minutos antes de tentar novamente.',
+        'old'   => ['email' => Request::email('email')],
+      ], 'layouts/guest');
+      return;
+    }
+
     $email    = Request::email('email');
     $password = (string) ($_POST['password'] ?? '');
 
     if ($email === '' || $password === '') {
-      View::render('auth/login', ['error' => 'Preencha todos os campos.'], 'layouts/guest');
+      View::render('auth/login', [
+        'error' => 'Preencha todos os campos.',
+        'old'   => ['email' => $email],
+      ], 'layouts/guest');
       return;
     }
 
     $user = $this->users->findByEmail($email);
 
     if (!$user || !$this->users->verifyPassword($password, $user['password_hash'])) {
-      View::render('auth/login', ['error' => 'E-mail ou senha incorretos.'], 'layouts/guest');
+      $this->recordFailedLogin();
+      View::render('auth/login', [
+        'error' => 'E-mail ou senha incorretos.',
+        'old'   => ['email' => $email],
+      ], 'layouts/guest');
       return;
     }
 
     if ($user['status'] === 'pending') {
-      View::render('auth/login', ['error' => 'Seu cadastro aguarda aprovação do docente.'], 'layouts/guest');
+      View::render('auth/login', [
+        'error' => 'Seu cadastro aguarda aprovação do docente.',
+        'old'   => ['email' => $email],
+      ], 'layouts/guest');
       return;
     }
 
     if ($user['status'] === 'inactive') {
-      View::render('auth/login', ['error' => 'Conta desativada. Entre em contato com o docente.'], 'layouts/guest');
+      View::render('auth/login', [
+        'error' => 'Conta desativada. Entre em contato com o docente.',
+        'old'   => ['email' => $email],
+      ], 'layouts/guest');
       return;
     }
 
+    $this->clearLoginThrottle();
     Auth::login($user);
     $this->redirectByRole();
   }
@@ -86,8 +113,8 @@ class AuthController
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
       $errors[] = 'E-mail inválido.';
     }
-    if (strlen($password) < 8) {
-      $errors[] = 'Senha deve ter pelo menos 8 caracteres.';
+    if (!$this->isStrongPassword($password)) {
+      $errors[] = 'Senha deve ter ao menos 10 caracteres, com letra maiúscula, minúscula e número.';
     }
     if ($password !== $passwordConf) {
       $errors[] = 'As senhas não coincidem.';
@@ -144,5 +171,47 @@ class AuthController
       View::redirect('/teacher/dashboard');
     }
     View::redirect('/student/dashboard');
+  }
+
+  private function isStrongPassword(string $password): bool
+  {
+    return strlen($password) >= 10
+      && preg_match('/[A-Z]/', $password) === 1
+      && preg_match('/[a-z]/', $password) === 1
+      && preg_match('/\d/', $password) === 1;
+  }
+
+  private function isLoginLocked(): bool
+  {
+    global $session;
+    $lockUntil = (int) $session->get('login_lock_until', 0);
+
+    if ($lockUntil <= time()) {
+      if ($lockUntil > 0) {
+        $this->clearLoginThrottle();
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  private function recordFailedLogin(): void
+  {
+    global $session;
+
+    $attempts = (int) $session->get('login_attempts', 0) + 1;
+    $session->set('login_attempts', $attempts);
+
+    if ($attempts >= self::LOGIN_MAX_ATTEMPTS) {
+      $session->set('login_lock_until', time() + self::LOGIN_LOCK_SECONDS);
+    }
+  }
+
+  private function clearLoginThrottle(): void
+  {
+    global $session;
+    $session->remove('login_attempts');
+    $session->remove('login_lock_until');
   }
 }

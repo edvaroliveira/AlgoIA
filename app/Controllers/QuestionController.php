@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Models\Exercise;
 use App\Models\Question;
+use App\Services\AuditService;
 use Core\Auth;
 use Core\Request;
 use Core\View;
@@ -64,6 +65,9 @@ class QuestionController
     }
 
     $this->questions->create((int) $exerciseId, $text, $hint, $maxScore, $orderIndex ?: ($this->questions->countByExercise((int) $exerciseId) + 1));
+    AuditService::record('teacher.question.create', 'exercise', (int) $exerciseId, [
+      'max_score' => $maxScore,
+    ]);
 
     global $session;
     $session->flash('success', 'Questão adicionada com sucesso.');
@@ -75,25 +79,20 @@ class QuestionController
     Auth::requireTeacher();
     Request::validateCsrf();
 
-    if (!$this->questions->belongsToTeacher((int) $id, Auth::id())) {
-      http_response_code(403);
-      exit('Acesso negado.');
-    }
+    Auth::ensure($this->questions->belongsToTeacher((int) $id, Auth::id()));
 
     $question   = $this->questions->find((int) $id);
     $exerciseId = $question['exercise_id'] ?? 0;
 
     $this->questions->delete((int) $id);
+    AuditService::record('teacher.question.delete', 'question', (int) $id, ['exercise_id' => (int) $exerciseId]);
     View::redirect("/teacher/exercises/{$exerciseId}/questions/create");
   }
 
   private function getOwnedExercise(int $id): array
   {
     $ex = $this->exercises->getWithTurma($id);
-    if (!$ex || (int) $ex['teacher_id'] !== Auth::id()) {
-      http_response_code(403);
-      exit('Acesso negado.');
-    }
+    Auth::ensure($ex && (int) $ex['teacher_id'] === Auth::id());
     return $ex;
   }
 }

@@ -70,10 +70,7 @@ class AttemptController
 
     $studentId = Auth::id();
 
-    if (!$this->attempts->belongsToStudent((int) $id, $studentId)) {
-      http_response_code(403);
-      exit(json_encode(['ok' => false, 'error' => 'Acesso negado.']));
-    }
+    Auth::ensure($this->attempts->belongsToStudent((int) $id, $studentId), 'Acesso negado.', 403, true);
 
     $attempt = $this->attempts->find((int) $id);
     if (!$attempt || $attempt['status'] !== 'in_progress') {
@@ -109,10 +106,7 @@ class AttemptController
     $studentId = Auth::id();
     $attempt   = $this->attempts->find((int) $id);
 
-    if (!$attempt || (int) $attempt['student_id'] !== $studentId || $attempt['status'] !== 'in_progress') {
-      http_response_code(403);
-      exit('Tentativa inválida.');
-    }
+    Auth::ensure($attempt && (int) $attempt['student_id'] === $studentId && $attempt['status'] === 'in_progress', 'Tentativa inválida.');
 
     $exercise  = $this->exercises->getWithTurma((int) $attempt['exercise_id']);
     $questions = $this->questions->findByExercise((int) $attempt['exercise_id']);
@@ -182,10 +176,7 @@ class AttemptController
 
     $studentId = Auth::id();
 
-    if (!$this->attempts->belongsToStudent((int) $id, $studentId)) {
-      http_response_code(403);
-      exit('Acesso negado.');
-    }
+    Auth::ensure($this->attempts->belongsToStudent((int) $id, $studentId));
 
     $attempt    = $this->attempts->getWithExercise((int) $id);
     $answers    = $this->answers->findByAttempt((int) $id);
@@ -210,14 +201,10 @@ class AttemptController
   {
     $ex = $this->exercises->getWithTurma($id);
     if (!$ex) {
-      http_response_code(404);
-      exit('Exercício não encontrado.');
+      Auth::deny('Exercício não encontrado.', 404);
     }
     $turmaModel = new Turma();
-    if (!$turmaModel->isStudentActive($studentId, (int) $ex['turma_id'])) {
-      http_response_code(403);
-      exit('Você não tem acesso a este exercício.');
-    }
+    Auth::ensure($turmaModel->isStudentActive($studentId, (int) $ex['turma_id']), 'Você não tem acesso a este exercício.');
     return $ex;
   }
 }

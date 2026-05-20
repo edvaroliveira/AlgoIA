@@ -60,8 +60,7 @@ class Auth
   public static function requireAuth(): void
   {
     if (!self::check()) {
-      header('Location: /login');
-      exit;
+      View::redirect('/login');
     }
   }
 
@@ -69,8 +68,7 @@ class Auth
   {
     self::requireAuth();
     if (!self::isTeacher()) {
-      header('Location: /student/dashboard');
-      exit;
+      View::redirect('/student/dashboard');
     }
   }
 
@@ -78,8 +76,26 @@ class Auth
   {
     self::requireAuth();
     if (!self::isStudent()) {
-      header('Location: /teacher/dashboard');
-      exit;
+      View::redirect('/teacher/dashboard');
     }
+  }
+
+  public static function ensure(bool $condition, string $message = 'Acesso negado.', int $code = 403, bool $json = false): void
+  {
+    if (!$condition) {
+      self::deny($message, $code, $json);
+    }
+  }
+
+  public static function deny(string $message = 'Acesso negado.', int $code = 403, bool $json = false): never
+  {
+    http_response_code($code);
+
+    if ($json) {
+      header('Content-Type: application/json');
+      exit(json_encode(['ok' => false, 'error' => $message], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    exit($message);
   }
 }

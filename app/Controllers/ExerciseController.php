@@ -8,6 +8,8 @@ use App\Models\Exercise;
 use App\Models\Question;
 use App\Models\Turma;
 use App\Models\Attempt;
+use App\Models\Answer;
+use App\Services\AuditService;
 use Core\Auth;
 use Core\Request;
 use Core\View;
@@ -67,6 +69,10 @@ class ExerciseController
     }
 
     $id = $this->exercises->create(Auth::id(), $turmaId, $title, $description, $opensAt, $closesAt, $maxAttempts);
+    AuditService::record('teacher.exercise.create', 'exercise', $id, [
+      'title' => $title,
+      'turma_id' => $turmaId,
+    ]);
     View::redirect("/teacher/exercises/{$id}");
   }
 
@@ -119,6 +125,10 @@ class ExerciseController
     }
 
     $this->exercises->update((int) $id, $turmaId, $title, $description, $opensAt, $closesAt, $maxAttempts);
+    AuditService::record('teacher.exercise.update', 'exercise', (int) $id, [
+      'title' => $title,
+      'turma_id' => $turmaId,
+    ]);
     View::redirect("/teacher/exercises/{$id}");
   }
 
@@ -126,9 +136,12 @@ class ExerciseController
   {
     Auth::requireTeacher();
     Request::validateCsrf();
-    $this->getOwnedExercise((int) $id);
+    $exercise = $this->getOwnedExercise((int) $id);
 
     $this->exercises->delete((int) $id);
+    AuditService::record('teacher.exercise.delete', 'exercise', (int) $id, [
+      'title' => $exercise['title'] ?? null,
+    ]);
     View::redirect('/teacher/exercises');
   }
 
@@ -166,6 +179,15 @@ class ExerciseController
     $maxAttempts  = (int) $exercise['max_attempts'];
     $canAttempt   = $maxAttempts === 0 || $attCount < $maxAttempts;
     $isOpen       = $this->exercises->isOpen($exercise);
+    $attemptId    = (int) Request::get('attempt', 0);
+    $attemptQuestions = [];
+    $savedAnswers = [];
+
+    if ($attemptId > 0 && $inProgress && (int) $inProgress['id'] === $attemptId) {
+      $answerModel = new Answer();
+      $attemptQuestions = $this->questions->findByExercise((int) $exercise['id']);
+      $savedAnswers = $answerModel->findMapByAttempt($attemptId);
+    }
 
     View::render('student/exercises/show', compact(
       'exercise',
@@ -174,7 +196,10 @@ class ExerciseController
       'inProgress',
       'bestScore',
       'canAttempt',
-      'isOpen'
+      'isOpen',
+      'attemptId',
+      'attemptQuestions',
+      'savedAnswers'
     ));
   }
 
@@ -183,10 +208,7 @@ class ExerciseController
   private function getOwnedExercise(int $id): array
   {
     $ex = $this->exercises->getWithTurma($id);
-    if (!$ex || (int) $ex['teacher_id'] !== Auth::id()) {
-      http_response_code(403);
-      exit('Acesso negado.');
-    }
+    Auth::ensure($ex && (int) $ex['teacher_id'] === Auth::id());
     return $ex;
   }
 
@@ -194,15 +216,11 @@ class ExerciseController
   {
     $ex = $this->exercises->getWithTurma($id);
     if (!$ex) {
-      http_response_code(404);
-      exit('Exercício não encontrado.');
+      Auth::deny('Exercício não encontrado.', 404);
     }
 
     $turmaModel = new Turma();
-    if (!$turmaModel->isStudentActive($studentId, (int) $ex['turma_id'])) {
-      http_response_code(403);
-      exit('Você não tem acesso a este exercício.');
-    }
+    Auth::ensure($turmaModel->isStudentActive($studentId, (int) $ex['turma_id']), 'Você não tem acesso a este exercício.');
 
     return $ex;
   }

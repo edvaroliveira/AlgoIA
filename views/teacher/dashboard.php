@@ -35,6 +35,8 @@
   </div>
 <?php endif; ?>
 
+<?php global $session; ?>
+
 <div class="section">
   <div class="section-header">
     <h2>Exercícios recentes</h2>
@@ -81,5 +83,51 @@
       </tbody>
     </table>
     <p><a href="<?= \Core\app_url('/teacher/exercises') ?>">Ver todos →</a></p>
+  <?php endif; ?>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Alunos recentes</h2>
+    <a href="<?= \Core\app_url('/teacher/students') ?>" class="btn btn--ghost btn--sm">Ver todos</a>
+  </div>
+
+  <?php if (empty($recentStudents)): ?>
+    <p class="empty-state">Nenhum aluno vinculado às suas turmas ainda.</p>
+  <?php else: ?>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Turmas</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($recentStudents as $student): ?>
+          <tr>
+            <td><?= \Core\View::e($student['name']) ?></td>
+            <td><?= \Core\View::e($student['email']) ?></td>
+            <td><?= \Core\View::e($student['turma_names'] ?? '—') ?></td>
+            <td>
+              <?php match ($student['status']) {
+                'active'   => print '<span class="badge badge--success">Ativo</span>',
+                'pending'  => print '<span class="badge badge--warning">Pendente</span>',
+                'inactive' => print '<span class="badge badge--neutral">Inativo</span>',
+                default    => print '',
+              }; ?>
+            </td>
+            <td class="td-actions">
+              <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $student['id'] . '/delete') ?>" onsubmit="return confirm('Excluir este aluno e todos os registros dele?');">
+                <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                <button type="submit" class="btn btn--danger btn--sm">Excluir</button>
+              </form>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
   <?php endif; ?>
 </div>

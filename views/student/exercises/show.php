@@ -84,21 +84,15 @@ if ($flash):
 <?php endif; ?>
 
 <!-- Responder questões (quando há tentativa em andamento via ?attempt=) -->
-<?php
-$attemptId = isset($_GET['attempt']) ? (int) $_GET['attempt'] : 0;
-if ($attemptId && $inProgress && (int) $inProgress['id'] === $attemptId):
-  $qModel    = new \App\Models\Question();
-  $ansModel  = new \App\Models\Answer();
-  $questions = $qModel->findByExercise((int) $exercise['id']);
-?>
+<?php if ($attemptId && !empty($attemptQuestions)): ?>
   <div class="section">
     <h2>Responder questões</h2>
 
     <form id="attempt-form" method="POST" action="<?= \Core\app_url('/student/attempts/' . $attemptId . '/submit') ?>">
       <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
 
-      <?php foreach ($questions as $i => $q):
-        $saved = $ansModel->findByAttemptAndQuestion($attemptId, (int) $q['id']);
+      <?php foreach ($attemptQuestions as $i => $q):
+        $saved = $savedAnswers[(int) $q['id']] ?? null;
       ?>
         <div class="question-card">
           <div class="question-header">

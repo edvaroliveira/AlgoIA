@@ -6,6 +6,8 @@ namespace Core;
 
 class Session
 {
+  private const INACTIVITY_TIMEOUT_SECONDS = 1800;
+
   public function start(): void
   {
     if (session_status() !== PHP_SESSION_NONE) {
@@ -22,9 +24,13 @@ class Session
 
     session_start();
 
+    $this->enforceInactivityTimeout();
+
     if (empty($_SESSION['csrf_token'])) {
-      $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+      $this->regenerateCsrfToken();
     }
+
+    $_SESSION['_last_activity_at'] = time();
   }
 
   public function get(string $key, mixed $default = null): mixed
@@ -62,6 +68,7 @@ class Session
   public function regenerate(): void
   {
     session_regenerate_id(true);
+    $this->regenerateCsrfToken();
   }
 
   public function destroy(): void
@@ -82,6 +89,12 @@ class Session
     session_destroy();
   }
 
+  public function regenerateCsrfToken(): string
+  {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    return $_SESSION['csrf_token'];
+  }
+
   public function csrfToken(): string
   {
     return $_SESSION['csrf_token'] ?? '';
@@ -91,5 +104,20 @@ class Session
   {
     return !empty($_SESSION['csrf_token'])
       && hash_equals($_SESSION['csrf_token'], $token);
+  }
+
+  private function enforceInactivityTimeout(): void
+  {
+    $now          = time();
+    $lastActivity = (int) ($_SESSION['_last_activity_at'] ?? 0);
+
+    if ($lastActivity > 0 && ($now - $lastActivity) > self::INACTIVITY_TIMEOUT_SECONDS) {
+      $_SESSION = [
+        '_flash' => [
+          'error' => 'Sua sessão expirou por inatividade. Faça login novamente.',
+        ],
+      ];
+      session_regenerate_id(true);
+    }
   }
 }

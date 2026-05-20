@@ -5,6 +5,10 @@
   <p class="form-footer"><a href="<?= \Core\app_url('/login') ?>">Ir para o login</a></p>
 <?php else: ?>
 
+  <div class="auth-eyebrow">Pré-cadastro do aluno</div>
+  <h2 class="auth-title">Criar acesso</h2>
+  <p class="auth-copy">Seu cadastro será vinculado à turma pela chave informada e dependerá da aprovação do docente.</p>
+
   <?php if (!empty($errors)): ?>
     <div class="alert alert--error">
       <?php foreach ($errors as $e): ?>
@@ -31,7 +35,7 @@
     </div>
 
     <div class="form-group">
-      <label class="form-label" for="password">Senha <span class="hint">(mínimo 8 caracteres)</span></label>
+      <label class="form-label" for="password">Senha <span class="hint">(mínimo 10 caracteres, com maiúscula, minúscula e número)</span></label>
       <input class="form-input" type="password" id="password" name="password"
         required autocomplete="new-password">
     </div>

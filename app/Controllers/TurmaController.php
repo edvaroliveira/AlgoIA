@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Models\Turma;
+use App\Services\AuditService;
 use Core\Auth;
 use Core\Request;
 use Core\View;
@@ -48,7 +49,8 @@ class TurmaController
       return;
     }
 
-    $this->turmas->create(Auth::id(), $name);
+    $turmaId = $this->turmas->create(Auth::id(), $name);
+    AuditService::record('teacher.turma.create', 'turma', $turmaId, ['name' => $name]);
     View::redirect('/teacher/turmas');
   }
 
@@ -71,6 +73,7 @@ class TurmaController
     $this->getOwnedTurma((int) $id);
 
     $newKey = $this->turmas->regenerateKey((int) $id);
+    AuditService::record('teacher.turma.regenerate_key', 'turma', (int) $id);
 
     global $session;
     $session->flash('success', "Nova chave gerada: {$newKey}");
@@ -84,6 +87,7 @@ class TurmaController
     $this->getOwnedTurma((int) $id);
 
     $this->turmas->approveStudent((int) $studentId, (int) $id);
+    AuditService::record('teacher.student.approve', 'student', (int) $studentId, ['turma_id' => (int) $id]);
     View::redirect("/teacher/turmas/{$id}");
   }
 
@@ -94,6 +98,7 @@ class TurmaController
     $this->getOwnedTurma((int) $id);
 
     $this->turmas->rejectStudent((int) $studentId, (int) $id);
+    AuditService::record('teacher.student.reject', 'student', (int) $studentId, ['turma_id' => (int) $id]);
     View::redirect("/teacher/turmas/{$id}");
   }
 
@@ -124,10 +129,7 @@ class TurmaController
   private function getOwnedTurma(int $id): array
   {
     $turma = $this->turmas->find($id);
-    if (!$turma || (int) $turma['teacher_id'] !== Auth::id()) {
-      http_response_code(403);
-      exit('Acesso negado.');
-    }
+    Auth::ensure($turma && (int) $turma['teacher_id'] === Auth::id());
     return $turma;
   }
 }
