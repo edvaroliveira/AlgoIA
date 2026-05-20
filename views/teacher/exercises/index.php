@@ -2,11 +2,11 @@
 
 <div class="page-header">
   <h1>Exercícios</h1>
-  <a href="/teacher/exercises/create" class="btn btn--primary">+ Novo exercício</a>
+  <a href="<?= \Core\app_url('/teacher/exercises/create') ?>" class="btn btn--primary">+ Novo exercício</a>
 </div>
 
 <?php if (empty($exercises)): ?>
-  <p class="empty-state">Nenhum exercício criado. <a href="/teacher/exercises/create">Criar o primeiro</a>.</p>
+  <p class="empty-state">Nenhum exercício criado. <a href="<?= \Core\app_url('/teacher/exercises/create') ?>">Criar o primeiro</a>.</p>
 <?php else: ?>
   <table class="table">
     <thead>
@@ -42,8 +42,8 @@
             <?php endif; ?>
           </td>
           <td class="td-actions">
-            <a href="/teacher/exercises/<?= $ex['id'] ?>" class="btn btn--sm">Ver</a>
-            <a href="/teacher/exercises/<?= $ex['id'] ?>/edit" class="btn btn--sm btn--ghost">Editar</a>
+            <a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a>
+            <a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id'] . '/edit') ?>" class="btn btn--sm btn--ghost">Editar</a>
           </td>
         </tr>
       <?php endforeach; ?>

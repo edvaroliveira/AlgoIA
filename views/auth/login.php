@@ -3,7 +3,7 @@
   <div class="alert alert--error"><?= \Core\View::e($error) ?></div>
 <?php endif; ?>
 
-<form method="POST" action="/login" class="form">
+<form method="POST" action="<?= \Core\app_url('/login') ?>" class="form">
   <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
 
   <div class="form-group">
@@ -23,5 +23,5 @@
 </form>
 
 <p class="form-footer">
-  Não tem conta? <a href="/register">Cadastre-se</a>
+  Não tem conta? <a href="<?= \Core\app_url('/register') ?>">Cadastre-se</a>
 </p>

@@ -3,7 +3,7 @@ global $session; ?>
 
 <div class="page-header">
   <h1><?= \Core\View::e($exercise['title']) ?></h1>
-  <a href="/student/dashboard" class="btn btn--ghost">← Dashboard</a>
+  <a href="<?= \Core\app_url('/student/dashboard') ?>" class="btn btn--ghost">← Dashboard</a>
 </div>
 
 <div class="card card--meta">
@@ -36,11 +36,11 @@ if ($flash):
   <div class="alert alert--neutral">Este exercício foi encerrado.</div>
 
 <?php elseif ($canAttempt && $isOpen): ?>
-  <form method="POST" action="/student/exercises/<?= $exercise['id'] ?>/start">
+  <form method="POST" action="<?= \Core\app_url('/student/exercises/' . $exercise['id'] . '/start') ?>">
     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
     <?php if ($inProgress): ?>
       <p class="alert alert--info">Você tem uma tentativa em andamento iniciada em <?= date('d/m H:i', strtotime($inProgress['started_at'])) ?>.</p>
-      <a href="/student/exercises/<?= $exercise['id'] ?>?attempt=<?= $inProgress['id'] ?>" class="btn btn--primary">Continuar tentativa</a>
+      <a href="<?= \Core\app_url('/student/exercises/' . $exercise['id'] . '?attempt=' . $inProgress['id']) ?>" class="btn btn--primary">Continuar tentativa</a>
     <?php else: ?>
       <button type="submit" class="btn btn--primary btn--lg">Iniciar tentativa</button>
     <?php endif; ?>
@@ -73,7 +73,7 @@ if ($flash):
             <td><?= $att['total_score'] !== null ? number_format((float) $att['total_score'], 1) . ' pts' : '—' ?></td>
             <td>
               <?php if ($att['status'] === 'graded'): ?>
-                <a href="/student/attempts/<?= $att['id'] ?>/result" class="btn btn--sm">Ver resultado</a>
+                <a href="<?= \Core\app_url('/student/attempts/' . $att['id'] . '/result') ?>" class="btn btn--sm">Ver resultado</a>
               <?php endif; ?>
             </td>
           </tr>
@@ -94,7 +94,7 @@ if ($attemptId && $inProgress && (int) $inProgress['id'] === $attemptId):
   <div class="section">
     <h2>Responder questões</h2>
 
-    <form id="attempt-form" method="POST" action="/student/attempts/<?= $attemptId ?>/submit">
+    <form id="attempt-form" method="POST" action="<?= \Core\app_url('/student/attempts/' . $attemptId . '/submit') ?>">
       <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
 
       <?php foreach ($questions as $i => $q):

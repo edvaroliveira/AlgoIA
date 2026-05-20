@@ -31,18 +31,18 @@
 <?php if ($pendingTotal > 0): ?>
   <div class="alert alert--warning">
     Você tem <strong><?= $pendingTotal ?></strong> aluno(s) aguardando aprovação.
-    <a href="/teacher/turmas">Revisar agora →</a>
+    <a href="<?= \Core\app_url('/teacher/turmas') ?>">Revisar agora →</a>
   </div>
 <?php endif; ?>
 
 <div class="section">
   <div class="section-header">
     <h2>Exercícios recentes</h2>
-    <a href="/teacher/exercises/create" class="btn btn--primary btn--sm">+ Novo exercício</a>
+    <a href="<?= \Core\app_url('/teacher/exercises/create') ?>" class="btn btn--primary btn--sm">+ Novo exercício</a>
   </div>
 
   <?php if (empty($exercises)): ?>
-    <p class="empty-state">Nenhum exercício criado ainda. <a href="/teacher/exercises/create">Criar o primeiro</a>.</p>
+    <p class="empty-state">Nenhum exercício criado ainda. <a href="<?= \Core\app_url('/teacher/exercises/create') ?>">Criar o primeiro</a>.</p>
   <?php else: ?>
     <table class="table">
       <thead>
@@ -75,11 +75,11 @@
                 <span class="badge badge--info">Agendado</span>
               <?php endif; ?>
             </td>
-            <td><a href="/teacher/exercises/<?= $ex['id'] ?>" class="btn btn--sm">Ver</a></td>
+            <td><a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a></td>
           </tr>
         <?php endforeach; ?>
       </tbody>
     </table>
-    <p><a href="/teacher/exercises">Ver todos →</a></p>
+    <p><a href="<?= \Core\app_url('/teacher/exercises') ?>">Ver todos →</a></p>
   <?php endif; ?>
 </div>

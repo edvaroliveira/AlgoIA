@@ -41,7 +41,7 @@
               : '—' ?>
           </td>
           <td>
-            <a href="/student/exercises/<?= $ex['id'] ?>" class="btn btn--sm">Ver</a>
+            <a href="<?= \Core\app_url('/student/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a>
           </td>
         </tr>
       <?php endforeach; ?>

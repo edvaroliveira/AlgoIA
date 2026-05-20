@@ -3,7 +3,7 @@ global $session; ?>
 
 <div class="page-header">
   <h1>Questões do exercício</h1>
-  <a href="/teacher/exercises/<?= $exercise['id'] ?>" class="btn btn--ghost">← Voltar ao exercício</a>
+  <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id']) ?>" class="btn btn--ghost">← Voltar ao exercício</a>
 </div>
 
 <p class="subtitle">Exercício: <strong><?= \Core\View::e($exercise['title']) ?></strong></p>
@@ -19,7 +19,7 @@ global $session; ?>
           <span class="question-score"><?= number_format((float) $q['max_score'], 1) ?> pts</span>
         </div>
         <p class="question-text"><?= nl2br(\Core\View::e($q['text'])) ?></p>
-        <form method="POST" action="/teacher/questions/<?= $q['id'] ?>/delete"
+        <form method="POST" action="<?= \Core\app_url('/teacher/questions/' . $q['id'] . '/delete') ?>"
           class="inline-form"
           onsubmit="return confirm('Excluir esta questão?');">
           <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
@@ -47,7 +47,7 @@ global $session; ?>
     <div class="alert alert--success"><?= \Core\View::e($flash) ?></div>
   <?php endif; ?>
 
-  <form method="POST" action="/teacher/exercises/<?= $exercise['id'] ?>/questions" class="form">
+  <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions') ?>" class="form">
     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
     <input type="hidden" name="order_index" value="<?= $nextOrder ?>">
 

@@ -42,7 +42,7 @@ $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pe
             </p>
           </div>
           <div class="card-footer">
-            <a href="/student/exercises/<?= $ex['id'] ?>" class="btn btn--primary btn--sm">Acessar</a>
+            <a href="<?= \Core\app_url('/student/exercises/' . $ex['id']) ?>" class="btn btn--primary btn--sm">Acessar</a>
           </div>
         </div>
       <?php endforeach; ?>
@@ -54,7 +54,7 @@ $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pe
 <div class="section">
   <div class="section-header">
     <h2>Todos os exercícios</h2>
-    <a href="/student/exercises" class="btn btn--ghost btn--sm">Ver todos</a>
+    <a href="<?= \Core\app_url('/student/exercises') ?>" class="btn btn--ghost btn--sm">Ver todos</a>
   </div>
   <?php
   $done = array_filter($all, fn($ex) => isset($ex['best_score']) && $ex['best_score'] !== null);
@@ -74,7 +74,7 @@ $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pe
       <tbody>
         <?php foreach ($done as $ex): ?>
           <tr>
-            <td><a href="/student/exercises/<?= $ex['id'] ?>"><?= \Core\View::e($ex['title']) ?></a></td>
+            <td><a href="<?= \Core\app_url('/student/exercises/' . $ex['id']) ?>"><?= \Core\View::e($ex['title']) ?></a></td>
             <td><?= \Core\View::e($ex['turma_name']) ?></td>
             <td><?= number_format((float) $ex['best_score'], 1) ?></td>
             <td><?= $ex['attempt_count'] ?></td>
@@ -88,7 +88,7 @@ $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pe
 <!-- Entrar em nova turma -->
 <div class="card card--narrow">
   <h3>Entrar em outra turma</h3>
-  <form method="POST" action="/student/turma/join" class="form form--inline">
+  <form method="POST" action="<?= \Core\app_url('/student/turma/join') ?>" class="form form--inline">
     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
     <input class="form-input form-input--key" type="text" name="turma_key"
       maxlength="6" placeholder="CHAVE" style="text-transform:uppercase" required>

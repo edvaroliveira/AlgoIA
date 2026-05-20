@@ -2,7 +2,7 @@
 
 <?php if (isset($success)): ?>
   <div class="alert alert--success"><?= \Core\View::e($success) ?></div>
-  <p class="form-footer"><a href="/login">Ir para o login</a></p>
+  <p class="form-footer"><a href="<?= \Core\app_url('/login') ?>">Ir para o login</a></p>
 <?php else: ?>
 
   <?php if (!empty($errors)): ?>
@@ -13,7 +13,7 @@
     </div>
   <?php endif; ?>
 
-  <form method="POST" action="/register" class="form">
+  <form method="POST" action="<?= \Core\app_url('/register') ?>" class="form">
     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
 
     <div class="form-group">
@@ -57,7 +57,7 @@
   </form>
 
   <p class="form-footer">
-    Já tem conta? <a href="/login">Entrar</a>
+    Já tem conta? <a href="<?= \Core\app_url('/login') ?>">Entrar</a>
   </p>
 
 <?php endif; ?>

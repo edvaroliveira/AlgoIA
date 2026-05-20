@@ -2,11 +2,11 @@
 
 <div class="page-header">
   <h1>Turmas</h1>
-  <a href="/teacher/turmas/create" class="btn btn--primary">+ Nova Turma</a>
+  <a href="<?= \Core\app_url('/teacher/turmas/create') ?>" class="btn btn--primary">+ Nova Turma</a>
 </div>
 
 <?php if (empty($turmas)): ?>
-  <p class="empty-state">Nenhuma turma criada. <a href="/teacher/turmas/create">Criar a primeira</a>.</p>
+  <p class="empty-state">Nenhuma turma criada. <a href="<?= \Core\app_url('/teacher/turmas/create') ?>">Criar a primeira</a>.</p>
 <?php else: ?>
   <div class="cards-grid">
     <?php foreach ($turmas as $t): ?>
@@ -25,7 +25,7 @@
           <p><strong>Alunos ativos:</strong> <?= $t['active_count'] ?></p>
         </div>
         <div class="card-footer">
-          <a href="/teacher/turmas/<?= $t['id'] ?>" class="btn btn--sm">Gerenciar</a>
+          <a href="<?= \Core\app_url('/teacher/turmas/' . $t['id']) ?>" class="btn btn--sm">Gerenciar</a>
         </div>
       </div>
     <?php endforeach; ?>

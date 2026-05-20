@@ -4,8 +4,8 @@ global $session; ?>
 <div class="page-header">
   <h1><?= \Core\View::e($exercise['title']) ?></h1>
   <div class="header-actions">
-    <a href="/teacher/exercises/<?= $exercise['id'] ?>/edit" class="btn btn--ghost">Editar</a>
-    <a href="/teacher/exercises" class="btn btn--ghost">← Exercícios</a>
+    <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/edit') ?>" class="btn btn--ghost">Editar</a>
+    <a href="<?= \Core\app_url('/teacher/exercises') ?>" class="btn btn--ghost">← Exercícios</a>
   </div>
 </div>
 
@@ -27,11 +27,11 @@ global $session; ?>
 <div class="section">
   <div class="section-header">
     <h2>Questões (<?= count($questions) ?>)</h2>
-    <a href="/teacher/exercises/<?= $exercise['id'] ?>/questions/create" class="btn btn--primary btn--sm">+ Questão</a>
+    <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>" class="btn btn--primary btn--sm">+ Questão</a>
   </div>
 
   <?php if (empty($questions)): ?>
-    <p class="empty-state">Nenhuma questão adicionada. <a href="/teacher/exercises/<?= $exercise['id'] ?>/questions/create">Adicionar</a>.</p>
+    <p class="empty-state">Nenhuma questão adicionada. <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>">Adicionar</a>.</p>
   <?php else: ?>
     <?php foreach ($questions as $i => $q): ?>
       <div class="question-card">
@@ -44,7 +44,7 @@ global $session; ?>
           <summary>Ver gabarito esperado</summary>
           <p class="hint-text"><?= nl2br(\Core\View::e($q['expected_answer_hint'])) ?></p>
         </details>
-        <form method="POST" action="/teacher/questions/<?= $q['id'] ?>/delete"
+        <form method="POST" action="<?= \Core\app_url('/teacher/questions/' . $q['id'] . '/delete') ?>"
           class="inline-form"
           onsubmit="return confirm('Excluir esta questão?');">
           <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
@@ -86,7 +86,7 @@ global $session; ?>
 
 <!-- Zona de perigo -->
 <div class="section">
-  <form method="POST" action="/teacher/exercises/<?= $exercise['id'] ?>/delete"
+  <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/delete') ?>"
     onsubmit="return confirm('Excluir este exercício e todos os seus dados?');">
     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
     <button type="submit" class="btn btn--danger">Excluir exercício</button>

@@ -3,7 +3,7 @@ global $session; ?>
 
 <div class="page-header">
   <h1>Novo Exercício</h1>
-  <a href="/teacher/exercises" class="btn btn--ghost">← Voltar</a>
+  <a href="<?= \Core\app_url('/teacher/exercises') ?>" class="btn btn--ghost">← Voltar</a>
 </div>
 
 <?php if (!empty($errors)): ?>
@@ -13,7 +13,7 @@ global $session; ?>
 <?php endif; ?>
 
 <div class="card card--narrow">
-  <form method="POST" action="/teacher/exercises" class="form">
+  <form method="POST" action="<?= \Core\app_url('/teacher/exercises') ?>" class="form">
     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
 
     <div class="form-group">
@@ -63,7 +63,7 @@ global $session; ?>
 
     <div class="form-actions">
       <button type="submit" class="btn btn--primary">Criar exercício</button>
-      <a href="/teacher/exercises" class="btn btn--ghost">Cancelar</a>
+      <a href="<?= \Core\app_url('/teacher/exercises') ?>" class="btn btn--ghost">Cancelar</a>
     </div>
   </form>
 </div>

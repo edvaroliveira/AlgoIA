@@ -40,7 +40,7 @@ class View
   /** HTTP redirect + exit. */
   public static function redirect(string $url): never
   {
-    header('Location: ' . $url);
+    header('Location: ' . app_url($url));
     exit;
   }
 
