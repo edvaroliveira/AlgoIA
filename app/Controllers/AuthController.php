@@ -133,6 +133,7 @@ class AuthController
 
   public function logout(): void
   {
+    Request::validateCsrf();
     Auth::logout();
     View::redirect('/login');
   }

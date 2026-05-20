@@ -58,4 +58,13 @@ class Question extends Model
     );
     return $row !== false;
   }
+
+  public function belongsToExercise(int $questionId, int $exerciseId): bool
+  {
+    $row = $this->db->fetchOne(
+      "SELECT id FROM questions WHERE id = ? AND exercise_id = ?",
+      [$questionId, $exerciseId]
+    );
+    return $row !== false;
+  }
 }

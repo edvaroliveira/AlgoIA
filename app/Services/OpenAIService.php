@@ -128,7 +128,7 @@ PROMPT;
           Database::getInstance()->execute(
             "INSERT INTO injection_logs (answer_id, student_id, flagged_pattern, student_answer)
                          VALUES (?, ?, ?, ?)",
-            [$answerId, $studentId, $pattern, mb_substr($studentAnswer, 0, 2000)]
+            [$answerId, $studentId, $pattern, $this->buildInjectionLogSummary($studentAnswer)]
           );
         } catch (\Throwable $e) {
           error_log('injection_log failed: ' . $e->getMessage());
@@ -136,6 +136,14 @@ PROMPT;
         break; // one log entry per answer
       }
     }
+  }
+
+  private function buildInjectionLogSummary(string $studentAnswer): string
+  {
+    return sprintf(
+      '[conteudo omitido por privacidade; tamanho=%d caracteres]',
+      mb_strlen($studentAnswer)
+    );
   }
 
   // ── API call ──────────────────────────────────────────────────────────────
