@@ -16,9 +16,9 @@ require ROOT_PATH . '/autoload.php';
 
 $db = Core\Database::getInstance();
 
-$name     = env('SEED_TEACHER_NAME', 'Professor Admin');
-$email    = env('SEED_TEACHER_EMAIL', 'admin@example.com');
-$password = env('SEED_TEACHER_PASSWORD', 'TrocaEsta123!');
+$name     = \Core\env('SEED_TEACHER_NAME', 'Professor Admin');
+$email    = \Core\env('SEED_TEACHER_EMAIL', 'admin@example.com');
+$password = \Core\env('SEED_TEACHER_PASSWORD', 'TrocaEsta123!');
 
 $existing = $db->fetchOne('SELECT id FROM users WHERE email = ?', [$email]);
 

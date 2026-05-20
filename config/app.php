@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 return [
-  'name'  => env('APP_NAME', 'IAProg'),
-  'env'   => env('APP_ENV', 'production'),
-  'url'   => env('APP_URL', 'http://localhost'),
-  'debug' => env('APP_DEBUG', 'false') === 'true',
+  'name'  => \Core\env('APP_NAME', 'IAProg'),
+  'env'   => \Core\env('APP_ENV', 'production'),
+  'url'   => \Core\env('APP_URL', 'http://localhost'),
+  'debug' => \Core\env('APP_DEBUG', 'false') === 'true',
 ];
