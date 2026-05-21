@@ -10,7 +10,7 @@ $content = $content ?? '';
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0b4d78">
+  <meta name="theme-color" content="#173f31">
   <title><?= \Core\View::e($pageTitle ?? 'IAProg') ?></title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
@@ -23,8 +23,8 @@ $content = $content ?? '';
       <div class="sidebar__brand">
         <div class="brand-mark">IA</div>
         <div>
-          <span class="brand-name">IAProg</span>
-          <small class="brand-subtitle">Plataforma institucional de algoritmos</small>
+          <span class="brand-name">AlgoIA</span>
+          <small class="brand-subtitle">Aprendizagem • Algoritmos • Amazônia</small>
         </div>
       </div>
 
@@ -56,7 +56,7 @@ $content = $content ?? '';
       <div class="content-shell">
         <header class="app-topbar">
           <div>
-            <div class="app-kicker">Instituto de Aprendizagem com IA</div>
+            <div class="app-kicker">Aprendizagem • Algoritmos • Amazônia</div>
             <h1 class="app-title"><?= \Core\View::e($pageTitle ?? 'Painel') ?></h1>
           </div>
           <div class="topbar-card">
