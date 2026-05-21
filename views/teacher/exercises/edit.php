@@ -23,7 +23,7 @@ global $session;
     <div class="surface-block__header">
       <div>
         <h2 class="surface-title">Parâmetros do exercício</h2>
-        <p class="surface-copy">Atualize a configuração geral sem alterar aqui o conjunto de questões ou as turmas ativadas.</p>
+        <p class="surface-copy">Atualize os metadados pedagógicos enquanto o exercício ainda está em rascunho.</p>
       </div>
     </div>
     <div class="surface-block__body">

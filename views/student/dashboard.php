@@ -37,10 +37,10 @@ $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pe
   <?php else: ?>
     <div class="cards-grid">
       <?php foreach ($available as $ex):
-        $closesTs  = strtotime($ex['closes_at']);
-        $remaining = $closesTs - time();
-        $hours     = floor($remaining / 3600);
-        $mins      = floor(($remaining % 3600) / 60);
+        $closesTs  = !empty($ex['closes_at']) ? strtotime($ex['closes_at']) : null;
+        $remaining = $closesTs !== null ? max(0, $closesTs - time()) : null;
+        $hours     = $remaining !== null ? floor($remaining / 3600) : null;
+        $mins      = $remaining !== null ? floor(($remaining % 3600) / 60) : null;
       ?>
         <div class="card card--exercise">
           <div class="card-header">
@@ -50,9 +50,14 @@ $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pe
           <div class="card-body">
             <p class="turma-tag">📚 <?= \Core\View::e($ex['turma_label'] ?? $ex['turma_name']) ?></p>
             <p class="deadline">
-              ⏱ Fecha em
-              <?= $hours > 0 ? "{$hours}h {$mins}min" : "{$mins}min" ?>
+              <?php if ($closesTs !== null): ?>
+                ⏱ Fecha em
+                <?= $hours > 0 ? "{$hours}h {$mins}min" : "{$mins}min" ?>
+              <?php else: ?>
+                ⏱ Janela definida para sua turma ativa
+              <?php endif; ?>
             </p>
+            <p class="deadline">Tentativas: <?= ((string) ($ex['max_attempts'] ?? '0')) === '0' ? 'Ilimitadas' : (int) $ex['max_attempts'] ?></p>
           </div>
           <div class="card-footer">
             <a href="<?= \Core\app_url('/student/exercises/' . $ex['id']) ?>" class="btn btn--primary btn--sm">Acessar</a>
