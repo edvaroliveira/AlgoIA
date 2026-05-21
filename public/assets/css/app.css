@@ -758,6 +758,11 @@ a:hover { color: var(--brand-dark); }
   min-width: 0;
 }
 
+.exercise-quick-actions {
+  position: sticky;
+  top: 1.5rem;
+}
+
 .info-panel {
   position: sticky;
   top: 1.5rem;
@@ -953,6 +958,10 @@ a:hover { color: var(--brand-dark); }
   color: var(--text-muted);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.activation-feedback.is-hidden {
+  display: none;
 }
 
 .key-strip {
@@ -1247,6 +1256,10 @@ a:hover { color: var(--brand-dark); }
   }
 
   .info-panel {
+    position: static;
+  }
+
+  .exercise-quick-actions {
     position: static;
   }
 }
