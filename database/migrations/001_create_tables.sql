@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS attempts (
     submitted_at DATETIME     NULL,
     total_score  DECIMAL(8,2) NULL,
     status       ENUM('in_progress','submitted','graded') NOT NULL DEFAULT 'in_progress',
-    CONSTRAINT fk_att_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id),
+    CONSTRAINT fk_att_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
     CONSTRAINT fk_att_student  FOREIGN KEY (student_id)  REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

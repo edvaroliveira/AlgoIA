@@ -12,6 +12,22 @@ class Exercise extends Model
 
   protected string $table = 'exercises';
 
+  public function delete(int $id): int
+  {
+    $this->db->beginTransaction();
+
+    try {
+      $this->db->execute("DELETE FROM attempts WHERE exercise_id = ?", [$id]);
+      $deleted = $this->db->execute("DELETE FROM {$this->table} WHERE id = ?", [$id]);
+      $this->db->commit();
+
+      return $deleted;
+    } catch (\Throwable $e) {
+      $this->db->rollback();
+      throw $e;
+    }
+  }
+
   public function createDraft(
     int     $teacherId,
     string  $title,
