@@ -43,6 +43,14 @@ class Request
     return trim(strip_tags($value));
   }
 
+  /** Returns freeform text preserving line breaks and symbols like <- used in pseudocode. */
+  public static function text(string $key, string $default = ''): string
+  {
+    $value = (string) ($_POST[$key] ?? $default);
+    $value = str_replace(["\r\n", "\r"], "\n", $value);
+    return trim($value);
+  }
+
   /** Returns a sanitized email from POST. */
   public static function email(string $key, string $default = ''): string
   {
