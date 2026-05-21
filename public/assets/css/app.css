@@ -708,6 +708,19 @@ a:hover { color: var(--brand-dark); }
   min-width: 0;
 }
 
+.exercise-show-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1.35rem;
+}
+
+.exercise-main-panel,
+.exercise-side-panel {
+  min-width: 0;
+}
+
 .info-panel {
   position: sticky;
   top: 1.5rem;
@@ -836,6 +849,24 @@ a:hover { color: var(--brand-dark); }
   line-height: 1.6;
 }
 
+.content-note {
+  padding: 1rem 1.05rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(245,249,248,.98), rgba(237,244,246,.98));
+  border: 1px solid rgba(216, 227, 232, 0.95);
+}
+
+.content-note strong {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--brand-ink);
+}
+
+.content-note p {
+  margin: 0;
+  line-height: 1.7;
+}
+
 .key-strip {
   display: flex;
   justify-content: space-between;
@@ -945,6 +976,11 @@ a:hover { color: var(--brand-dark); }
 
 .question-card { padding: 1.2rem 1.2rem; }
 
+.question-card--teacher {
+  border: 1px solid rgba(216, 227, 232, 0.95);
+  box-shadow: 0 14px 28px rgba(12, 47, 71, 0.05);
+}
+
 .question-header,
 .answer-header {
   display: flex;
@@ -1048,6 +1084,37 @@ a:hover { color: var(--brand-dark); }
   font-size: 0.98rem;
 }
 
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.danger-zone {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.35rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(196, 69, 54, 0.18);
+  background: linear-gradient(180deg, rgba(255,244,242,.96), rgba(252,238,235,.96));
+}
+
+.danger-zone__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #8b2f21;
+}
+
+.danger-zone__copy {
+  margin: 0.35rem 0 0;
+  color: #9a5347;
+  line-height: 1.6;
+}
+
 @media (max-width: 1199.98px) {
   .guest-grid {
     grid-template-columns: 1fr;
@@ -1076,12 +1143,18 @@ a:hover { color: var(--brand-dark); }
   .td-actions,
   .card-header--split,
   .card-footer--actions,
-  .key-strip {
+  .key-strip,
+  .header-actions,
+  .danger-zone {
     flex-direction: column;
     align-items: stretch;
   }
 
   .editor-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .exercise-show-grid {
     grid-template-columns: 1fr;
   }
 
