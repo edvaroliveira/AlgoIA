@@ -883,6 +883,41 @@ a:hover { color: var(--brand-dark); }
   line-height: 1.7;
 }
 
+.checkbox-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.choice-card {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(216, 227, 232, 0.95);
+  background: rgba(255,255,255,.94);
+  cursor: pointer;
+}
+
+.choice-card input {
+  margin-top: 0.2rem;
+}
+
+.choice-card span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.choice-card strong {
+  color: var(--brand-ink);
+}
+
+.choice-card small {
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .key-strip {
   display: flex;
   justify-content: space-between;

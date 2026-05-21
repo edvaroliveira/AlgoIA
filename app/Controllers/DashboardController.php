@@ -28,8 +28,7 @@ class DashboardController
     $pendingTotal = array_sum(array_column($myTurmas, 'pending_count'));
     $activeTotal  = array_sum(array_column($myTurmas, 'active_count'));
 
-    $now      = time();
-    $openExs  = array_filter($myExercises, fn($e) => strtotime($e['opens_at']) <= $now && strtotime($e['closes_at']) >= $now);
+    $openExs  = array_filter($myExercises, fn($e) => $exercises->isOpen($e));
     $recentExs = array_slice($myExercises, 0, 5);
     $recentStudents = $users->getRecentStudentsByTeacher((int) $teacherId, 6);
 

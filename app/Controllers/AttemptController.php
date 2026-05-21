@@ -8,7 +8,6 @@ use App\Models\Exercise;
 use App\Models\Question;
 use App\Models\Attempt;
 use App\Models\Answer;
-use App\Models\Turma;
 use App\Services\OpenAIService;
 use Core\Auth;
 use Core\Database;
@@ -203,8 +202,7 @@ class AttemptController
     if (!$ex) {
       Auth::deny('Exercício não encontrado.', 404);
     }
-    $turmaModel = new Turma();
-    Auth::ensure($turmaModel->isStudentActive($studentId, (int) $ex['turma_id']), 'Você não tem acesso a este exercício.');
+    Auth::ensure($this->exercises->studentHasAccess($id, $studentId), 'Você não tem acesso a este exercício.');
     return $ex;
   }
 }

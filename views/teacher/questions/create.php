@@ -16,6 +16,12 @@ global $session;
 
 <p class="subtitle">Exercício: <strong><?= \Core\View::e($exercise['title']) ?></strong></p>
 
+<?php if (($exercise['status'] ?? 'active') === 'draft'): ?>
+  <div class="alert alert--warning">
+    Este exercício ainda está pendente de finalização. Depois de concluir as questões, volte ao detalhe do exercício para ativar em uma ou mais turmas.
+  </div>
+<?php endif; ?>
+
 <!-- Lista atual -->
 <?php if (!empty($questions)): ?>
   <div class="section">
@@ -102,6 +108,7 @@ global $session;
 
         <div class="form-actions">
           <button type="submit" class="btn btn--primary">Adicionar questão</button>
+          <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id']) ?>" class="btn btn--ghost">Voltar e finalizar depois</a>
         </div>
       </form>
     </div>

@@ -23,7 +23,7 @@ global $session;
 
 <div class="card card--meta">
   <div class="meta-grid">
-    <div><strong>Turma:</strong> <?= \Core\View::e($exercise['turma_name']) ?></div>
+    <div><strong>Turmas:</strong> <?= \Core\View::e($exercise['turma_label'] ?? $exercise['turma_name']) ?></div>
     <div><strong>Abre:</strong> <?= date('d/m/Y H:i', strtotime($exercise['opens_at'])) ?></div>
     <div><strong>Fecha:</strong> <?= date('d/m/Y H:i', strtotime($exercise['closes_at'])) ?></div>
     <div><strong>Tentativas:</strong> <?= $exercise['max_attempts'] === '0' ? 'Ilimitadas' : $exercise['max_attempts'] ?></div>

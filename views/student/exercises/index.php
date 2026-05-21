@@ -58,7 +58,7 @@ $gradedExercises = count(array_filter($exercises, fn($exercise) => $exercise['be
           <?php foreach ($exercises as $ex): ?>
             <tr>
               <td><?= \Core\View::e($ex['title']) ?></td>
-              <td><?= \Core\View::e($ex['turma_name']) ?></td>
+              <td><?= \Core\View::e($ex['turma_label'] ?? $ex['turma_name']) ?></td>
               <td><?= date('d/m/Y H:i', strtotime($ex['opens_at'])) ?></td>
               <td><?= date('d/m/Y H:i', strtotime($ex['closes_at'])) ?></td>
               <td>

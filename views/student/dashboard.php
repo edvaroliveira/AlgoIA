@@ -48,7 +48,7 @@ $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pe
             <span class="badge badge--success">Aberto</span>
           </div>
           <div class="card-body">
-            <p class="turma-tag">📚 <?= \Core\View::e($ex['turma_name']) ?></p>
+            <p class="turma-tag">📚 <?= \Core\View::e($ex['turma_label'] ?? $ex['turma_name']) ?></p>
             <p class="deadline">
               ⏱ Fecha em
               <?= $hours > 0 ? "{$hours}h {$mins}min" : "{$mins}min" ?>
@@ -88,7 +88,7 @@ $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pe
         <?php foreach ($done as $ex): ?>
           <tr>
             <td><a href="<?= \Core\app_url('/student/exercises/' . $ex['id']) ?>"><?= \Core\View::e($ex['title']) ?></a></td>
-            <td><?= \Core\View::e($ex['turma_name']) ?></td>
+            <td><?= \Core\View::e($ex['turma_label'] ?? $ex['turma_name']) ?></td>
             <td><?= number_format((float) $ex['best_score'], 1) ?></td>
             <td><?= $ex['attempt_count'] ?></td>
           </tr>

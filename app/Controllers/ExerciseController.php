@@ -52,28 +52,30 @@ class ExerciseController
 
     $title       = Request::str('title');
     $description = Request::text('description') ?: null;
-    $turmaId     = Request::int('turma_id');
     $opensAt     = Request::str('opens_at');
     $closesAt    = Request::str('closes_at');
     $maxAttempts = Request::int('max_attempts', 1);
 
-    $errors = $this->validateExercise($title, $turmaId, $opensAt, $closesAt, $maxAttempts);
+    $errors = $this->validateExercise($title, $opensAt, $closesAt, $maxAttempts);
 
     if ($errors) {
       View::render('teacher/exercises/create', [
         'errors' => $errors,
         'turmas' => $this->turmas->findByTeacher(Auth::id()),
-        'old'    => compact('title', 'description', 'turmaId', 'opensAt', 'closesAt', 'maxAttempts'),
+        'old'    => compact('title', 'description', 'opensAt', 'closesAt', 'maxAttempts'),
       ]);
       return;
     }
 
-    $id = $this->exercises->create(Auth::id(), $turmaId, $title, $description, $opensAt, $closesAt, $maxAttempts);
+    $id = $this->exercises->createDraft(Auth::id(), $title, $description, $opensAt, $closesAt, $maxAttempts);
     AuditService::record('teacher.exercise.create', 'exercise', $id, [
       'title' => $title,
-      'turma_id' => $turmaId,
+      'status' => 'draft',
     ]);
-    View::redirect("/teacher/exercises/{$id}");
+
+    global $session;
+    $session->flash('success', 'Exercício criado como pendente de finalização. Cadastre as questões antes de ativar para turmas.');
+    View::redirect("/teacher/exercises/{$id}/questions/create");
   }
 
   public function show(string $id): void
@@ -84,8 +86,9 @@ class ExerciseController
     View::render('teacher/exercises/show', [
       'exercise'  => $exercise,
       'questions' => $this->questions->findByExercise((int) $id),
-      'results'   => $this->exercises->getResultsForTeacher((int) $id),
+      'results'   => ($exercise['status'] ?? 'active') === 'active' ? $this->exercises->getResultsForTeacher((int) $id) : [],
       'maxScore'  => $this->questions->getTotalMaxScore((int) $id),
+      'turmas'    => $this->turmas->findByTeacher(Auth::id()),
     ]);
   }
 
@@ -108,27 +111,68 @@ class ExerciseController
 
     $title       = Request::str('title');
     $description = Request::text('description') ?: null;
-    $turmaId     = Request::int('turma_id');
     $opensAt     = Request::str('opens_at');
     $closesAt    = Request::str('closes_at');
     $maxAttempts = Request::int('max_attempts', 1);
 
-    $errors = $this->validateExercise($title, $turmaId, $opensAt, $closesAt, $maxAttempts);
+    $errors = $this->validateExercise($title, $opensAt, $closesAt, $maxAttempts);
 
     if ($errors) {
+      $exercise = $this->exercises->getWithTurma((int) $id) ?: [];
+      $exercise['title'] = $title;
+      $exercise['description'] = $description;
+      $exercise['opens_at'] = $opensAt;
+      $exercise['closes_at'] = $closesAt;
+      $exercise['max_attempts'] = $maxAttempts;
+
       View::render('teacher/exercises/edit', [
         'errors'   => $errors,
-        'exercise' => $this->exercises->getWithTurma((int) $id),
+        'exercise' => $exercise,
         'turmas'   => $this->turmas->findByTeacher(Auth::id()),
       ]);
       return;
     }
 
-    $this->exercises->update((int) $id, $turmaId, $title, $description, $opensAt, $closesAt, $maxAttempts);
+    $this->exercises->updateDraft((int) $id, $title, $description, $opensAt, $closesAt, $maxAttempts);
     AuditService::record('teacher.exercise.update', 'exercise', (int) $id, [
       'title' => $title,
-      'turma_id' => $turmaId,
+      'status' => 'metadata-updated',
     ]);
+    View::redirect("/teacher/exercises/{$id}");
+  }
+
+  public function activate(string $id): void
+  {
+    Auth::requireTeacher();
+    Request::validateCsrf();
+
+    $exercise = $this->getOwnedExercise((int) $id);
+    $questions = $this->questions->countByExercise((int) $id);
+    $turmaIds = array_values(array_filter(array_map('intval', (array) ($_POST['turma_ids'] ?? []))));
+
+    $errors = $this->validateActivation($questions, $turmaIds);
+
+    if ($errors) {
+      View::render('teacher/exercises/show', [
+        'exercise' => $exercise,
+        'questions' => $this->questions->findByExercise((int) $id),
+        'results' => ($exercise['status'] ?? 'active') === 'active' ? $this->exercises->getResultsForTeacher((int) $id) : [],
+        'maxScore' => $this->questions->getTotalMaxScore((int) $id),
+        'turmas' => $this->turmas->findByTeacher(Auth::id()),
+        'activationErrors' => $errors,
+        'activationTurmaIds' => $turmaIds,
+      ]);
+      return;
+    }
+
+    $this->exercises->activate((int) $id, $turmaIds);
+    AuditService::record('teacher.exercise.activate', 'exercise', (int) $id, [
+      'turma_ids' => $turmaIds,
+      'question_count' => $questions,
+    ]);
+
+    global $session;
+    $session->flash('success', 'Exercício finalizado e ativado para as turmas selecionadas.');
     View::redirect("/teacher/exercises/{$id}");
   }
 
@@ -219,15 +263,13 @@ class ExerciseController
       Auth::deny('Exercício não encontrado.', 404);
     }
 
-    $turmaModel = new Turma();
-    Auth::ensure($turmaModel->isStudentActive($studentId, (int) $ex['turma_id']), 'Você não tem acesso a este exercício.');
+    Auth::ensure($this->exercises->studentHasAccess($id, $studentId), 'Você não tem acesso a este exercício.');
 
     return $ex;
   }
 
   private function validateExercise(
     string $title,
-    int    $turmaId,
     string $opensAt,
     string $closesAt,
     int    $maxAttempts
@@ -236,9 +278,6 @@ class ExerciseController
 
     if (mb_strlen($title) < 3) {
       $errors[] = 'Título deve ter pelo menos 3 caracteres.';
-    }
-    if ($turmaId <= 0 || !$this->turmas->belongsToTeacher($turmaId, Auth::id())) {
-      $errors[] = 'Turma inválida.';
     }
     if (!strtotime($opensAt)) {
       $errors[] = 'Data de abertura inválida.';
@@ -251,6 +290,28 @@ class ExerciseController
     }
     if ($maxAttempts < 0) {
       $errors[] = 'Número de tentativas inválido (use 0 para ilimitado).';
+    }
+
+    return $errors;
+  }
+
+  private function validateActivation(int $questionCount, array $turmaIds): array
+  {
+    $errors = [];
+
+    if ($questionCount < 1) {
+      $errors[] = 'Adicione pelo menos uma questão antes de ativar o exercício.';
+    }
+
+    if (empty($turmaIds)) {
+      $errors[] = 'Selecione pelo menos uma turma para ativação.';
+    }
+
+    foreach ($turmaIds as $turmaId) {
+      if (!$this->turmas->belongsToTeacher($turmaId, Auth::id())) {
+        $errors[] = 'Há turma inválida na ativação.';
+        break;
+      }
     }
 
     return $errors;
