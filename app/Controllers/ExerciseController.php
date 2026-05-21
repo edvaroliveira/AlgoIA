@@ -80,14 +80,10 @@ class ExerciseController
     View::render('teacher/exercises/show', [
       'exercise'  => $exercise,
       'questions' => $this->questions->findByExercise((int) $id),
-      'results'   => ($exercise['status'] ?? 'active') === 'active' ? $this->exercises->getResultsForTeacher((int) $id) : [],
+      'results'   => $this->exercises->isActive($exercise) ? $this->exercises->getResultsForTeacher((int) $id) : [],
       'maxScore'  => $this->questions->getTotalMaxScore((int) $id),
       'turmas'    => $this->turmas->findByTeacher(Auth::id()),
-      'publicationDefaults' => [
-        'opens_at' => date('Y-m-d\TH:i'),
-        'closes_at' => date('Y-m-d\TH:i', strtotime('+7 days')),
-        'max_attempts' => 1,
-      ],
+      'publicationDefaults' => $this->publicationDefaults(),
     ]);
   }
 
@@ -174,16 +170,12 @@ class ExerciseController
       View::render('teacher/exercises/show', [
         'exercise' => $exercise,
         'questions' => $this->questions->findByExercise((int) $id),
-        'results' => ($exercise['status'] ?? 'active') === 'active' ? $this->exercises->getResultsForTeacher((int) $id) : [],
+        'results' => $this->exercises->isActive($exercise) ? $this->exercises->getResultsForTeacher((int) $id) : [],
         'maxScore' => $this->questions->getTotalMaxScore((int) $id),
         'turmas' => $this->turmas->findByTeacher(Auth::id()),
         'activationErrors' => $errors,
         'activationTurmaIds' => array_keys($publicationConfigs),
-        'publicationDefaults' => [
-          'opens_at' => date('Y-m-d\TH:i'),
-          'closes_at' => date('Y-m-d\TH:i', strtotime('+7 days')),
-          'max_attempts' => 1,
-        ],
+        'publicationDefaults' => $this->publicationDefaults(),
         'publicationInput' => $publicationConfigs,
       ]);
       return;
@@ -370,7 +362,7 @@ class ExerciseController
 
   private function ensureDraftExercise(array $exercise): void
   {
-    if (($exercise['status'] ?? 'draft') === 'draft') {
+    if ($this->exercises->canEdit($exercise)) {
       return;
     }
 
@@ -381,12 +373,21 @@ class ExerciseController
 
   private function ensureReadyExercise(array $exercise): void
   {
-    if (($exercise['status'] ?? 'draft') === 'ready') {
+    if ($this->exercises->canPublish($exercise)) {
       return;
     }
 
     global $session;
     $session->flash('error', 'Conclua o cadastro das questões antes de publicar o exercício para as turmas.');
     View::redirect('/teacher/exercises/' . $exercise['id']);
+  }
+
+  private function publicationDefaults(): array
+  {
+    return [
+      'opens_at' => date('Y-m-d\TH:i'),
+      'closes_at' => date('Y-m-d\TH:i', strtotime('+7 days')),
+      'max_attempts' => 1,
+    ];
   }
 }

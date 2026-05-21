@@ -18,7 +18,7 @@ global $session;
 
 <?php if (($exercise['status'] ?? 'active') === 'draft'): ?>
   <div class="alert alert--warning">
-    Este exercício ainda está pendente de finalização. Depois de concluir as questões, volte ao detalhe do exercício para ativar em uma ou mais turmas.
+    Este exercício ainda está em rascunho. Depois de concluir as questões, volte ao detalhe do exercício para concluir a etapa pedagógica e publicar para as turmas.
   </div>
 <?php endif; ?>
 

@@ -6,6 +6,10 @@ namespace App\Models;
 
 class Exercise extends Model
 {
+  public const STATUS_DRAFT = 'draft';
+  public const STATUS_READY = 'ready';
+  public const STATUS_ACTIVE = 'active';
+
   protected string $table = 'exercises';
 
   public function createDraft(
@@ -15,9 +19,39 @@ class Exercise extends Model
   ): int {
     return $this->db->insert(
       "INSERT INTO exercises (teacher_id, title, description, status)
-             VALUES (?, ?, ?, 'draft')",
-      [$teacherId, $title, $description]
+             VALUES (?, ?, ?, ?)",
+      [$teacherId, $title, $description, self::STATUS_DRAFT]
     );
+  }
+
+  public function isDraft(array $exercise): bool
+  {
+    return ($exercise['status'] ?? self::STATUS_DRAFT) === self::STATUS_DRAFT;
+  }
+
+  public function isReady(array $exercise): bool
+  {
+    return ($exercise['status'] ?? self::STATUS_DRAFT) === self::STATUS_READY;
+  }
+
+  public function isActive(array $exercise): bool
+  {
+    return ($exercise['status'] ?? self::STATUS_DRAFT) === self::STATUS_ACTIVE;
+  }
+
+  public function canEdit(array $exercise): bool
+  {
+    return $this->isDraft($exercise);
+  }
+
+  public function canComplete(array $exercise): bool
+  {
+    return $this->isDraft($exercise);
+  }
+
+  public function canPublish(array $exercise): bool
+  {
+    return $this->isReady($exercise);
   }
 
   public function findByTeacher(int $teacherId): array
@@ -158,8 +192,8 @@ class Exercise extends Model
   public function markReady(int $id): void
   {
     $this->db->execute(
-      "UPDATE exercises SET status = 'ready' WHERE id = ?",
-      [$id]
+      "UPDATE exercises SET status = ? WHERE id = ?",
+      [self::STATUS_READY, $id]
     );
   }
 
@@ -182,8 +216,8 @@ class Exercise extends Model
       }
 
       $this->db->execute(
-        "UPDATE exercises SET turma_id = ?, status = 'active' WHERE id = ?",
-        [$primaryTurmaId, $id]
+        "UPDATE exercises SET turma_id = ?, status = ? WHERE id = ?",
+        [$primaryTurmaId, self::STATUS_ACTIVE, $id]
       );
 
       $this->db->commit();
@@ -244,7 +278,7 @@ class Exercise extends Model
 
   public function isOpen(array $exercise): bool
   {
-    if (($exercise['status'] ?? 'active') !== 'active') {
+    if (!$this->isActive($exercise)) {
       return false;
     }
 
@@ -261,7 +295,7 @@ class Exercise extends Model
 
   public function isClosed(array $exercise): bool
   {
-    if (($exercise['status'] ?? 'active') !== 'active') {
+    if (!$this->isActive($exercise)) {
       return false;
     }
 

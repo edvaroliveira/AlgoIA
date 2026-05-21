@@ -102,7 +102,7 @@ class QuestionController
 
   private function ensureDraftExercise(array $exercise): void
   {
-    if (($exercise['status'] ?? 'draft') === 'draft') {
+    if ($this->exercises->canEdit($exercise)) {
       return;
     }
 

@@ -6,7 +6,7 @@ global $session;
 <div class="page-header">
   <div>
     <h1>Criar exercício</h1>
-    <p class="subtitle">Crie o rascunho, cadastre todas as questões e só depois ative o exercício para uma ou mais turmas.</p>
+    <p class="subtitle">Crie o rascunho, cadastre as questões, conclua a etapa pedagógica e só depois publique para as turmas desejadas.</p>
   </div>
   <a href="<?= \Core\app_url('/teacher/exercises') ?>" class="btn btn--ghost">← Voltar</a>
 </div>
@@ -22,7 +22,7 @@ global $session;
     <div class="surface-block__header">
       <div>
         <h2 class="surface-title">Configuração inicial</h2>
-        <p class="surface-copy">Nesta etapa o exercício nasce como pendente de finalização. A ativação para turmas acontece depois das questões.</p>
+        <p class="surface-copy">Nesta etapa o exercício nasce como rascunho. A conclusão e a publicação por turma acontecem depois das questões.</p>
       </div>
     </div>
     <div class="surface-block__body">
@@ -59,7 +59,7 @@ global $session;
       <div class="surface-block__body surface-block__body--stack">
         <div class="info-step">
           <strong>Rascunho primeiro</strong>
-          <p>O exercício ficará pendente de finalização até você concluir as questões e ativar para as turmas desejadas.</p>
+          <p>O exercício ficará em rascunho até você concluir as questões e encerrar a etapa pedagógica.</p>
         </div>
         <div class="info-step">
           <strong>Publicação depois</strong>
@@ -70,8 +70,8 @@ global $session;
           <p>Nomes claros ajudam o aluno a reconhecer conteúdo e prioridade imediatamente.</p>
         </div>
         <div class="info-step">
-          <strong>Ativação no final</strong>
-          <p>Depois de cadastrar as questões, escolha uma ou mais turmas para publicar a atividade.</p>
+          <strong>Conclusão e publicação</strong>
+          <p>Depois de cadastrar as questões, conclua o exercício e publique a atividade para uma ou mais turmas.</p>
         </div>
       </div>
     </section>
