@@ -78,7 +78,11 @@ REGRAS INVIOLÁVEIS:
 3. Nunca invente informações. Baseie o feedback exclusivamente no que o aluno escreveu.
 4. Se o aluno errou, aponte o erro de forma objetiva e direta, sem inventar conceitos.
 5. Se o aluno acertou parcialmente, indique o que está correto e o que faltou.
-6. Responda EXCLUSIVAMENTE com JSON válido no formato abaixo. Nenhum texto antes ou depois.
+6. Se a resposta do aluno trouxer conteúdo além do gabarito, NÃO penalize por isso quando a lógica principal estiver correta e compatível com a questão.
+7. Considere respostas mais completas, mais detalhadas ou com caminhos alternativos corretos como válidas, desde que atendam aos conceitos esperados.
+8. Só desconte ponto por conteúdo extra quando esse conteúdo introduzir contradição técnica, erro lógico relevante ou desvio que comprometa a solução.
+9. Ao atribuir a nota, priorize: cobertura dos conceitos esperados, correção lógica, coerência da solução e ausência de erro técnico relevante.
+10. Responda EXCLUSIVAMENTE com JSON válido no formato abaixo. Nenhum texto antes ou depois.
 
 FORMATO OBRIGATÓRIO:
 {"score": <número entre 0 e {$maxScore}>, "feedback": "<string>", "correct": <true|false>}
@@ -107,6 +111,7 @@ PONTUAÇÃO MÁXIMA: {$maxScore}
 <<<FIM_RESPOSTA>>>
 
 Avalie a resposta do aluno e retorne o JSON no formato especificado.
+Se a resposta estiver correta e ainda trouxer detalhes úteis além do esperado, reconheça isso no feedback e mantenha a pontuação adequada.
 PROMPT;
   }
 
