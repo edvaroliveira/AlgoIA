@@ -76,11 +76,14 @@ class Attempt extends Model
   public function getWithExercise(int $attemptId): array|false
   {
     return $this->db->fetchOne(
-      "SELECT a.*, e.title AS exercise_title, e.closes_at, e.max_attempts,
-                    GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', ') AS turma_name
+      "SELECT a.*, e.title AS exercise_title,
+                    MAX(CASE WHEN st.student_id IS NOT NULL THEN et.closes_at END) AS closes_at,
+                    MAX(CASE WHEN st.student_id IS NOT NULL THEN et.max_attempts END) AS max_attempts,
+                    GROUP_CONCAT(DISTINCT CASE WHEN st.student_id IS NOT NULL THEN t.name END ORDER BY t.name SEPARATOR ', ') AS turma_name
              FROM attempts a
              JOIN exercises e ON e.id = a.exercise_id
              LEFT JOIN exercise_turmas et ON et.exercise_id = e.id
+             LEFT JOIN student_turma st ON st.turma_id = et.turma_id AND st.student_id = a.student_id AND st.status = 'active'
              LEFT JOIN turmas t ON t.id = et.turma_id
              WHERE a.id = ?
              GROUP BY a.id",

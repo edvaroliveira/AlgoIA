@@ -9,22 +9,42 @@ $activationErrors = array_values(array_filter(
   static fn($error): bool => is_string($error) && trim($error) !== ''
 ));
 $activationTurmaIds = $activationTurmaIds ?? ($exercise['assigned_turma_ids'] ?? []);
+$publicationDefaults = $publicationDefaults ?? [
+  'opens_at' => date('Y-m-d\TH:i'),
+  'closes_at' => date('Y-m-d\TH:i', strtotime('+7 days')),
+  'max_attempts' => 1,
+];
+$publicationInput = $publicationInput ?? [];
 $pageTitle = $exercise['title'] ?? 'Exercício';
 $isDraft = ($exercise['status'] ?? 'active') === 'draft';
+$isReady = ($exercise['status'] ?? 'active') === 'ready';
 global $session;
 $flashError = $session->getFlash('error');
-$isOpen = !empty($exercise) && strtotime((string) $exercise['opens_at']) <= time() && strtotime((string) $exercise['closes_at']) >= time();
-$isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < time();
+$flashSuccess = $session->getFlash('success');
+$isOpen = !empty($exercise['opens_at']) && !empty($exercise['closes_at'])
+  && strtotime((string) $exercise['opens_at']) <= time()
+  && strtotime((string) $exercise['closes_at']) >= time();
+$isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['closes_at']) < time();
 ?>
 
 <?php if ($flashError): ?>
   <div class="alert alert--error"><?= \Core\View::e($flashError) ?></div>
 <?php endif; ?>
 
+<?php if ($flashSuccess): ?>
+  <div class="alert alert--success"><?= \Core\View::e($flashSuccess) ?></div>
+<?php endif; ?>
+
 <div class="page-header">
   <div>
     <h1><?= \Core\View::e($exercise['title'] ?? 'Exercício') ?></h1>
-    <p class="subtitle"><?= $isDraft ? 'Rascunho pendente de finalização. Complete as questões e ative para as turmas desejadas.' : 'Gestão completa da atividade, com visão de janela, estrutura de correção e desempenho dos alunos.' ?></p>
+    <p class="subtitle"><?=
+                        $isDraft
+                          ? 'Rascunho em construção. Cadastre as questões e conclua o exercício antes de publicar.'
+                          : ($isReady
+                            ? 'Estrutura pedagógica concluída. Falta apenas publicar para as turmas com a janela e as tentativas desejadas.'
+                            : 'Gestão completa da atividade, com visão de publicação, estrutura de correção e desempenho dos alunos.')
+                        ?></p>
   </div>
   <div class="header-actions">
     <?php if ($isDraft): ?>
@@ -43,7 +63,9 @@ $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < ti
   </div>
   <div class="hero-panel__meta">
     <?php if ($isDraft): ?>
-      <span class="hero-chip">Pendente de finalização</span>
+      <span class="hero-chip">Rascunho</span>
+    <?php elseif ($isReady): ?>
+      <span class="hero-chip">Pronto para publicar</span>
     <?php elseif ($isClosed): ?>
       <span class="hero-chip">Encerrado</span>
     <?php elseif ($isOpen): ?>
@@ -87,8 +109,8 @@ $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < ti
         <div><strong>Chaves das turmas</strong><?= \Core\View::e($exercise['turma_keys'] ?? '—') ?></div>
         <div><strong>Abre</strong><?= !empty($exercise['opens_at']) ? date('d/m/Y H:i', strtotime($exercise['opens_at'])) : '—' ?></div>
         <div><strong>Fecha</strong><?= !empty($exercise['closes_at']) ? date('d/m/Y H:i', strtotime($exercise['closes_at'])) : '—' ?></div>
-        <div><strong>Tentativas</strong><?= ($exercise['max_attempts'] ?? '0') === '0' ? 'Ilimitadas' : $exercise['max_attempts'] ?></div>
-        <div><strong>Status</strong><?= $isDraft ? 'Pendente de finalização' : ($isClosed ? 'Encerrado' : ($isOpen ? 'Aberto' : 'Agendado')) ?></div>
+        <div><strong>Tentativas</strong><?= ($exercise['max_attempts'] ?? null) === null ? '—' : (((string) $exercise['max_attempts']) === '0' ? 'Ilimitadas' : $exercise['max_attempts']) ?></div>
+        <div><strong>Status</strong><?= $isDraft ? 'Rascunho' : ($isReady ? 'Pronto para publicar' : ($isClosed ? 'Encerrado' : ($isOpen ? 'Aberto' : 'Agendado'))) ?></div>
       </div>
       <?php if (!empty($exercise['description'])): ?>
         <div class="content-note">
@@ -110,6 +132,11 @@ $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < ti
         <?php if ($isDraft): ?>
           <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/edit') ?>" class="btn btn--ghost btn--full">Editar configuração</a>
           <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>" class="btn btn--primary btn--full">Adicionar ou revisar questões</a>
+        <?php elseif ($isReady): ?>
+          <div class="content-note">
+            <strong>Conteúdo congelado</strong>
+            <p>Depois da conclusão pedagógica, o exercício fica bloqueado para edição e passa a aguardar apenas a publicação por turma.</p>
+          </div>
         <?php else: ?>
           <div class="content-note">
             <strong>Edição bloqueada</strong>
@@ -123,8 +150,39 @@ $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < ti
       <section class="surface-block info-panel info-panel--static">
         <div class="surface-block__header">
           <div>
-            <h2 class="surface-title">Finalizar ativação</h2>
-            <p class="surface-copy">O exercício só fica disponível aos alunos depois desta etapa.</p>
+            <h2 class="surface-title">Concluir exercício</h2>
+            <p class="surface-copy">Feche a etapa pedagógica quando as questões estiverem prontas.</p>
+          </div>
+        </div>
+        <div class="surface-block__body surface-block__body--stack">
+          <?php if (empty($questions)): ?>
+            <div class="content-note">
+              <strong>Conclusão bloqueada</strong>
+              <p>Cadastre pelo menos uma questão antes de concluir esta atividade.</p>
+            </div>
+          <?php else: ?>
+            <div class="content-note">
+              <strong>Próxima etapa</strong>
+              <p>Ao concluir, o conteúdo do exercício é congelado e a publicação para as turmas passa a ser feita nesta mesma tela.</p>
+            </div>
+          <?php endif; ?>
+
+          <form method="POST"
+            action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/complete') ?>"
+            class="form">
+            <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+            <button type="submit" class="btn btn--primary btn--full" <?= empty($questions) ? 'disabled' : '' ?>>
+              Concluir cadastro do exercício
+            </button>
+          </form>
+        </div>
+      </section>
+    <?php elseif ($isReady): ?>
+      <section class="surface-block info-panel info-panel--static">
+        <div class="surface-block__header">
+          <div>
+            <h2 class="surface-title">Publicar para turmas</h2>
+            <p class="surface-copy">Defina a janela de disponibilidade e o limite de tentativas individualmente por turma.</p>
           </div>
         </div>
         <div class="surface-block__body surface-block__body--stack">
@@ -136,13 +194,6 @@ $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < ti
             <div class="alert alert--error activation-feedback" data-activation-feedback hidden></div>
           <?php endif; ?>
 
-          <?php if (empty($questions)): ?>
-            <div class="content-note">
-              <strong>Ativação bloqueada</strong>
-              <p>Cadastre pelo menos uma questão antes de escolher as turmas e publicar esta atividade.</p>
-            </div>
-          <?php endif; ?>
-
           <form method="POST"
             action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/activate') ?>"
             class="form"
@@ -150,20 +201,42 @@ $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < ti
             data-question-count="<?= count($questions) ?>">
             <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
 
-            <div class="checkbox-grid">
-              <?php foreach ($turmas as $turma): ?>
-                <label class="choice-card">
-                  <input type="checkbox" name="turma_ids[]" value="<?= $turma['id'] ?>" <?= in_array((int) $turma['id'], array_map('intval', $activationTurmaIds), true) ? 'checked' : '' ?>>
-                  <span>
-                    <strong><?= \Core\View::e($turma['name']) ?></strong>
-                    <small><?= \Core\View::e($turma['access_key']) ?></small>
+            <div class="checkbox-grid checkbox-grid--stacked">
+              <?php foreach ($turmas as $turma):
+                $publication = $publicationInput[(int) $turma['id']] ?? [];
+                $isSelected = in_array((int) $turma['id'], array_map('intval', $activationTurmaIds), true);
+                $opensAt = $publication['opens_at'] ?? $publicationDefaults['opens_at'];
+                $closesAt = $publication['closes_at'] ?? $publicationDefaults['closes_at'];
+                $maxAttempts = $publication['max_attempts'] ?? $publicationDefaults['max_attempts'];
+              ?>
+                <label class="choice-card choice-card--publication">
+                  <span class="choice-card__header">
+                    <input type="checkbox" name="publication[<?= $turma['id'] ?>][enabled]" value="1" <?= $isSelected ? 'checked' : '' ?>>
+                    <span>
+                      <strong><?= \Core\View::e($turma['name']) ?></strong>
+                      <small><?= \Core\View::e($turma['access_key']) ?></small>
+                    </span>
+                  </span>
+                  <span class="choice-card__body">
+                    <span class="form-group">
+                      <span class="form-label">Abertura</span>
+                      <input class="form-input" type="datetime-local" name="publication[<?= $turma['id'] ?>][opens_at]" value="<?= \Core\View::e($opensAt) ?>">
+                    </span>
+                    <span class="form-group">
+                      <span class="form-label">Fechamento</span>
+                      <input class="form-input" type="datetime-local" name="publication[<?= $turma['id'] ?>][closes_at]" value="<?= \Core\View::e($closesAt) ?>">
+                    </span>
+                    <span class="form-group">
+                      <span class="form-label">Tentativas <span class="hint">(0 = ilimitado)</span></span>
+                      <input class="form-input form-input--short" type="number" min="0" name="publication[<?= $turma['id'] ?>][max_attempts]" value="<?= \Core\View::e((string) $maxAttempts) ?>">
+                    </span>
                   </span>
                 </label>
               <?php endforeach; ?>
             </div>
 
-            <button type="submit" class="btn btn--primary btn--full" <?= empty($questions) ? 'disabled' : '' ?>>
-              Finalizar e ativar exercício
+            <button type="submit" class="btn btn--primary btn--full">
+              Publicar exercício
             </button>
           </form>
         </div>
@@ -177,10 +250,16 @@ $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < ti
           </div>
         </div>
         <div class="surface-block__body surface-block__body--stack">
-          <div class="content-note">
-            <strong>Publicação concluída</strong>
-            <p><?= \Core\View::e($exercise['turma_label'] ?? '—') ?></p>
-          </div>
+          <?php foreach (($exercise['publication_settings'] ?? []) as $publication): ?>
+            <div class="content-note">
+              <strong><?= \Core\View::e($publication['turma_name']) ?> <span class="hint">(<?= \Core\View::e($publication['access_key']) ?>)</span></strong>
+              <p>
+                Abre em <?= date('d/m/Y H:i', strtotime($publication['opens_at'])) ?> ·
+                Fecha em <?= date('d/m/Y H:i', strtotime($publication['closes_at'])) ?> ·
+                Tentativas: <?= ((string) $publication['max_attempts']) === '0' ? 'Ilimitadas' : $publication['max_attempts'] ?>
+              </p>
+            </div>
+          <?php endforeach; ?>
         </div>
       </section>
     <?php endif; ?>
@@ -234,12 +313,12 @@ $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < ti
     <div class="surface-block__header">
       <div>
         <h2 class="surface-title">Resultados dos alunos</h2>
-        <p class="surface-copy"><?= $isDraft ? 'Resultados aparecerão aqui quando o exercício for finalizado, ativado e começar a receber submissões.' : 'Melhor nota registrada e número de tentativas por participante que já teve correção concluída.' ?></p>
+        <p class="surface-copy"><?= ($isDraft || $isReady) ? 'Resultados aparecerão aqui quando o exercício for publicado e começar a receber submissões.' : 'Melhor nota registrada e número de tentativas por participante que já teve correção concluída.' ?></p>
       </div>
     </div>
     <div class="surface-block__body">
       <?php if (empty($results)): ?>
-        <p class="empty-state"><?= $isDraft ? 'Exercício ainda não ativado para turmas.' : 'Nenhuma submissão ainda.' ?></p>
+        <p class="empty-state"><?= ($isDraft || $isReady) ? 'Exercício ainda não publicado para turmas.' : 'Nenhuma submissão ainda.' ?></p>
       <?php else: ?>
         <table class="table">
           <thead>

@@ -31,6 +31,7 @@ $router->post('/teacher/exercises',            'ExerciseController@store');
 $router->get('/teacher/exercises/{id}',        'ExerciseController@show');
 $router->get('/teacher/exercises/{id}/edit',   'ExerciseController@edit');
 $router->post('/teacher/exercises/{id}',       'ExerciseController@update');
+$router->post('/teacher/exercises/{id}/complete', 'ExerciseController@complete');
 $router->post('/teacher/exercises/{id}/activate', 'ExerciseController@activate');
 $router->post('/teacher/exercises/{id}/delete', 'ExerciseController@destroy');
 

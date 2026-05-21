@@ -1,6 +1,5 @@
 <?php
 $pageTitle = 'Novo Exercício';
-$turmas = $turmas ?? [];
 global $session;
 ?>
 
@@ -42,27 +41,6 @@ global $session;
             rows="4" placeholder="Contextualize o exercício, objetivos e critérios gerais."><?= \Core\View::e($old['description'] ?? '') ?></textarea>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="opens_at">Abertura</label>
-            <input class="form-input" type="datetime-local" id="opens_at" name="opens_at"
-              value="<?= \Core\View::e($old['opensAt'] ?? '') ?>" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="closes_at">Fechamento</label>
-            <input class="form-input" type="datetime-local" id="closes_at" name="closes_at"
-              value="<?= \Core\View::e($old['closesAt'] ?? '') ?>" required>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="max_attempts">
-            Máximo de tentativas <span class="hint">(0 = ilimitado)</span>
-          </label>
-          <input class="form-input form-input--short" type="number" id="max_attempts" name="max_attempts"
-            value="<?= \Core\View::e($old['maxAttempts'] ?? 1) ?>" min="0" required>
-        </div>
-
         <div class="form-actions">
           <button type="submit" class="btn btn--primary">Salvar rascunho</button>
           <a href="<?= \Core\app_url('/teacher/exercises') ?>" class="btn btn--ghost">Cancelar</a>
@@ -84,8 +62,8 @@ global $session;
           <p>O exercício ficará pendente de finalização até você concluir as questões e ativar para as turmas desejadas.</p>
         </div>
         <div class="info-step">
-          <strong>Janela objetiva</strong>
-          <p>Defina abertura e fechamento realistas para evitar bloqueios desnecessários.</p>
+          <strong>Publicação depois</strong>
+          <p>Datas de abertura, fechamento e quantidade de tentativas serão definidas por turma, só na etapa de publicação.</p>
         </div>
         <div class="info-step">
           <strong>Título específico</strong>

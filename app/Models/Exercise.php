@@ -11,15 +11,12 @@ class Exercise extends Model
   public function createDraft(
     int     $teacherId,
     string  $title,
-    ?string $description,
-    string  $opensAt,
-    string  $closesAt,
-    int     $maxAttempts
+    ?string $description
   ): int {
     return $this->db->insert(
-      "INSERT INTO exercises (teacher_id, title, description, opens_at, closes_at, max_attempts, status)
-             VALUES (?, ?, ?, ?, ?, ?, 'draft')",
-      [$teacherId, $title, $description, $opensAt, $closesAt, $maxAttempts]
+      "INSERT INTO exercises (teacher_id, title, description, status)
+             VALUES (?, ?, ?, 'draft')",
+      [$teacherId, $title, $description]
     );
   }
 
@@ -29,7 +26,10 @@ class Exercise extends Model
       "SELECT e.*,
                     COALESCE(NULLIF(GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', '), ''), 'Pendente de finalização') AS turma_label,
                     MIN(t.name) AS turma_name,
-                    COUNT(DISTINCT et.turma_id) AS turma_count
+                    COUNT(DISTINCT et.turma_id) AS turma_count,
+                    MIN(et.opens_at) AS opens_at,
+                    MAX(et.closes_at) AS closes_at,
+                    MAX(et.max_attempts) AS max_attempts
              FROM exercises e
              LEFT JOIN exercise_turmas et ON et.exercise_id = e.id
              LEFT JOIN turmas t ON t.id = et.turma_id
@@ -47,7 +47,10 @@ class Exercise extends Model
                     COALESCE(NULLIF(GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', '), ''), 'Pendente de finalização') AS turma_label,
                     MIN(t.name) AS turma_name,
                     GROUP_CONCAT(DISTINCT t.access_key ORDER BY t.name SEPARATOR ', ') AS turma_keys,
-                    COUNT(DISTINCT et.turma_id) AS turma_count
+                    COUNT(DISTINCT et.turma_id) AS turma_count,
+                    MIN(et.opens_at) AS opens_at,
+                    MAX(et.closes_at) AS closes_at,
+                    MAX(et.max_attempts) AS max_attempts
              FROM exercises e
              LEFT JOIN exercise_turmas et ON et.exercise_id = e.id
              LEFT JOIN turmas t ON t.id = et.turma_id
@@ -61,27 +64,32 @@ class Exercise extends Model
     }
 
     $exercise['assigned_turma_ids'] = $this->getAssignedTurmaIds($id);
+    $exercise['publication_settings'] = $this->getPublicationSettings($id);
     return $exercise;
   }
 
   public function findAvailableForStudent(int $studentId): array
   {
-    $now = date('Y-m-d H:i:s');
     return $this->db->fetchAll(
       "SELECT e.*,
                     GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', ') AS turma_label,
                     MIN(t.name) AS turma_name,
-                    COUNT(DISTINCT et.turma_id) AS turma_count
+                    COUNT(DISTINCT et.turma_id) AS turma_count,
+                    MIN(et.opens_at) AS opens_at,
+                    MAX(et.closes_at) AS closes_at,
+                    MAX(et.max_attempts) AS max_attempts,
+                    MAX(CASE WHEN et.opens_at <= NOW() AND et.closes_at >= NOW() THEN 1 ELSE 0 END) AS has_open_publication,
+                    MAX(CASE WHEN et.opens_at > NOW() THEN 1 ELSE 0 END) AS has_future_publication
              FROM exercises e
              JOIN exercise_turmas et ON et.exercise_id = e.id
              JOIN turmas t ON t.id = et.turma_id
              JOIN student_turma st ON st.turma_id = et.turma_id
              WHERE e.status = 'active'
                AND st.student_id = ? AND st.status = 'active'
-               AND e.opens_at <= ? AND e.closes_at >= ?
+               AND et.opens_at <= NOW() AND et.closes_at >= NOW()
              GROUP BY e.id
-             ORDER BY e.closes_at ASC",
-      [$studentId, $now, $now]
+             ORDER BY MIN(et.closes_at) ASC",
+      [$studentId]
     );
   }
 
@@ -91,7 +99,12 @@ class Exercise extends Model
       "SELECT e.*,
                     GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', ') AS turma_label,
                     MIN(t.name) AS turma_name,
-                    COUNT(DISTINCT et.turma_id) AS turma_count
+                    COUNT(DISTINCT et.turma_id) AS turma_count,
+                    MIN(et.opens_at) AS opens_at,
+                    MAX(et.closes_at) AS closes_at,
+                    MAX(et.max_attempts) AS max_attempts,
+                    MAX(CASE WHEN et.opens_at <= NOW() AND et.closes_at >= NOW() THEN 1 ELSE 0 END) AS has_open_publication,
+                    MAX(CASE WHEN et.opens_at > NOW() THEN 1 ELSE 0 END) AS has_future_publication
              FROM exercises e
              JOIN exercise_turmas et ON et.exercise_id = e.id
              JOIN turmas t ON t.id = et.turma_id
@@ -99,30 +112,60 @@ class Exercise extends Model
              WHERE e.status = 'active'
                AND st.student_id = ? AND st.status = 'active'
              GROUP BY e.id
-             ORDER BY e.closes_at DESC",
+             ORDER BY MAX(et.closes_at) DESC",
       [$studentId]
+    );
+  }
+
+  public function findForStudent(int $exerciseId, int $studentId): array|false
+  {
+    return $this->db->fetchOne(
+      "SELECT e.*,
+                    GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', ') AS turma_label,
+                    MIN(t.name) AS turma_name,
+                    COUNT(DISTINCT et.turma_id) AS turma_count,
+                    MIN(et.opens_at) AS opens_at,
+                    MAX(et.closes_at) AS closes_at,
+                    MAX(et.max_attempts) AS max_attempts,
+                    MAX(CASE WHEN et.opens_at <= NOW() AND et.closes_at >= NOW() THEN 1 ELSE 0 END) AS has_open_publication,
+                    MAX(CASE WHEN et.opens_at > NOW() THEN 1 ELSE 0 END) AS has_future_publication
+             FROM exercises e
+             JOIN exercise_turmas et ON et.exercise_id = e.id
+             JOIN turmas t ON t.id = et.turma_id
+             JOIN student_turma st ON st.turma_id = et.turma_id
+             WHERE e.id = ?
+               AND e.status = 'active'
+               AND st.student_id = ?
+               AND st.status = 'active'
+             GROUP BY e.id",
+      [$exerciseId, $studentId]
     );
   }
 
   public function updateDraft(
     int     $id,
     string  $title,
-    ?string $description,
-    string  $opensAt,
-    string  $closesAt,
-    int     $maxAttempts
+    ?string $description
   ): void {
     $this->db->execute(
       "UPDATE exercises
-             SET title = ?, description = ?, opens_at = ?, closes_at = ?, max_attempts = ?
+             SET title = ?, description = ?
              WHERE id = ?",
-      [$title, $description, $opensAt, $closesAt, $maxAttempts, $id]
+      [$title, $description, $id]
     );
   }
 
-  public function activate(int $id, array $turmaIds): void
+  public function markReady(int $id): void
   {
-    $turmaIds = array_values(array_unique(array_map('intval', $turmaIds)));
+    $this->db->execute(
+      "UPDATE exercises SET status = 'ready' WHERE id = ?",
+      [$id]
+    );
+  }
+
+  public function activate(int $id, array $publicationConfigs): void
+  {
+    $turmaIds = array_values(array_map('intval', array_keys($publicationConfigs)));
     $primaryTurmaId = $turmaIds[0] ?? null;
 
     $this->db->beginTransaction();
@@ -130,10 +173,11 @@ class Exercise extends Model
     try {
       $this->db->execute("DELETE FROM exercise_turmas WHERE exercise_id = ?", [$id]);
 
-      foreach ($turmaIds as $turmaId) {
+      foreach ($publicationConfigs as $turmaId => $config) {
         $this->db->insert(
-          "INSERT INTO exercise_turmas (exercise_id, turma_id) VALUES (?, ?)",
-          [$id, $turmaId]
+          "INSERT INTO exercise_turmas (exercise_id, turma_id, opens_at, closes_at, max_attempts)
+                 VALUES (?, ?, ?, ?, ?)",
+          [$id, (int) $turmaId, $config['opens_at'], $config['closes_at'], (int) $config['max_attempts']]
         );
       }
 
@@ -157,6 +201,18 @@ class Exercise extends Model
     );
 
     return array_map(static fn(array $row): int => (int) $row['turma_id'], $rows);
+  }
+
+  public function getPublicationSettings(int $exerciseId): array
+  {
+    return $this->db->fetchAll(
+      "SELECT et.turma_id, et.opens_at, et.closes_at, et.max_attempts, t.name AS turma_name, t.access_key
+             FROM exercise_turmas et
+             JOIN turmas t ON t.id = et.turma_id
+             WHERE et.exercise_id = ?
+             ORDER BY t.name",
+      [$exerciseId]
+    );
   }
 
   public function studentHasAccess(int $exerciseId, int $studentId): bool
@@ -192,14 +248,29 @@ class Exercise extends Model
       return false;
     }
 
+    if (array_key_exists('has_open_publication', $exercise)) {
+      return (int) $exercise['has_open_publication'] === 1;
+    }
+
     $now = time();
-    return strtotime($exercise['opens_at']) <= $now
+    return !empty($exercise['opens_at'])
+      && !empty($exercise['closes_at'])
+      && strtotime($exercise['opens_at']) <= $now
       && strtotime($exercise['closes_at']) >= $now;
   }
 
   public function isClosed(array $exercise): bool
   {
-    return strtotime($exercise['closes_at']) < time();
+    if (($exercise['status'] ?? 'active') !== 'active') {
+      return false;
+    }
+
+    if (array_key_exists('has_open_publication', $exercise) && array_key_exists('has_future_publication', $exercise)) {
+      return (int) $exercise['has_open_publication'] !== 1
+        && (int) $exercise['has_future_publication'] !== 1;
+    }
+
+    return !empty($exercise['closes_at']) && strtotime($exercise['closes_at']) < time();
   }
 
   public function getResultsForTeacher(int $exerciseId): array

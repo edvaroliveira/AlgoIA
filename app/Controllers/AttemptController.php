@@ -107,7 +107,7 @@ class AttemptController
 
     Auth::ensure($attempt && (int) $attempt['student_id'] === $studentId && $attempt['status'] === 'in_progress', 'Tentativa inválida.');
 
-    $exercise  = $this->exercises->getWithTurma((int) $attempt['exercise_id']);
+    $exercise  = $this->getStudentExercise((int) $attempt['exercise_id'], $studentId);
     $questions = $this->questions->findByExercise((int) $attempt['exercise_id']);
 
     // Save all answers from POST
@@ -179,7 +179,7 @@ class AttemptController
 
     $attempt    = $this->attempts->getWithExercise((int) $id);
     $answers    = $this->answers->findByAttempt((int) $id);
-    $isClosed   = strtotime($attempt['closes_at']) < time();
+    $isClosed   = !empty($attempt['closes_at']) && strtotime($attempt['closes_at']) < time();
     $maxScore   = array_sum(array_column($answers, 'max_score'));
     $bestScore  = $this->attempts->getBestScore($studentId, (int) $attempt['exercise_id']);
     $usedTries  = $this->attempts->countSubmitted($studentId, (int) $attempt['exercise_id']);
@@ -198,7 +198,7 @@ class AttemptController
 
   private function getStudentExercise(int $id, int $studentId): array
   {
-    $ex = $this->exercises->getWithTurma($id);
+    $ex = $this->exercises->findForStudent($id, $studentId);
     if (!$ex) {
       Auth::deny('Exercício não encontrado.', 404);
     }
