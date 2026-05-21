@@ -1,8 +1,29 @@
 <?php $pageTitle = 'Dashboard — Docente'; ?>
+<?php
+$turmas = $turmas ?? [];
+$totalExs = $totalExs ?? 0;
+$openCount = $openCount ?? 0;
+$pendingTotal = $pendingTotal ?? 0;
+$activeTotal = $activeTotal ?? 0;
+$exercises = $exercises ?? [];
+$recentStudents = $recentStudents ?? [];
+?>
 
-<div class="page-header">
-  <h1>Dashboard</h1>
-  <p>Bem-vindo, <?= \Core\View::e(\Core\Auth::user()['name']) ?>.</p>
+<section class="hero-panel hero-panel--teacher">
+  <div>
+    <div class="hero-panel__eyebrow">Visão geral docente</div>
+    <h2 class="hero-panel__title">Central de acompanhamento da sua operação acadêmica.</h2>
+    <p class="hero-panel__copy">Acompanhe turmas, aprovações, exercícios em andamento e ações rápidas sem navegar em telas fragmentadas.</p>
+  </div>
+  <div class="hero-panel__meta">
+    <span class="hero-chip">Docente: <?= \Core\View::e(\Core\Auth::user()['name']) ?></span>
+    <span class="hero-chip hero-chip--soft">Turmas ativas: <?= count($turmas) ?></span>
+  </div>
+</section>
+
+<div class="section-header section-header--tight">
+  <h2>Indicadores principais</h2>
+  <a href="<?= \Core\app_url('/teacher/exercises/create') ?>" class="btn btn--primary btn--sm">Criar exercício</a>
 </div>
 
 <div class="stats-grid">

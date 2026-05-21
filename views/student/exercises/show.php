@@ -1,8 +1,23 @@
-<?php $pageTitle = \Core\View::e($exercise['title']);
-global $session; ?>
+<?php
+$exercise = $exercise ?? [];
+$attCount = $attCount ?? 0;
+$bestScore = $bestScore ?? null;
+$isOpen = $isOpen ?? false;
+$canAttempt = $canAttempt ?? false;
+$inProgress = $inProgress ?? null;
+$attempts = $attempts ?? [];
+$attemptId = $attemptId ?? null;
+$attemptQuestions = $attemptQuestions ?? [];
+$savedAnswers = $savedAnswers ?? [];
+$pageTitle = $exercise['title'] ?? 'Exercício';
+global $session;
+?>
 
 <div class="page-header">
-  <h1><?= \Core\View::e($exercise['title']) ?></h1>
+  <div>
+    <h1><?= \Core\View::e($exercise['title']) ?></h1>
+    <p class="subtitle">Leia o contexto, acompanhe suas tentativas e responda no mesmo fluxo, sem telas separadas.</p>
+  </div>
   <a href="<?= \Core\app_url('/student/dashboard') ?>" class="btn btn--ghost">← Dashboard</a>
 </div>
 
@@ -36,15 +51,25 @@ if ($flash):
   <div class="alert alert--neutral">Este exercício foi encerrado.</div>
 
 <?php elseif ($canAttempt && $isOpen): ?>
-  <form method="POST" action="<?= \Core\app_url('/student/exercises/' . $exercise['id'] . '/start') ?>">
-    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-    <?php if ($inProgress): ?>
-      <p class="alert alert--info">Você tem uma tentativa em andamento iniciada em <?= date('d/m H:i', strtotime($inProgress['started_at'])) ?>.</p>
-      <a href="<?= \Core\app_url('/student/exercises/' . $exercise['id'] . '?attempt=' . $inProgress['id']) ?>" class="btn btn--primary">Continuar tentativa</a>
-    <?php else: ?>
-      <button type="submit" class="btn btn--primary btn--lg">Iniciar tentativa</button>
-    <?php endif; ?>
-  </form>
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Janela de resposta ativa</h2>
+        <p class="surface-copy">Tudo pronto para iniciar ou retomar sua tentativa dentro do prazo atual.</p>
+      </div>
+    </div>
+    <div class="surface-block__body surface-block__body--stack">
+      <form method="POST" action="<?= \Core\app_url('/student/exercises/' . $exercise['id'] . '/start') ?>">
+        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+        <?php if ($inProgress): ?>
+          <p class="alert alert--info">Você tem uma tentativa em andamento iniciada em <?= date('d/m H:i', strtotime($inProgress['started_at'])) ?>.</p>
+          <a href="<?= \Core\app_url('/student/exercises/' . $exercise['id'] . '?attempt=' . $inProgress['id']) ?>" class="btn btn--primary">Continuar tentativa</a>
+        <?php else: ?>
+          <button type="submit" class="btn btn--primary btn--lg">Iniciar tentativa</button>
+        <?php endif; ?>
+      </form>
+    </div>
+  </section>
 
 <?php elseif (!$canAttempt): ?>
   <div class="alert alert--neutral">Você atingiu o número máximo de tentativas.</div>
@@ -53,40 +78,52 @@ if ($flash):
 <!-- Tentativas anteriores -->
 <?php if (!empty($attempts)): ?>
   <div class="section">
-    <h2>Suas tentativas</h2>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Iniciada em</th>
-          <th>Submetida em</th>
-          <th>Nota</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($attempts as $i => $att): ?>
-          <tr>
-            <td><?= $i + 1 ?></td>
-            <td><?= date('d/m/Y H:i', strtotime($att['started_at'])) ?></td>
-            <td><?= $att['submitted_at'] ? date('d/m/Y H:i', strtotime($att['submitted_at'])) : '—' ?></td>
-            <td><?= $att['total_score'] !== null ? number_format((float) $att['total_score'], 1) . ' pts' : '—' ?></td>
-            <td>
-              <?php if ($att['status'] === 'graded'): ?>
-                <a href="<?= \Core\app_url('/student/attempts/' . $att['id'] . '/result') ?>" class="btn btn--sm">Ver resultado</a>
-              <?php endif; ?>
-            </td>
-          </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
+    <section class="surface-block">
+      <div class="surface-block__header">
+        <div>
+          <h2 class="surface-title">Histórico de tentativas</h2>
+          <p class="surface-copy">Acompanhe início, envio e desempenho sem sair do detalhe do exercício.</p>
+        </div>
+      </div>
+      <div class="surface-block__body">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Iniciada em</th>
+              <th>Submetida em</th>
+              <th>Nota</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($attempts as $i => $att): ?>
+              <tr>
+                <td><?= $i + 1 ?></td>
+                <td><?= date('d/m/Y H:i', strtotime($att['started_at'])) ?></td>
+                <td><?= $att['submitted_at'] ? date('d/m/Y H:i', strtotime($att['submitted_at'])) : '—' ?></td>
+                <td><?= $att['total_score'] !== null ? number_format((float) $att['total_score'], 1) . ' pts' : '—' ?></td>
+                <td>
+                  <?php if ($att['status'] === 'graded'): ?>
+                    <a href="<?= \Core\app_url('/student/attempts/' . $att['id'] . '/result') ?>" class="btn btn--sm">Ver resultado</a>
+                  <?php endif; ?>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 <?php endif; ?>
 
 <!-- Responder questões (quando há tentativa em andamento via ?attempt=) -->
 <?php if ($attemptId && !empty($attemptQuestions)): ?>
   <div class="section">
-    <h2>Responder questões</h2>
+    <div class="section-header">
+      <h2>Responder questões</h2>
+      <span class="hero-chip hero-chip--surface">Autosave ativo</span>
+    </div>
 
     <form id="attempt-form" method="POST" action="<?= \Core\app_url('/student/attempts/' . $attemptId . '/submit') ?>">
       <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
