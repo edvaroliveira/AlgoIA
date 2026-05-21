@@ -831,6 +831,10 @@ a:hover { color: var(--brand-dark); }
   padding: 1rem 1.25rem 1.25rem;
 }
 
+.surface-block__footer {
+  padding: 0 1.25rem 1.15rem;
+}
+
 .surface-block__body--stack {
   display: grid;
   gap: 1rem;
@@ -847,6 +851,18 @@ a:hover { color: var(--brand-dark); }
   margin: 0.35rem 0 0;
   color: var(--text-muted);
   line-height: 1.6;
+}
+
+.surface-link {
+  color: var(--brand);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.surface-link:hover,
+.surface-link:focus-visible {
+  color: var(--brand-ink);
+  text-decoration: underline;
 }
 
 .content-note {

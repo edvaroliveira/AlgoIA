@@ -59,96 +59,115 @@ $recentStudents = $recentStudents ?? [];
 <?php global $session; ?>
 
 <div class="section">
-  <div class="section-header">
-    <h2>Exercícios recentes</h2>
-    <a href="<?= \Core\app_url('/teacher/exercises/create') ?>" class="btn btn--primary btn--sm">+ Novo exercício</a>
-  </div>
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Exercícios recentes</h2>
+        <p class="surface-copy">Atalhos para as últimas atividades criadas e leitura rápida do status de cada janela.</p>
+      </div>
+      <a href="<?= \Core\app_url('/teacher/exercises/create') ?>" class="btn btn--primary btn--sm">+ Novo exercício</a>
+    </div>
 
-  <?php if (empty($exercises)): ?>
-    <p class="empty-state">Nenhum exercício criado ainda. <a href="<?= \Core\app_url('/teacher/exercises/create') ?>">Criar o primeiro</a>.</p>
-  <?php else: ?>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Título</th>
-          <th>Turma</th>
-          <th>Abre</th>
-          <th>Fecha</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($exercises as $ex):
-          $now    = time();
-          $open   = strtotime($ex['opens_at']) <= $now && strtotime($ex['closes_at']) >= $now;
-          $closed = strtotime($ex['closes_at']) < $now;
-        ?>
-          <tr>
-            <td><?= \Core\View::e($ex['title']) ?></td>
-            <td><?= \Core\View::e($ex['turma_name']) ?></td>
-            <td><?= date('d/m/Y H:i', strtotime($ex['opens_at'])) ?></td>
-            <td><?= date('d/m/Y H:i', strtotime($ex['closes_at'])) ?></td>
-            <td>
-              <?php if ($closed): ?>
-                <span class="badge badge--neutral">Encerrado</span>
-              <?php elseif ($open): ?>
-                <span class="badge badge--success">Aberto</span>
-              <?php else: ?>
-                <span class="badge badge--info">Agendado</span>
-              <?php endif; ?>
-            </td>
-            <td><a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a></td>
-          </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
-    <p><a href="<?= \Core\app_url('/teacher/exercises') ?>">Ver todos →</a></p>
-  <?php endif; ?>
+    <div class="surface-block__body">
+      <?php if (empty($exercises)): ?>
+        <p class="empty-state">Nenhum exercício criado ainda. <a href="<?= \Core\app_url('/teacher/exercises/create') ?>">Criar o primeiro</a>.</p>
+      <?php else: ?>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Turma</th>
+              <th>Abre</th>
+              <th>Fecha</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($exercises as $ex):
+              $now    = time();
+              $open   = strtotime($ex['opens_at']) <= $now && strtotime($ex['closes_at']) >= $now;
+              $closed = strtotime($ex['closes_at']) < $now;
+            ?>
+              <tr>
+                <td><?= \Core\View::e($ex['title']) ?></td>
+                <td><?= \Core\View::e($ex['turma_name']) ?></td>
+                <td><?= date('d/m/Y H:i', strtotime($ex['opens_at'])) ?></td>
+                <td><?= date('d/m/Y H:i', strtotime($ex['closes_at'])) ?></td>
+                <td>
+                  <?php if ($closed): ?>
+                    <span class="badge badge--neutral">Encerrado</span>
+                  <?php elseif ($open): ?>
+                    <span class="badge badge--success">Aberto</span>
+                  <?php else: ?>
+                    <span class="badge badge--info">Agendado</span>
+                  <?php endif; ?>
+                </td>
+                <td class="td-actions"><a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
+    </div>
+
+    <?php if (!empty($exercises)): ?>
+      <div class="surface-block__footer">
+        <a href="<?= \Core\app_url('/teacher/exercises') ?>" class="surface-link">Abrir biblioteca completa de exercícios →</a>
+      </div>
+    <?php endif; ?>
+  </section>
 </div>
 
 <div class="section">
-  <div class="section-header">
-    <h2>Alunos recentes</h2>
-    <a href="<?= \Core\app_url('/teacher/students') ?>" class="btn btn--ghost btn--sm">Ver todos</a>
-  </div>
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Alunos recentes</h2>
+        <p class="surface-copy">Panorama dos últimos vínculos visíveis na sua base, mantendo as ações críticas acessíveis.</p>
+      </div>
+      <a href="<?= \Core\app_url('/teacher/students') ?>" class="btn btn--ghost btn--sm">Ver todos</a>
+    </div>
 
-  <?php if (empty($recentStudents)): ?>
-    <p class="empty-state">Nenhum aluno vinculado às suas turmas ainda.</p>
-  <?php else: ?>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>E-mail</th>
-          <th>Turmas</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($recentStudents as $student): ?>
-          <tr>
-            <td><?= \Core\View::e($student['name']) ?></td>
-            <td><?= \Core\View::e($student['email']) ?></td>
-            <td><?= \Core\View::e($student['turma_names'] ?? '—') ?></td>
-            <td>
-              <?php match ($student['status']) {
-                'active'   => print '<span class="badge badge--success">Ativo</span>',
-                'pending'  => print '<span class="badge badge--warning">Pendente</span>',
-                'inactive' => print '<span class="badge badge--neutral">Inativo</span>',
-                default    => print '',
-              }; ?>
-            </td>
-            <td class="td-actions">
-              <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $student['id'] . '/delete') ?>" onsubmit="return confirm('Excluir este aluno e todos os registros dele?');">
-                <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                <button type="submit" class="btn btn--danger btn--sm">Excluir</button>
-              </form>
-            </td>
-          </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
-  <?php endif; ?>
+    <div class="surface-block__body">
+      <?php if (empty($recentStudents)): ?>
+        <p class="empty-state">Nenhum aluno vinculado às suas turmas ainda.</p>
+      <?php else: ?>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Turmas</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($recentStudents as $student): ?>
+              <tr>
+                <td><?= \Core\View::e($student['name']) ?></td>
+                <td><?= \Core\View::e($student['email']) ?></td>
+                <td><?= \Core\View::e($student['turma_names'] ?? '—') ?></td>
+                <td>
+                  <?php match ($student['status']) {
+                    'active'   => print '<span class="badge badge--success">Ativo</span>',
+                    'pending'  => print '<span class="badge badge--warning">Pendente</span>',
+                    'inactive' => print '<span class="badge badge--neutral">Inativo</span>',
+                    default    => print '',
+                  }; ?>
+                </td>
+                <td class="td-actions">
+                  <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $student['id'] . '/delete') ?>" onsubmit="return confirm('Excluir este aluno e todos os registros dele?');">
+                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                    <button type="submit" class="btn btn--danger btn--sm">Excluir</button>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
+    </div>
+  </section>
 </div>
