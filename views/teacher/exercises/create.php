@@ -7,7 +7,7 @@ global $session;
 <div class="page-header">
   <div>
     <h1>Criar exercício</h1>
-    <p class="subtitle">Configure janela de abertura, turma e política de tentativas antes de adicionar as questões.</p>
+    <p class="subtitle">Crie o rascunho, cadastre todas as questões e só depois ative o exercício para uma ou mais turmas.</p>
   </div>
   <a href="<?= \Core\app_url('/teacher/exercises') ?>" class="btn btn--ghost">← Voltar</a>
 </div>
@@ -23,7 +23,7 @@ global $session;
     <div class="surface-block__header">
       <div>
         <h2 class="surface-title">Configuração inicial</h2>
-        <p class="surface-copy">Nesta etapa você define o contêiner do exercício. As questões entram logo depois.</p>
+        <p class="surface-copy">Nesta etapa o exercício nasce como pendente de finalização. A ativação para turmas acontece depois das questões.</p>
       </div>
     </div>
     <div class="surface-block__body">
@@ -40,18 +40,6 @@ global $session;
           <label class="form-label" for="description">Descrição <span class="hint">(opcional)</span></label>
           <textarea class="form-input form-textarea" id="description" name="description"
             rows="4" placeholder="Contextualize o exercício, objetivos e critérios gerais."><?= \Core\View::e($old['description'] ?? '') ?></textarea>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="turma_id">Turma</label>
-          <select class="form-input" id="turma_id" name="turma_id" required>
-            <option value="">Selecione uma turma</option>
-            <?php foreach ($turmas as $t): ?>
-              <option value="<?= $t['id'] ?>" <?= ($old['turmaId'] ?? 0) == $t['id'] ? 'selected' : '' ?>>
-                <?= \Core\View::e($t['name']) ?> (<?= \Core\View::e($t['access_key']) ?>)
-              </option>
-            <?php endforeach; ?>
-          </select>
         </div>
 
         <div class="form-row">
@@ -76,7 +64,7 @@ global $session;
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn btn--primary">Criar exercício</button>
+          <button type="submit" class="btn btn--primary">Salvar rascunho</button>
           <a href="<?= \Core\app_url('/teacher/exercises') ?>" class="btn btn--ghost">Cancelar</a>
         </div>
       </form>
@@ -92,6 +80,10 @@ global $session;
       </div>
       <div class="surface-block__body surface-block__body--stack">
         <div class="info-step">
+          <strong>Rascunho primeiro</strong>
+          <p>O exercício ficará pendente de finalização até você concluir as questões e ativar para as turmas desejadas.</p>
+        </div>
+        <div class="info-step">
           <strong>Janela objetiva</strong>
           <p>Defina abertura e fechamento realistas para evitar bloqueios desnecessários.</p>
         </div>
@@ -100,8 +92,8 @@ global $session;
           <p>Nomes claros ajudam o aluno a reconhecer conteúdo e prioridade imediatamente.</p>
         </div>
         <div class="info-step">
-          <strong>Questões depois</strong>
-          <p>Após salvar, complete a atividade adicionando enunciados e gabaritos esperados.</p>
+          <strong>Ativação no final</strong>
+          <p>Depois de cadastrar as questões, escolha uma ou mais turmas para publicar a atividade.</p>
         </div>
       </div>
     </section>

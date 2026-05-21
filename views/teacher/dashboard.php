@@ -86,16 +86,19 @@ $recentStudents = $recentStudents ?? [];
           <tbody>
             <?php foreach ($exercises as $ex):
               $now    = time();
+              $isDraft = ($ex['status'] ?? 'active') === 'draft';
               $open   = strtotime($ex['opens_at']) <= $now && strtotime($ex['closes_at']) >= $now;
               $closed = strtotime($ex['closes_at']) < $now;
             ?>
               <tr>
                 <td><?= \Core\View::e($ex['title']) ?></td>
-                <td><?= \Core\View::e($ex['turma_name']) ?></td>
+                <td><?= \Core\View::e($ex['turma_label'] ?? 'Pendente de finalização') ?></td>
                 <td><?= date('d/m/Y H:i', strtotime($ex['opens_at'])) ?></td>
                 <td><?= date('d/m/Y H:i', strtotime($ex['closes_at'])) ?></td>
                 <td>
-                  <?php if ($closed): ?>
+                  <?php if ($isDraft): ?>
+                    <span class="badge badge--warning">Pendente</span>
+                  <?php elseif ($closed): ?>
                     <span class="badge badge--neutral">Encerrado</span>
                   <?php elseif ($open): ?>
                     <span class="badge badge--success">Aberto</span>

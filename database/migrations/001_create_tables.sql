@@ -43,16 +43,25 @@ CREATE TABLE IF NOT EXISTS student_turma (
 CREATE TABLE IF NOT EXISTS exercises (
     id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     teacher_id   INT UNSIGNED NOT NULL,
-    turma_id     INT UNSIGNED NOT NULL,
+    turma_id     INT UNSIGNED NULL,
     title        VARCHAR(200) NOT NULL,
     description  TEXT,
     opens_at     DATETIME     NOT NULL,
     closes_at    DATETIME     NOT NULL,
     max_attempts INT          NOT NULL DEFAULT 1 COMMENT '0 = ilimitado',
+    status       ENUM('draft','active') NOT NULL DEFAULT 'draft',
     created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_ex_teacher FOREIGN KEY (teacher_id) REFERENCES users(id),
     CONSTRAINT fk_ex_turma   FOREIGN KEY (turma_id)   REFERENCES turmas(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS exercise_turmas (
+    exercise_id INT UNSIGNED NOT NULL,
+    turma_id    INT UNSIGNED NOT NULL,
+    PRIMARY KEY (exercise_id, turma_id),
+    CONSTRAINT fk_ex_turmas_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ex_turmas_turma    FOREIGN KEY (turma_id)    REFERENCES turmas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── Questões ─────────────────────────────────────────────────────────────────

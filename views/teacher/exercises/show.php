@@ -3,7 +3,11 @@ $exercise = $exercise ?? [];
 $questions = $questions ?? [];
 $results = $results ?? [];
 $maxScore = $maxScore ?? 0;
+$turmas = $turmas ?? [];
+$activationErrors = $activationErrors ?? [];
+$activationTurmaIds = $activationTurmaIds ?? ($exercise['assigned_turma_ids'] ?? []);
 $pageTitle = $exercise['title'] ?? 'Exercício';
+$isDraft = ($exercise['status'] ?? 'active') === 'draft';
 $isOpen = !empty($exercise) && strtotime((string) $exercise['opens_at']) <= time() && strtotime((string) $exercise['closes_at']) >= time();
 $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < time();
 global $session;
@@ -12,7 +16,7 @@ global $session;
 <div class="page-header">
   <div>
     <h1><?= \Core\View::e($exercise['title'] ?? 'Exercício') ?></h1>
-    <p class="subtitle">Gestão completa da atividade, com visão de janela, estrutura de correção e desempenho dos alunos.</p>
+    <p class="subtitle"><?= $isDraft ? 'Rascunho pendente de finalização. Complete as questões e ative para as turmas desejadas.' : 'Gestão completa da atividade, com visão de janela, estrutura de correção e desempenho dos alunos.' ?></p>
   </div>
   <div class="header-actions">
     <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/edit') ?>" class="btn btn--ghost">Editar</a>
@@ -28,14 +32,16 @@ global $session;
     <p class="hero-panel__copy">Confira a turma associada, a janela de disponibilidade, o peso total da avaliação e o comportamento das submissões em um painel único.</p>
   </div>
   <div class="hero-panel__meta">
-    <?php if ($isClosed): ?>
+    <?php if ($isDraft): ?>
+      <span class="hero-chip">Pendente de finalização</span>
+    <?php elseif ($isClosed): ?>
       <span class="hero-chip">Encerrado</span>
     <?php elseif ($isOpen): ?>
       <span class="hero-chip">Aberto agora</span>
     <?php else: ?>
       <span class="hero-chip">Agendado</span>
     <?php endif; ?>
-    <span class="hero-chip hero-chip--soft">Turma: <?= \Core\View::e($exercise['turma_name'] ?? '') ?></span>
+    <span class="hero-chip hero-chip--soft">Turmas: <?= \Core\View::e($exercise['turma_label'] ?? 'Pendente de finalização') ?></span>
   </div>
 </section>
 
@@ -51,9 +57,9 @@ global $session;
     <p class="overview-card__copy">Soma total do peso das questões configuradas neste exercício.</p>
   </article>
   <article class="overview-card">
-    <span class="overview-card__label">Submissões avaliadas</span>
-    <strong class="overview-card__value"><?= count($results) ?></strong>
-    <p class="overview-card__copy">Alunos com pelo menos uma tentativa já corrigida.</p>
+    <span class="overview-card__label">Turmas vinculadas</span>
+    <strong class="overview-card__value"><?= (int) ($exercise['turma_count'] ?? count($activationTurmaIds)) ?></strong>
+    <p class="overview-card__copy"><?= $isDraft ? 'Selecione uma ou mais turmas ao finalizar o exercício.' : 'Distribuição atual da atividade entre as turmas já ativadas.' ?></p>
   </article>
 </div>
 
@@ -67,12 +73,12 @@ global $session;
     </div>
     <div class="surface-block__body surface-block__body--stack">
       <div class="meta-grid">
-        <div><strong>Turma</strong><?= \Core\View::e($exercise['turma_name'] ?? '') ?></div>
-        <div><strong>Chave da turma</strong><?= \Core\View::e($exercise['turma_key'] ?? '—') ?></div>
+        <div><strong>Turmas</strong><?= \Core\View::e($exercise['turma_label'] ?? 'Pendente de finalização') ?></div>
+        <div><strong>Chaves das turmas</strong><?= \Core\View::e($exercise['turma_keys'] ?? '—') ?></div>
         <div><strong>Abre</strong><?= !empty($exercise['opens_at']) ? date('d/m/Y H:i', strtotime($exercise['opens_at'])) : '—' ?></div>
         <div><strong>Fecha</strong><?= !empty($exercise['closes_at']) ? date('d/m/Y H:i', strtotime($exercise['closes_at'])) : '—' ?></div>
         <div><strong>Tentativas</strong><?= ($exercise['max_attempts'] ?? '0') === '0' ? 'Ilimitadas' : $exercise['max_attempts'] ?></div>
-        <div><strong>Status</strong><?= $isClosed ? 'Encerrado' : ($isOpen ? 'Aberto' : 'Agendado') ?></div>
+        <div><strong>Status</strong><?= $isDraft ? 'Pendente de finalização' : ($isClosed ? 'Encerrado' : ($isOpen ? 'Aberto' : 'Agendado')) ?></div>
       </div>
       <?php if (!empty($exercise['description'])): ?>
         <div class="content-note">
@@ -93,6 +99,49 @@ global $session;
       <div class="surface-block__body surface-block__body--stack">
         <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/edit') ?>" class="btn btn--ghost btn--full">Editar configuração</a>
         <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>" class="btn btn--primary btn--full">Adicionar ou revisar questões</a>
+      </div>
+    </section>
+
+    <section class="surface-block info-panel info-panel--static">
+      <div class="surface-block__header">
+        <div>
+          <h2 class="surface-title"><?= $isDraft ? 'Finalizar ativação' : 'Turmas vinculadas' ?></h2>
+          <p class="surface-copy"><?= $isDraft ? 'O exercício só fica disponível aos alunos depois desta etapa.' : 'Você pode atualizar as turmas vinculadas sem recriar o exercício.' ?></p>
+        </div>
+      </div>
+      <div class="surface-block__body surface-block__body--stack">
+        <?php if (!empty($activationErrors)): ?>
+          <div class="alert alert--error">
+            <?php foreach ($activationErrors as $error): ?><div><?= \Core\View::e($error) ?></div><?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($isDraft && empty($questions)): ?>
+          <div class="content-note">
+            <strong>Ativação bloqueada</strong>
+            <p>Cadastre pelo menos uma questão antes de escolher as turmas e publicar esta atividade.</p>
+          </div>
+        <?php endif; ?>
+
+        <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/activate') ?>" class="form">
+          <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+
+          <div class="checkbox-grid">
+            <?php foreach ($turmas as $turma): ?>
+              <label class="choice-card">
+                <input type="checkbox" name="turma_ids[]" value="<?= $turma['id'] ?>" <?= in_array((int) $turma['id'], array_map('intval', $activationTurmaIds), true) ? 'checked' : '' ?>>
+                <span>
+                  <strong><?= \Core\View::e($turma['name']) ?></strong>
+                  <small><?= \Core\View::e($turma['access_key']) ?></small>
+                </span>
+              </label>
+            <?php endforeach; ?>
+          </div>
+
+          <button type="submit" class="btn btn--primary btn--full" <?= $isDraft && empty($questions) ? 'disabled' : '' ?>>
+            <?= $isDraft ? 'Finalizar e ativar exercício' : 'Atualizar turmas vinculadas' ?>
+          </button>
+        </form>
       </div>
     </section>
   </aside>
@@ -141,12 +190,12 @@ global $session;
     <div class="surface-block__header">
       <div>
         <h2 class="surface-title">Resultados dos alunos</h2>
-        <p class="surface-copy">Melhor nota registrada e número de tentativas por participante que já teve correção concluída.</p>
+        <p class="surface-copy"><?= $isDraft ? 'Resultados aparecerão aqui quando o exercício for finalizado, ativado e começar a receber submissões.' : 'Melhor nota registrada e número de tentativas por participante que já teve correção concluída.' ?></p>
       </div>
     </div>
     <div class="surface-block__body">
       <?php if (empty($results)): ?>
-        <p class="empty-state">Nenhuma submissão ainda.</p>
+        <p class="empty-state"><?= $isDraft ? 'Exercício ainda não ativado para turmas.' : 'Nenhuma submissão ainda.' ?></p>
       <?php else: ?>
         <table class="table">
           <thead>

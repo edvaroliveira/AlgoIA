@@ -77,11 +77,13 @@ class Attempt extends Model
   {
     return $this->db->fetchOne(
       "SELECT a.*, e.title AS exercise_title, e.closes_at, e.max_attempts,
-                    t.name AS turma_name
+                    GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', ') AS turma_name
              FROM attempts a
              JOIN exercises e ON e.id = a.exercise_id
-             JOIN turmas t ON t.id = e.turma_id
-             WHERE a.id = ?",
+             LEFT JOIN exercise_turmas et ON et.exercise_id = e.id
+             LEFT JOIN turmas t ON t.id = et.turma_id
+             WHERE a.id = ?
+             GROUP BY a.id",
       [$attemptId]
     );
   }
