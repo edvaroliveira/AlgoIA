@@ -676,9 +676,16 @@ a:hover { color: var(--brand-dark); }
 }
 
 .td-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
+  white-space: nowrap;
+}
+
+.td-actions > * {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.td-actions > * + * {
+  margin-left: 0.55rem;
 }
 
 .form {
@@ -1333,9 +1340,16 @@ a:hover { color: var(--brand-dark); }
 }
 
 .td-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
+  white-space: nowrap;
+}
+
+.td-actions > * {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.td-actions > * + * {
+  margin-left: 0.5rem;
 }
 
 .form {
