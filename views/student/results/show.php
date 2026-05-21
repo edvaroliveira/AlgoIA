@@ -1,10 +1,20 @@
 <?php
-$pageTitle = 'Resultado — ' . \Core\View::e($attempt['exercise_title']);
-$isBest    = $bestScore !== null && abs((float) $attempt['total_score'] - (float) $bestScore) < 0.01;
+$attempt = $attempt ?? [];
+$bestScore = $bestScore ?? null;
+$maxScore = $maxScore ?? 0;
+$answers = $answers ?? [];
+$showReferenceAnswer = $showReferenceAnswer ?? false;
+$pageTitle = 'Resultado — ' . ($attempt['exercise_title'] ?? 'Exercício');
+$isBest    = $bestScore !== null
+  && isset($attempt['total_score'])
+  && abs((float) $attempt['total_score'] - (float) $bestScore) < 0.01;
 ?>
 
 <div class="page-header">
-  <h1>Resultado</h1>
+  <div>
+    <h1>Resultado da tentativa</h1>
+    <p class="subtitle">Leitura detalhada da correção, com feedback da IA e referência esperada quando liberada.</p>
+  </div>
   <a href="<?= \Core\app_url('/student/exercises/' . $attempt['exercise_id']) ?>" class="btn btn--ghost">← Exercício</a>
 </div>
 
@@ -18,6 +28,24 @@ $isBest    = $bestScore !== null && abs((float) $attempt['total_score'] - (float
     Submetido em <?= date('d/m/Y H:i', strtotime($attempt['submitted_at'])) ?>
     <?php if ($isBest): ?> · <strong>Sua melhor tentativa!</strong><?php endif; ?>
   </p>
+</div>
+
+<div class="overview-grid overview-grid--compact">
+  <article class="overview-card">
+    <span class="overview-card__label">Pontuação obtida</span>
+    <strong class="overview-card__value"><?= number_format((float) $attempt['total_score'], 1) ?></strong>
+    <p class="overview-card__copy">Resultado total consolidado desta submissão.</p>
+  </article>
+  <article class="overview-card">
+    <span class="overview-card__label">Valor máximo</span>
+    <strong class="overview-card__value"><?= number_format((float) $maxScore, 1) ?></strong>
+    <p class="overview-card__copy">Soma máxima possível considerando todas as questões.</p>
+  </article>
+  <article class="overview-card">
+    <span class="overview-card__label">Melhor marca</span>
+    <strong class="overview-card__value"><?= $bestScore !== null ? number_format((float) $bestScore, 1) : '—' ?></strong>
+    <p class="overview-card__copy">Sua referência atual neste exercício.</p>
+  </article>
 </div>
 
 <!-- Respostas -->

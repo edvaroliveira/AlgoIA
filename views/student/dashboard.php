@@ -1,9 +1,22 @@
 <?php $pageTitle = 'Dashboard';
 global $session; ?>
+<?php
+$turmas = $turmas ?? [];
+$available = $available ?? [];
+$all = $all ?? [];
+?>
 
-<div class="page-header">
-  <h1>Olá, <?= \Core\View::e(\Core\Auth::user()['name']) ?>!</h1>
-</div>
+<section class="hero-panel hero-panel--student">
+  <div>
+    <div class="hero-panel__eyebrow">Painel do aluno</div>
+    <h2 class="hero-panel__title">Continue sua prática com visão clara do que está aberto agora.</h2>
+    <p class="hero-panel__copy">Veja exercícios liberados, acompanhe seu histórico e entre em novas turmas sem perder o contexto da sua evolução.</p>
+  </div>
+  <div class="hero-panel__meta">
+    <span class="hero-chip">Olá, <?= \Core\View::e(\Core\Auth::user()['name']) ?></span>
+    <span class="hero-chip hero-chip--soft">Turmas vinculadas: <?= count($turmas) ?></span>
+  </div>
+</section>
 
 <!-- Turmas -->
 <?php
