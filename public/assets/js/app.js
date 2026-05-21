@@ -80,4 +80,61 @@
       }, 400);
     }, 6000);
   });
+
+  // ── Draft activation form validation ─────────────────────────────────────
+  var activationForm = document.querySelector("[data-activation-form]");
+
+  if (activationForm) {
+    var feedbackEl = document.querySelector("[data-activation-feedback]");
+
+    activationForm.addEventListener("submit", function (event) {
+      var errors = [];
+      var questionCount = Number(activationForm.dataset.questionCount || "0");
+      var selectedTurmas = activationForm.querySelectorAll(
+        'input[name="turma_ids[]"]:checked',
+      );
+
+      if (questionCount < 1) {
+        errors.push(
+          "Adicione pelo menos uma questão antes de ativar o exercício.",
+        );
+      }
+
+      if (!selectedTurmas.length) {
+        errors.push("Selecione pelo menos uma turma para ativação.");
+      }
+
+      if (!feedbackEl) {
+        return;
+      }
+
+      if (errors.length) {
+        event.preventDefault();
+        feedbackEl.innerHTML = errors
+          .map(function (message) {
+            return "<div>" + message + "</div>";
+          })
+          .join("");
+        feedbackEl.classList.remove("is-hidden");
+        feedbackEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        return;
+      }
+
+      feedbackEl.innerHTML = "";
+      feedbackEl.classList.add("is-hidden");
+    });
+
+    activationForm
+      .querySelectorAll('input[name="turma_ids[]"]')
+      .forEach(function (input) {
+        input.addEventListener("change", function () {
+          if (!feedbackEl) {
+            return;
+          }
+
+          feedbackEl.innerHTML = "";
+          feedbackEl.classList.add("is-hidden");
+        });
+      });
+  }
 })();

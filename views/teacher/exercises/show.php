@@ -97,7 +97,7 @@ $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < ti
   </section>
 
   <aside class="exercise-side-panel">
-    <section class="surface-block info-panel info-panel--static">
+    <section class="surface-block info-panel info-panel--static exercise-quick-actions">
       <div class="surface-block__header">
         <div>
           <h2 class="surface-title">Ações rápidas</h2>
@@ -126,9 +126,11 @@ $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < ti
         </div>
         <div class="surface-block__body surface-block__body--stack">
           <?php if (!empty($activationErrors)): ?>
-            <div class="alert alert--error">
+            <div class="alert alert--error activation-feedback" data-activation-feedback>
               <?php foreach ($activationErrors as $error): ?><div><?= \Core\View::e($error) ?></div><?php endforeach; ?>
             </div>
+          <?php else: ?>
+            <div class="alert alert--error activation-feedback is-hidden" data-activation-feedback></div>
           <?php endif; ?>
 
           <?php if (empty($questions)): ?>
@@ -138,7 +140,11 @@ $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < ti
             </div>
           <?php endif; ?>
 
-          <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/activate') ?>" class="form">
+          <form method="POST"
+            action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/activate') ?>"
+            class="form"
+            data-activation-form
+            data-question-count="<?= count($questions) ?>">
             <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
 
             <div class="checkbox-grid">
