@@ -96,6 +96,7 @@ class ExerciseController
   {
     Auth::requireTeacher();
     $exercise = $this->getOwnedExercise((int) $id);
+    $this->ensureDraftExercise($exercise);
 
     View::render('teacher/exercises/edit', [
       'exercise' => $exercise,
@@ -107,7 +108,8 @@ class ExerciseController
   {
     Auth::requireTeacher();
     Request::validateCsrf();
-    $this->getOwnedExercise((int) $id);
+    $exercise = $this->getOwnedExercise((int) $id);
+    $this->ensureDraftExercise($exercise);
 
     $title       = Request::str('title');
     $description = Request::text('description') ?: null;
@@ -147,6 +149,7 @@ class ExerciseController
     Request::validateCsrf();
 
     $exercise = $this->getOwnedExercise((int) $id);
+    $this->ensureDraftExercise($exercise);
     $questions = $this->questions->countByExercise((int) $id);
     $turmaIds = array_values(array_filter(array_map('intval', (array) ($_POST['turma_ids'] ?? []))));
 
@@ -315,5 +318,16 @@ class ExerciseController
     }
 
     return $errors;
+  }
+
+  private function ensureDraftExercise(array $exercise): void
+  {
+    if (($exercise['status'] ?? 'draft') === 'draft') {
+      return;
+    }
+
+    global $session;
+    $session->flash('error', 'Este exercício já foi vinculado a turma e não pode mais ser modificado.');
+    View::redirect('/teacher/exercises/' . $exercise['id']);
   }
 }

@@ -26,6 +26,7 @@ class QuestionController
   {
     Auth::requireTeacher();
     $exercise = $this->getOwnedExercise((int) $exerciseId);
+    $this->ensureDraftExercise($exercise);
 
     View::render('teacher/questions/create', [
       'exercise'   => $exercise,
@@ -39,6 +40,7 @@ class QuestionController
     Auth::requireTeacher();
     Request::validateCsrf();
     $exercise = $this->getOwnedExercise((int) $exerciseId);
+    $this->ensureDraftExercise($exercise);
 
     $text         = Request::text('text');
     $hint         = Request::text('expected_answer_hint');
@@ -83,6 +85,8 @@ class QuestionController
 
     $question   = $this->questions->find((int) $id);
     $exerciseId = $question['exercise_id'] ?? 0;
+    $exercise = $this->getOwnedExercise((int) $exerciseId);
+    $this->ensureDraftExercise($exercise);
 
     $this->questions->delete((int) $id);
     AuditService::record('teacher.question.delete', 'question', (int) $id, ['exercise_id' => (int) $exerciseId]);
@@ -94,5 +98,16 @@ class QuestionController
     $ex = $this->exercises->getWithTurma($id);
     Auth::ensure($ex && (int) $ex['teacher_id'] === Auth::id());
     return $ex;
+  }
+
+  private function ensureDraftExercise(array $exercise): void
+  {
+    if (($exercise['status'] ?? 'draft') === 'draft') {
+      return;
+    }
+
+    global $session;
+    $session->flash('error', 'Este exercício já foi vinculado a turma e não aceita mais alterações nas questões.');
+    View::redirect('/teacher/exercises/' . $exercise['id']);
   }
 }
