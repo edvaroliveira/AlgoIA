@@ -4,7 +4,10 @@ $questions = $questions ?? [];
 $results = $results ?? [];
 $maxScore = $maxScore ?? 0;
 $turmas = $turmas ?? [];
-$activationErrors = $activationErrors ?? [];
+$activationErrors = array_values(array_filter(
+  $activationErrors ?? [],
+  static fn($error): bool => is_string($error) && trim($error) !== ''
+));
 $activationTurmaIds = $activationTurmaIds ?? ($exercise['assigned_turma_ids'] ?? []);
 $pageTitle = $exercise['title'] ?? 'Exercício';
 $isDraft = ($exercise['status'] ?? 'active') === 'draft';
@@ -130,7 +133,7 @@ $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < ti
               <?php foreach ($activationErrors as $error): ?><div><?= \Core\View::e($error) ?></div><?php endforeach; ?>
             </div>
           <?php else: ?>
-            <div class="alert alert--error activation-feedback is-hidden" data-activation-feedback></div>
+            <div class="alert alert--error activation-feedback" data-activation-feedback hidden></div>
           <?php endif; ?>
 
           <?php if (empty($questions)): ?>
