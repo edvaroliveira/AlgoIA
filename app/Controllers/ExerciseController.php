@@ -51,7 +51,7 @@ class ExerciseController
     Request::validateCsrf();
 
     $title       = Request::str('title');
-    $description = Request::str('description') ?: null;
+    $description = Request::text('description') ?: null;
     $turmaId     = Request::int('turma_id');
     $opensAt     = Request::str('opens_at');
     $closesAt    = Request::str('closes_at');
@@ -107,7 +107,7 @@ class ExerciseController
     $this->getOwnedExercise((int) $id);
 
     $title       = Request::str('title');
-    $description = Request::str('description') ?: null;
+    $description = Request::text('description') ?: null;
     $turmaId     = Request::int('turma_id');
     $opensAt     = Request::str('opens_at');
     $closesAt    = Request::str('closes_at');

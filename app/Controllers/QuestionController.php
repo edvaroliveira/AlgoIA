@@ -40,8 +40,8 @@ class QuestionController
     Request::validateCsrf();
     $exercise = $this->getOwnedExercise((int) $exerciseId);
 
-    $text         = Request::str('text');
-    $hint         = Request::str('expected_answer_hint');
+    $text         = Request::text('text');
+    $hint         = Request::text('expected_answer_hint');
     $maxScore     = min(10.0, max(0.0, Request::float('max_score', 10.0)));
     $orderIndex   = Request::int('order_index', 0);
 
