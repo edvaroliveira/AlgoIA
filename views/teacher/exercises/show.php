@@ -8,10 +8,15 @@ $activationErrors = $activationErrors ?? [];
 $activationTurmaIds = $activationTurmaIds ?? ($exercise['assigned_turma_ids'] ?? []);
 $pageTitle = $exercise['title'] ?? 'Exercício';
 $isDraft = ($exercise['status'] ?? 'active') === 'draft';
+global $session;
+$flashError = $session->getFlash('error');
 $isOpen = !empty($exercise) && strtotime((string) $exercise['opens_at']) <= time() && strtotime((string) $exercise['closes_at']) >= time();
 $isClosed = !empty($exercise) && strtotime((string) $exercise['closes_at']) < time();
-global $session;
 ?>
+
+<?php if ($flashError): ?>
+  <div class="alert alert--error"><?= \Core\View::e($flashError) ?></div>
+<?php endif; ?>
 
 <div class="page-header">
   <div>
@@ -19,8 +24,10 @@ global $session;
     <p class="subtitle"><?= $isDraft ? 'Rascunho pendente de finalização. Complete as questões e ative para as turmas desejadas.' : 'Gestão completa da atividade, com visão de janela, estrutura de correção e desempenho dos alunos.' ?></p>
   </div>
   <div class="header-actions">
-    <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/edit') ?>" class="btn btn--ghost">Editar</a>
-    <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>" class="btn btn--primary">Gerir questões</a>
+    <?php if ($isDraft): ?>
+      <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/edit') ?>" class="btn btn--ghost">Editar</a>
+      <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>" class="btn btn--primary">Gerir questões</a>
+    <?php endif; ?>
     <a href="<?= \Core\app_url('/teacher/exercises') ?>" class="btn btn--ghost">← Exercícios</a>
   </div>
 </div>
@@ -97,53 +104,77 @@ global $session;
         </div>
       </div>
       <div class="surface-block__body surface-block__body--stack">
-        <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/edit') ?>" class="btn btn--ghost btn--full">Editar configuração</a>
-        <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>" class="btn btn--primary btn--full">Adicionar ou revisar questões</a>
-      </div>
-    </section>
-
-    <section class="surface-block info-panel info-panel--static">
-      <div class="surface-block__header">
-        <div>
-          <h2 class="surface-title"><?= $isDraft ? 'Finalizar ativação' : 'Turmas vinculadas' ?></h2>
-          <p class="surface-copy"><?= $isDraft ? 'O exercício só fica disponível aos alunos depois desta etapa.' : 'Você pode atualizar as turmas vinculadas sem recriar o exercício.' ?></p>
-        </div>
-      </div>
-      <div class="surface-block__body surface-block__body--stack">
-        <?php if (!empty($activationErrors)): ?>
-          <div class="alert alert--error">
-            <?php foreach ($activationErrors as $error): ?><div><?= \Core\View::e($error) ?></div><?php endforeach; ?>
-          </div>
-        <?php endif; ?>
-
-        <?php if ($isDraft && empty($questions)): ?>
+        <?php if ($isDraft): ?>
+          <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/edit') ?>" class="btn btn--ghost btn--full">Editar configuração</a>
+          <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>" class="btn btn--primary btn--full">Adicionar ou revisar questões</a>
+        <?php else: ?>
           <div class="content-note">
-            <strong>Ativação bloqueada</strong>
-            <p>Cadastre pelo menos uma questão antes de escolher as turmas e publicar esta atividade.</p>
+            <strong>Edição bloqueada</strong>
+            <p>Depois da vinculação com turma, este exercício fica congelado para preservar o enunciado, as regras e as questões publicadas.</p>
           </div>
         <?php endif; ?>
-
-        <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/activate') ?>" class="form">
-          <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-
-          <div class="checkbox-grid">
-            <?php foreach ($turmas as $turma): ?>
-              <label class="choice-card">
-                <input type="checkbox" name="turma_ids[]" value="<?= $turma['id'] ?>" <?= in_array((int) $turma['id'], array_map('intval', $activationTurmaIds), true) ? 'checked' : '' ?>>
-                <span>
-                  <strong><?= \Core\View::e($turma['name']) ?></strong>
-                  <small><?= \Core\View::e($turma['access_key']) ?></small>
-                </span>
-              </label>
-            <?php endforeach; ?>
-          </div>
-
-          <button type="submit" class="btn btn--primary btn--full" <?= $isDraft && empty($questions) ? 'disabled' : '' ?>>
-            <?= $isDraft ? 'Finalizar e ativar exercício' : 'Atualizar turmas vinculadas' ?>
-          </button>
-        </form>
       </div>
     </section>
+
+    <?php if ($isDraft): ?>
+      <section class="surface-block info-panel info-panel--static">
+        <div class="surface-block__header">
+          <div>
+            <h2 class="surface-title">Finalizar ativação</h2>
+            <p class="surface-copy">O exercício só fica disponível aos alunos depois desta etapa.</p>
+          </div>
+        </div>
+        <div class="surface-block__body surface-block__body--stack">
+          <?php if (!empty($activationErrors)): ?>
+            <div class="alert alert--error">
+              <?php foreach ($activationErrors as $error): ?><div><?= \Core\View::e($error) ?></div><?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+
+          <?php if (empty($questions)): ?>
+            <div class="content-note">
+              <strong>Ativação bloqueada</strong>
+              <p>Cadastre pelo menos uma questão antes de escolher as turmas e publicar esta atividade.</p>
+            </div>
+          <?php endif; ?>
+
+          <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/activate') ?>" class="form">
+            <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+
+            <div class="checkbox-grid">
+              <?php foreach ($turmas as $turma): ?>
+                <label class="choice-card">
+                  <input type="checkbox" name="turma_ids[]" value="<?= $turma['id'] ?>" <?= in_array((int) $turma['id'], array_map('intval', $activationTurmaIds), true) ? 'checked' : '' ?>>
+                  <span>
+                    <strong><?= \Core\View::e($turma['name']) ?></strong>
+                    <small><?= \Core\View::e($turma['access_key']) ?></small>
+                  </span>
+                </label>
+              <?php endforeach; ?>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--full" <?= empty($questions) ? 'disabled' : '' ?>>
+              Finalizar e ativar exercício
+            </button>
+          </form>
+        </div>
+      </section>
+    <?php else: ?>
+      <section class="surface-block info-panel info-panel--static">
+        <div class="surface-block__header">
+          <div>
+            <h2 class="surface-title">Turmas vinculadas</h2>
+            <p class="surface-copy">A publicação já foi concluída e o exercício está congelado para evitar alterações após a disponibilização.</p>
+          </div>
+        </div>
+        <div class="surface-block__body surface-block__body--stack">
+          <div class="content-note">
+            <strong>Publicação concluída</strong>
+            <p><?= \Core\View::e($exercise['turma_label'] ?? '—') ?></p>
+          </div>
+        </div>
+      </section>
+    <?php endif; ?>
   </aside>
 </div>
 
@@ -154,7 +185,9 @@ global $session;
         <h2 class="surface-title">Questões cadastradas (<?= count($questions) ?>)</h2>
         <p class="surface-copy">Estrutura usada na correção assistida por IA e no cálculo da nota final.</p>
       </div>
-      <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>" class="btn btn--primary btn--sm">+ Questão</a>
+      <?php if ($isDraft): ?>
+        <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>" class="btn btn--primary btn--sm">+ Questão</a>
+      <?php endif; ?>
     </div>
 
     <div class="surface-block__body">
@@ -172,12 +205,14 @@ global $session;
               <summary>Ver gabarito esperado</summary>
               <p class="hint-text"><?= nl2br(\Core\View::e($q['expected_answer_hint'])) ?></p>
             </details>
-            <form method="POST" action="<?= \Core\app_url('/teacher/questions/' . $q['id'] . '/delete') ?>"
-              class="inline-form"
-              onsubmit="return confirm('Excluir esta questão?');">
-              <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-              <button class="btn btn--danger btn--sm">Excluir questão</button>
-            </form>
+            <?php if ($isDraft): ?>
+              <form method="POST" action="<?= \Core\app_url('/teacher/questions/' . $q['id'] . '/delete') ?>"
+                class="inline-form"
+                onsubmit="return confirm('Excluir esta questão?');">
+                <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                <button class="btn btn--danger btn--sm">Excluir questão</button>
+              </form>
+            <?php endif; ?>
           </div>
         <?php endforeach; ?>
       <?php endif; ?>
