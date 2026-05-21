@@ -62,7 +62,7 @@ class OpenAIService
     $rawResponse = $this->callApi($systemPrompt, $userPrompt);
 
     // Layer 3 — strict structural validation
-    return $this->parseResponse($rawResponse, $maxScore);
+    return $this->parseResponse($rawResponse, $maxScore, $questionText, $expectedAnswerHint);
   }
 
   // ── Prompt construction ──────────────────────────────────────────────────
@@ -97,7 +97,17 @@ REGRAS INVIOLÁVEIS:
 22. Responda EXCLUSIVAMENTE com JSON válido no formato abaixo. Nenhum texto antes ou depois.
 
 FORMATO OBRIGATÓRIO:
-{"score": <número entre 0 e {$maxScore}>, "feedback": "<string>", "correct": <true|false>}
+{"score": <número entre 0 e {$maxScore}>, "feedback": "<string>", "correct": <true|false>, "deduction_reasons": ["<string>"]}
+
+Use deduction_reasons apenas com estes valores quando houver desconto:
+- "logic_error"
+- "missing_concept"
+- "contradiction"
+- "inefficiency"
+- "approach_difference"
+- "incomplete_explanation"
+
+Se não houver desconto, retorne deduction_reasons como array vazio.
 PROMPT;
   }
 
@@ -127,6 +137,7 @@ Se a resposta estiver correta e ainda trouxer detalhes úteis além do esperado,
 Se houver pseudocódigo, passos descritivos ou lógica narrada, avalie a coerência do procedimento descrito em vez de buscar correspondência literal com o gabarito.
 Se a questão não exigir otimização, uma solução correta por abordagem alternativa não deve perder nota por ter complexidade maior; no máximo, cite essa diferença como observação complementar, se ela for relevante.
 Se a questão não exigir uma abordagem específica, uma solução correta por estratégia diferente também não deve perder nota; mencione a diferença apenas como observação complementar, se isso ajudar pedagogicamente.
+Preencha deduction_reasons somente com os motivos reais do desconto. Não inclua "inefficiency" nem "approach_difference" quando a questão não exigir explicitamente otimização, complexidade ou abordagem específica.
 PROMPT;
   }
 
@@ -231,7 +242,7 @@ PROMPT;
 
   // ── Response validation ───────────────────────────────────────────────────
 
-  private function parseResponse(string $raw, float $maxScore): array
+  private function parseResponse(string $raw, float $maxScore, string $questionText, string $expectedHint): array
   {
     $data = json_decode($raw, true);
 
@@ -247,7 +258,90 @@ PROMPT;
     $score    = max(0.0, min($maxScore, (float) $data['score']));
     $feedback = trim(strip_tags((string) $data['feedback']));
     $correct  = (bool) ($data['correct'] ?? ($score >= $maxScore * 0.6));
+    $deductionReasons = $this->normalizeDeductionReasons($data['deduction_reasons'] ?? []);
+
+    if (
+      $score < $maxScore
+      && !$this->questionRequiresEfficiencyOrSpecificApproach($questionText, $expectedHint)
+      && $this->hasOnlyNonBlockingReasons($deductionReasons)
+    ) {
+      $score = $maxScore;
+      $correct = true;
+    }
 
     return compact('score', 'feedback', 'correct');
+  }
+
+  private function normalizeDeductionReasons(mixed $reasons): array
+  {
+    if (!is_array($reasons)) {
+      return [];
+    }
+
+    $normalized = [];
+
+    foreach ($reasons as $reason) {
+      if (!is_string($reason)) {
+        continue;
+      }
+
+      $value = strtolower(trim($reason));
+      if ($value !== '') {
+        $normalized[] = $value;
+      }
+    }
+
+    return array_values(array_unique($normalized));
+  }
+
+  private function questionRequiresEfficiencyOrSpecificApproach(string $questionText, string $expectedHint): bool
+  {
+    $content = mb_strtolower($questionText . "\n" . $expectedHint);
+
+    $explicitIndicators = [
+      'complexidade',
+      'eficien',
+      'otimiz',
+      'mais eficiente',
+      'melhor abordagem',
+      'abordagem específica',
+      'abordagem especifica',
+      'obrigatoriamente',
+      'deve usar',
+      'utilize',
+      'use obrigatoriamente',
+      'sem ordenar',
+      'sem ordenação',
+      'sem ordenacao',
+      'o(n)',
+      'o(log n)',
+      'tempo linear',
+      'complexidade linear',
+    ];
+
+    foreach ($explicitIndicators as $indicator) {
+      if (str_contains($content, $indicator)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private function hasOnlyNonBlockingReasons(array $deductionReasons): bool
+  {
+    if ($deductionReasons === []) {
+      return false;
+    }
+
+    $nonBlocking = ['inefficiency', 'approach_difference'];
+
+    foreach ($deductionReasons as $reason) {
+      if (!in_array($reason, $nonBlocking, true)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }
