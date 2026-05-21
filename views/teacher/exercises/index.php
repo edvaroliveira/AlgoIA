@@ -4,7 +4,14 @@ $exercises = $exercises ?? [];
 $now = time();
 $activeExercises = count(array_filter($exercises, fn($exercise) => ($exercise['status'] ?? 'active') === 'active'));
 $draftExercises = count(array_filter($exercises, fn($exercise) => ($exercise['status'] ?? 'active') === 'draft'));
-$openExercises = count(array_filter($exercises, fn($exercise) => ($exercise['status'] ?? 'active') === 'active' && strtotime($exercise['opens_at']) <= $now && strtotime($exercise['closes_at']) >= $now));
+$readyExercises = count(array_filter($exercises, fn($exercise) => ($exercise['status'] ?? 'active') === 'ready'));
+$openExercises = count(array_filter($exercises, static function ($exercise) use ($now): bool {
+  return ($exercise['status'] ?? 'active') === 'active'
+    && !empty($exercise['opens_at'])
+    && !empty($exercise['closes_at'])
+    && strtotime($exercise['opens_at']) <= $now
+    && strtotime($exercise['closes_at']) >= $now;
+}));
 ?>
 
 <div class="page-header">
@@ -22,16 +29,20 @@ $openExercises = count(array_filter($exercises, fn($exercise) => ($exercise['sta
     <p class="overview-card__copy">Inclui rascunhos pendentes de finalização e atividades já ativas.</p>
   </article>
   <article class="overview-card">
-    <span class="overview-card__label">Ativos agora</span>
+    <span class="overview-card__label">Publicados</span>
     <strong class="overview-card__value"><?= $activeExercises ?></strong>
-    <p class="overview-card__copy">Exercícios já finalizados, com pelo menos uma turma vinculada.</p>
+    <p class="overview-card__copy">Exercícios já vinculados a pelo menos uma turma.</p>
   </article>
   <article class="overview-card">
-    <span class="overview-card__label">Pendentes de finalização</span>
-    <strong class="overview-card__value"><?= $draftExercises ?></strong>
-    <p class="overview-card__copy">Rascunhos que ainda precisam de questões completas e ativação para turmas.</p>
+    <span class="overview-card__label">Prontos para publicar</span>
+    <strong class="overview-card__value"><?= $readyExercises ?></strong>
+    <p class="overview-card__copy">Exercícios concluídos pedagogicamente, aguardando vinculação por turma.</p>
   </article>
 </div>
+
+<?php if ($draftExercises > 0): ?>
+  <div class="alert alert--info">Há <?= $draftExercises ?> exercício(s) ainda em rascunho aguardando cadastro ou revisão das questões.</div>
+<?php endif; ?>
 
 <?php if (empty($exercises)): ?>
   <p class="empty-state">Nenhum exercício criado. <a href="<?= \Core\app_url('/teacher/exercises/create') ?>">Criar o primeiro</a>.</p>
@@ -59,18 +70,22 @@ $openExercises = count(array_filter($exercises, fn($exercise) => ($exercise['sta
         <tbody>
           <?php foreach ($exercises as $ex):
             $isDraft = ($ex['status'] ?? 'active') === 'draft';
-            $open   = strtotime($ex['opens_at']) <= $now && strtotime($ex['closes_at']) >= $now;
-            $closed = strtotime($ex['closes_at']) < $now;
+            $isReady = ($ex['status'] ?? 'active') === 'ready';
+            $open = !empty($ex['opens_at']) && !empty($ex['closes_at'])
+              && strtotime($ex['opens_at']) <= $now && strtotime($ex['closes_at']) >= $now;
+            $closed = !empty($ex['closes_at']) && strtotime($ex['closes_at']) < $now;
           ?>
             <tr>
               <td><?= \Core\View::e($ex['title']) ?></td>
               <td><?= \Core\View::e($ex['turma_label'] ?? 'Pendente de finalização') ?></td>
-              <td><?= date('d/m/Y H:i', strtotime($ex['opens_at'])) ?></td>
-              <td><?= date('d/m/Y H:i', strtotime($ex['closes_at'])) ?></td>
-              <td><?= $ex['max_attempts'] === '0' ? '∞' : $ex['max_attempts'] ?></td>
+              <td><?= !empty($ex['opens_at']) ? date('d/m/Y H:i', strtotime($ex['opens_at'])) : '—' ?></td>
+              <td><?= !empty($ex['closes_at']) ? date('d/m/Y H:i', strtotime($ex['closes_at'])) : '—' ?></td>
+              <td><?= ($ex['max_attempts'] ?? null) === null ? '—' : ((string) $ex['max_attempts'] === '0' ? '∞' : $ex['max_attempts']) ?></td>
               <td>
                 <?php if ($isDraft): ?>
-                  <span class="badge badge--warning">Pendente</span>
+                  <span class="badge badge--warning">Rascunho</span>
+                <?php elseif ($isReady): ?>
+                  <span class="badge badge--info">Pronto para publicar</span>
                 <?php elseif ($closed): ?>
                   <span class="badge badge--neutral">Encerrado</span>
                 <?php elseif ($open): ?>
@@ -81,7 +96,9 @@ $openExercises = count(array_filter($exercises, fn($exercise) => ($exercise['sta
               </td>
               <td class="td-actions">
                 <a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a>
-                <a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id'] . '/edit') ?>" class="btn btn--sm btn--ghost">Editar</a>
+                <?php if ($isDraft): ?>
+                  <a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id'] . '/edit') ?>" class="btn btn--sm btn--ghost">Editar</a>
+                <?php endif; ?>
               </td>
             </tr>
           <?php endforeach; ?>

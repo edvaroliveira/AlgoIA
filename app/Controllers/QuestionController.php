@@ -107,7 +107,7 @@ class QuestionController
     }
 
     global $session;
-    $session->flash('error', 'Este exercício já foi vinculado a turma e não aceita mais alterações nas questões.');
+    $session->flash('error', 'Este exercício já foi concluído ou publicado e não aceita mais alterações nas questões.');
     View::redirect('/teacher/exercises/' . $exercise['id']);
   }
 }

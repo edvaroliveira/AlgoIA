@@ -91,17 +91,51 @@
       var errors = [];
       var questionCount = Number(activationForm.dataset.questionCount || "0");
       var selectedTurmas = activationForm.querySelectorAll(
-        'input[name="turma_ids[]"]:checked',
+        'input[name$="[enabled]"]:checked',
       );
 
       if (questionCount < 1) {
         errors.push(
-          "Adicione pelo menos uma questão antes de ativar o exercício.",
+          "Adicione pelo menos uma questão antes de publicar o exercício.",
         );
       }
 
       if (!selectedTurmas.length) {
-        errors.push("Selecione pelo menos uma turma para ativação.");
+        errors.push("Selecione pelo menos uma turma para publicação.");
+      }
+
+      selectedTurmas.forEach(function (input) {
+        var prefix = input.name.replace("[enabled]", "");
+        var opensAt = activationForm.querySelector(
+          'input[name="' + prefix + '[opens_at]"]',
+        );
+        var closesAt = activationForm.querySelector(
+          'input[name="' + prefix + '[closes_at]"]',
+        );
+        var maxAttempts = activationForm.querySelector(
+          'input[name="' + prefix + '[max_attempts]"]',
+        );
+
+        if (!opensAt || !closesAt || !opensAt.value || !closesAt.value) {
+          errors.push(
+            "Preencha abertura e fechamento em todas as turmas selecionadas.",
+          );
+          return;
+        }
+
+        if (new Date(opensAt.value) >= new Date(closesAt.value)) {
+          errors.push(
+            "A data de fechamento deve ser posterior à abertura em todas as turmas selecionadas.",
+          );
+        }
+
+        if (maxAttempts && Number(maxAttempts.value) < 0) {
+          errors.push("O número de tentativas não pode ser negativo.");
+        }
+      });
+
+      if (errors.length) {
+        errors = Array.from(new Set(errors));
       }
 
       if (!feedbackEl) {
@@ -125,7 +159,7 @@
     });
 
     activationForm
-      .querySelectorAll('input[name="turma_ids[]"]')
+      .querySelectorAll('input[name$="[enabled]"]')
       .forEach(function (input) {
         input.addEventListener("change", function () {
           if (!feedbackEl) {

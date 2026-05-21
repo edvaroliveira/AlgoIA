@@ -1,6 +1,5 @@
 <?php
 $exercise = $exercise ?? [];
-$turmas = $turmas ?? [];
 $pageTitle = 'Editar Exercício';
 global $session;
 ?>
@@ -8,7 +7,7 @@ global $session;
 <div class="page-header">
   <div>
     <h1>Editar exercício</h1>
-    <p class="subtitle">Ajuste metadados e janela de acesso. A vinculação com turmas é controlada na finalização do exercício.</p>
+    <p class="subtitle">Ajuste apenas os metadados pedagógicos antes da conclusão. A publicação por turma acontece depois.</p>
   </div>
   <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id']) ?>" class="btn btn--ghost">← Voltar</a>
 </div>
@@ -42,25 +41,6 @@ global $session;
           <textarea class="form-input form-textarea" id="description" name="description" rows="4"><?= \Core\View::e($exercise['description'] ?? '') ?></textarea>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="opens_at">Abertura</label>
-            <input class="form-input" type="datetime-local" id="opens_at" name="opens_at"
-              value="<?= !empty($exercise['opens_at']) ? date('Y-m-d\TH:i', strtotime($exercise['opens_at'])) : '' ?>" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="closes_at">Fechamento</label>
-            <input class="form-input" type="datetime-local" id="closes_at" name="closes_at"
-              value="<?= !empty($exercise['closes_at']) ? date('Y-m-d\TH:i', strtotime($exercise['closes_at'])) : '' ?>" required>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="max_attempts">Máximo de tentativas <span class="hint">(0 = ilimitado)</span></label>
-          <input class="form-input form-input--short" type="number" id="max_attempts" name="max_attempts"
-            value="<?= \Core\View::e($exercise['max_attempts'] ?? 0) ?>" min="0" required>
-        </div>
-
         <div class="form-actions">
           <button type="submit" class="btn btn--primary">Salvar alterações</button>
           <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id']) ?>" class="btn btn--ghost">Cancelar</a>
@@ -79,11 +59,11 @@ global $session;
       <div class="surface-block__body surface-block__body--stack">
         <div class="info-step">
           <strong>Turmas separadas</strong>
-          <p>A ativação para uma ou mais turmas fica disponível na tela do exercício, depois que as questões estiverem prontas.</p>
+          <p>A publicação para uma ou mais turmas fica disponível só depois da conclusão do exercício.</p>
         </div>
         <div class="info-step">
-          <strong>Janela de entrega</strong>
-          <p>Evite fechar cedo demais se o exercício já estiver em andamento para alunos ativos.</p>
+          <strong>Agenda por turma</strong>
+          <p>Abertura, fechamento e tentativas não são mais configurados aqui. Cada turma recebe sua própria janela na publicação.</p>
         </div>
         <div class="info-step">
           <strong>Questões separadas</strong>
