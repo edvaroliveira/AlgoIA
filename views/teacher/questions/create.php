@@ -131,8 +131,16 @@ global $session;
           <p>Liste conceitos esperados, não apenas uma frase curta, para melhorar a avaliação da IA.</p>
         </div>
         <div class="info-step">
+          <strong>Eficiência só quando pedir</strong>
+          <p>Se quiser cobrar melhor complexidade, otimização ou uma abordagem específica, diga isso claramente no enunciado e no gabarito. Se isso não for explicitado, a IA tende a aceitar caminhos alternativos corretos sem penalizar apenas pela eficiência.</p>
+        </div>
+        <div class="info-step">
           <strong>Peso coerente</strong>
           <p>Distribua pontos conforme complexidade real da questão dentro do exercício.</p>
+        </div>
+        <div class="info-step">
+          <strong>Explique o critério de nota</strong>
+          <p>Quando houver diferença entre solução correta, solução parcial e solução otimizada, descreva isso no gabarito para orientar melhor o crédito parcial e o feedback.</p>
         </div>
       </div>
     </section>
