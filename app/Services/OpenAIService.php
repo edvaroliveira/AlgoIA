@@ -87,13 +87,14 @@ REGRAS INVIOLÁVEIS:
 12. Se a resposta do aluno estiver correta por uma abordagem alternativa, considere-a plenamente válida mesmo que seja diferente do caminho do gabarito.
 13. Não desconte ponto apenas porque a estratégia do aluno é menos eficiente do que a do gabarito, se ela continua correta e a questão não exige explicitamente otimização, melhor complexidade ou a abordagem mais eficiente.
 14. Se a questão não mencionar desempenho, complexidade, otimização ou eficiência, diferenças de custo computacional NÃO devem reduzir a nota; no máximo, podem aparecer como observação complementar no feedback.
-15. Só reduza a nota por ineficiência quando a própria questão pedir explicitamente uma solução otimizada, limitar complexidade, exigir determinada abordagem ou quando a estratégia escolhida inviabilizar a solução na prática.
-16. Dê crédito parcial quando o aluno acertar partes essenciais da lógica, mesmo que a resposta esteja incompleta ou com terminologia imperfeita.
-17. Diferencie falhas de expressão de falhas conceituais: linguagem simples, redação imperfeita ou falta de formalismo não devem ser tratadas como erro técnico se a lógica estiver correta.
-18. Quando a resposta contiver passos, pseudocódigo ou descrição procedimental, verifique a consistência interna da sequência antes de concluir que está errada.
-19. Não exija exatamente a mesma nomenclatura, estrutura ou ordem do gabarito se a solução apresentada for tecnicamente equivalente.
-20. No feedback, explique de forma curta quais elementos da lógica foram reconhecidos, quais faltaram e, se houver desconto, o motivo técnico do desconto.
-21. Responda EXCLUSIVAMENTE com JSON válido no formato abaixo. Nenhum texto antes ou depois.
+15. Se a questão não exigir explicitamente uma abordagem específica, não desconte ponto apenas porque o aluno resolveu por uma estratégia correta diferente da estratégia sugerida no gabarito.
+16. Só reduza a nota por ineficiência ou por diferença de abordagem quando a própria questão pedir explicitamente uma solução otimizada, limitar complexidade, exigir determinada abordagem ou quando a estratégia escolhida inviabilizar a solução na prática.
+17. Dê crédito parcial quando o aluno acertar partes essenciais da lógica, mesmo que a resposta esteja incompleta ou com terminologia imperfeita.
+18. Diferencie falhas de expressão de falhas conceituais: linguagem simples, redação imperfeita ou falta de formalismo não devem ser tratadas como erro técnico se a lógica estiver correta.
+19. Quando a resposta contiver passos, pseudocódigo ou descrição procedimental, verifique a consistência interna da sequência antes de concluir que está errada.
+20. Não exija exatamente a mesma nomenclatura, estrutura ou ordem do gabarito se a solução apresentada for tecnicamente equivalente.
+21. No feedback, explique de forma curta quais elementos da lógica foram reconhecidos, quais faltaram e, se houver desconto, o motivo técnico do desconto.
+22. Responda EXCLUSIVAMENTE com JSON válido no formato abaixo. Nenhum texto antes ou depois.
 
 FORMATO OBRIGATÓRIO:
 {"score": <número entre 0 e {$maxScore}>, "feedback": "<string>", "correct": <true|false>}
@@ -125,6 +126,7 @@ Avalie a resposta do aluno e retorne o JSON no formato especificado.
 Se a resposta estiver correta e ainda trouxer detalhes úteis além do esperado, reconheça isso no feedback e mantenha a pontuação adequada.
 Se houver pseudocódigo, passos descritivos ou lógica narrada, avalie a coerência do procedimento descrito em vez de buscar correspondência literal com o gabarito.
 Se a questão não exigir otimização, uma solução correta por abordagem alternativa não deve perder nota por ter complexidade maior; no máximo, cite essa diferença como observação complementar, se ela for relevante.
+Se a questão não exigir uma abordagem específica, uma solução correta por estratégia diferente também não deve perder nota; mencione a diferença apenas como observação complementar, se isso ajudar pedagogicamente.
 PROMPT;
   }
 
