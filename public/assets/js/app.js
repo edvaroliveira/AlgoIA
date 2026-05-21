@@ -115,13 +115,13 @@
             return "<div>" + message + "</div>";
           })
           .join("");
-        feedbackEl.classList.remove("is-hidden");
+        feedbackEl.hidden = false;
         feedbackEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
         return;
       }
 
       feedbackEl.innerHTML = "";
-      feedbackEl.classList.add("is-hidden");
+      feedbackEl.hidden = true;
     });
 
     activationForm
@@ -133,7 +133,7 @@
           }
 
           feedbackEl.innerHTML = "";
-          feedbackEl.classList.add("is-hidden");
+          feedbackEl.hidden = true;
         });
       });
   }

@@ -758,14 +758,15 @@ a:hover { color: var(--brand-dark); }
   min-width: 0;
 }
 
-.exercise-quick-actions {
+.exercise-side-panel {
   position: sticky;
   top: 1.5rem;
+  align-self: start;
 }
 
+.exercise-quick-actions,
 .info-panel {
-  position: sticky;
-  top: 1.5rem;
+  position: static;
 }
 
 .info-step {
@@ -1255,10 +1256,7 @@ a:hover { color: var(--brand-dark); }
     grid-template-columns: 1fr;
   }
 
-  .info-panel {
-    position: static;
-  }
-
+  .exercise-side-panel,
   .exercise-quick-actions {
     position: static;
   }
