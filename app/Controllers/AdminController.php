@@ -51,11 +51,7 @@ class AdminController
   {
     Auth::requireAdmin();
 
-    $filters = [
-      'search' => trim((string) Request::get('search', '')),
-      'role' => trim((string) Request::get('role', '')),
-      'status' => trim((string) Request::get('status', '')),
-    ];
+    $filters = $this->getUserFiltersFromRequest();
 
     $pagination = $this->buildPagination('/admin/users', $filters, $this->users->countForAdmin($filters));
     $users = $this->users->getAllForAdmin($filters, $pagination['perPage'], $pagination['offset']);
@@ -67,6 +63,30 @@ class AdminController
     ]);
   }
 
+  public function exportUsers(): void
+  {
+    Auth::requireAdmin();
+
+    $filters = $this->getUserFiltersFromRequest();
+    $users = $this->users->getAllForAdmin($filters, null, null);
+
+    $this->streamCsvDownload(
+      'users-' . date('Ymd-His') . '.csv',
+      ['nome', 'email', 'perfil', 'status', 'contexto', 'criado_em'],
+      $users,
+      function (array $user): array {
+        return [
+          (string) ($user['name'] ?? ''),
+          (string) ($user['email'] ?? ''),
+          (string) ($user['role'] ?? ''),
+          (string) ($user['status'] ?? ''),
+          $this->buildAdminUserContextText($user),
+          (string) ($user['created_at'] ?? ''),
+        ];
+      }
+    );
+  }
+
   public function turmas(): void
   {
     Auth::requireAdmin();
@@ -74,10 +94,7 @@ class AdminController
     /** @var Turma $turmasModel */
     $turmasModel = $this->turmas;
 
-    $filters = [
-      'search' => trim((string) Request::get('search', '')),
-      'status' => trim((string) Request::get('status', '')),
-    ];
+    $filters = $this->getTurmaFiltersFromRequest();
 
     $pagination = $this->buildPagination('/admin/turmas', $filters, $turmasModel->countForAdmin($filters));
     $turmas = $turmasModel->getAllForAdmin($filters, $pagination['perPage'], $pagination['offset']);
@@ -89,14 +106,35 @@ class AdminController
     ]);
   }
 
+  public function exportTurmas(): void
+  {
+    Auth::requireAdmin();
+
+    $turmas = $this->turmas->getAllForAdmin($this->getTurmaFiltersFromRequest(), null, null);
+
+    $this->streamCsvDownload(
+      'turmas-' . date('Ymd-His') . '.csv',
+      ['turma', 'docente', 'chave', 'alunos_ativos', 'pendencias', 'exercicios', 'situacao'],
+      $turmas,
+      function (array $turma): array {
+        return [
+          (string) ($turma['name'] ?? ''),
+          (string) ($turma['teacher_name'] ?? ''),
+          (string) ($turma['access_key'] ?? ''),
+          (string) ((int) ($turma['active_count'] ?? 0)),
+          (string) ((int) ($turma['pending_count'] ?? 0)),
+          (string) ((int) ($turma['exercise_count'] ?? 0)),
+          $this->buildAdminTurmaSituationText($turma),
+        ];
+      }
+    );
+  }
+
   public function exercises(): void
   {
     Auth::requireAdmin();
 
-    $filters = [
-      'search' => trim((string) Request::get('search', '')),
-      'status' => trim((string) Request::get('status', '')),
-    ];
+    $filters = $this->getExerciseFiltersFromRequest();
 
     $pagination = $this->buildPagination('/admin/exercises', $filters, $this->exercises->countForAdmin($filters));
     $exercises = $this->exercises->getAllForAdmin($filters, $pagination['perPage'], $pagination['offset']);
@@ -106,6 +144,30 @@ class AdminController
       'filters' => $filters,
       'pagination' => $pagination,
     ]);
+  }
+
+  public function exportExercises(): void
+  {
+    Auth::requireAdmin();
+
+    $exercises = $this->exercises->getAllForAdmin($this->getExerciseFiltersFromRequest(), null, null);
+
+    $this->streamCsvDownload(
+      'exercises-' . date('Ymd-His') . '.csv',
+      ['titulo', 'docente', 'turmas', 'abre_em', 'fecha_em', 'tentativas', 'status'],
+      $exercises,
+      function (array $exercise): array {
+        return [
+          (string) ($exercise['title'] ?? ''),
+          (string) ($exercise['teacher_name'] ?? ''),
+          (string) ($exercise['turma_label'] ?? ''),
+          (string) ($exercise['opens_at'] ?? ''),
+          (string) ($exercise['closes_at'] ?? ''),
+          (string) ((int) ($exercise['attempt_count'] ?? 0)),
+          $this->buildAdminExerciseStatusText($exercise),
+        ];
+      }
+    );
   }
 
   public function audit(): void
@@ -562,6 +624,31 @@ class AdminController
     return 'AlgoIA' . strtoupper(bin2hex(random_bytes(3))) . '9a';
   }
 
+  private function getUserFiltersFromRequest(): array
+  {
+    return [
+      'search' => trim((string) Request::get('search', '')),
+      'role' => trim((string) Request::get('role', '')),
+      'status' => trim((string) Request::get('status', '')),
+    ];
+  }
+
+  private function getTurmaFiltersFromRequest(): array
+  {
+    return [
+      'search' => trim((string) Request::get('search', '')),
+      'status' => trim((string) Request::get('status', '')),
+    ];
+  }
+
+  private function getExerciseFiltersFromRequest(): array
+  {
+    return [
+      'search' => trim((string) Request::get('search', '')),
+      'status' => trim((string) Request::get('status', '')),
+    ];
+  }
+
   private function getAuditFiltersFromRequest(): array
   {
     return [
@@ -571,6 +658,93 @@ class AdminController
       'from_date' => trim((string) Request::get('from_date', '')),
       'to_date' => trim((string) Request::get('to_date', '')),
     ];
+  }
+
+  private function streamCsvDownload(string $filename, array $headers, array $rows, callable $mapper): void
+  {
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
+    $output = fopen('php://output', 'wb');
+    if ($output === false) {
+      http_response_code(500);
+      exit('Não foi possível gerar a exportação.');
+    }
+
+    fwrite($output, "\xEF\xBB\xBF");
+    fputcsv($output, $headers, ';');
+
+    foreach ($rows as $row) {
+      fputcsv($output, $mapper($row), ';');
+    }
+
+    fclose($output);
+    exit;
+  }
+
+  private function buildAdminUserContextText(array $user): string
+  {
+    $role = (string) ($user['role'] ?? 'student');
+
+    if ($role === 'teacher') {
+      return (int) ($user['owned_turma_count'] ?? 0) . ' turma(s) · ' . (int) ($user['exercise_count'] ?? 0) . ' exercício(s)';
+    }
+
+    if ($role === 'student') {
+      return !empty($user['turma_names'])
+        ? (string) $user['turma_names']
+        : 'Sem turma';
+    }
+
+    if ($role === 'admin') {
+      return 'Acesso global';
+    }
+
+    return '—';
+  }
+
+  private function buildAdminTurmaSituationText(array $turma): string
+  {
+    if (!(bool) ($turma['active'] ?? true)) {
+      return 'Inativa';
+    }
+
+    if ((int) ($turma['pending_count'] ?? 0) > 0) {
+      return 'Com pendências';
+    }
+
+    return 'Operação normal';
+  }
+
+  private function buildAdminExerciseStatusText(array $exercise): string
+  {
+    $status = (string) ($exercise['status'] ?? '');
+    if ($status === Exercise::STATUS_DRAFT) {
+      return 'Rascunho';
+    }
+
+    if ($status === Exercise::STATUS_READY) {
+      return 'Pronto';
+    }
+
+    if ($status !== Exercise::STATUS_ACTIVE) {
+      return $status;
+    }
+
+    $now = time();
+    $opensAt = !empty($exercise['opens_at']) ? strtotime((string) $exercise['opens_at']) : false;
+    $closesAt = !empty($exercise['closes_at']) ? strtotime((string) $exercise['closes_at']) : false;
+
+    if ($closesAt !== false && $closesAt < $now) {
+      return 'Encerrado';
+    }
+
+    if ($opensAt !== false && $closesAt !== false && $opensAt <= $now && $closesAt >= $now) {
+      return 'Aberto';
+    }
+
+    return 'Agendado';
   }
 
   private function buildAuditContextText(array $log): string

@@ -3,6 +3,7 @@ $pageTitle = 'Turmas — Administração';
 $turmas = $turmas ?? [];
 $filters = $filters ?? ['search' => '', 'status' => ''];
 $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($turmas), 'path' => '/admin/turmas', 'query' => $filters];
+$exportQuery = http_build_query(array_filter($filters, static fn($value): bool => (string) $value !== ''));
 $activeTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['active_count'] ?? 0), $turmas));
 $pendingTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['pending_count'] ?? 0), $turmas));
 $exerciseTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['exercise_count'] ?? 0), $turmas));
@@ -34,6 +35,7 @@ $exerciseTotal = array_sum(array_map(static fn(array $turma): int => (int) ($tur
       </div>
       <div class="td-actions">
         <button type="submit" class="btn btn--primary">Filtrar</button>
+        <a href="<?= \Core\app_url('/admin/turmas/export' . ($exportQuery !== '' ? '?' . $exportQuery : '')) ?>" class="btn btn--ghost">Exportar CSV</a>
         <a href="<?= \Core\app_url('/admin/turmas') ?>" class="btn btn--ghost">Limpar</a>
       </div>
     </form>

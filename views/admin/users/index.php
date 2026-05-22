@@ -3,6 +3,7 @@ $pageTitle = 'Usuários — Administração';
 $users = $users ?? [];
 $filters = $filters ?? ['search' => '', 'role' => '', 'status' => ''];
 $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($users), 'path' => '/admin/users', 'query' => $filters];
+$exportQuery = http_build_query(array_filter($filters, static fn($value): bool => (string) $value !== ''));
 $totalUsers = count($users);
 $adminCount = count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'admin'));
 $teacherCount = count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'teacher'));
@@ -49,6 +50,7 @@ global $session;
           <label class="form-label">Ações</label>
           <div class="td-actions">
             <button type="submit" class="btn btn--primary">Filtrar</button>
+            <a href="<?= \Core\app_url('/admin/users/export' . ($exportQuery !== '' ? '?' . $exportQuery : '')) ?>" class="btn btn--ghost">Exportar CSV</a>
             <a href="<?= \Core\app_url('/admin/users') ?>" class="btn btn--ghost">Limpar</a>
           </div>
         </div>
