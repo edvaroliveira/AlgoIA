@@ -1549,15 +1549,18 @@ class AdminController
       View::redirect('/admin/users');
     }
 
-    $temporaryPassword = $this->generateTemporaryPassword();
-    $this->users->resetPassword($userId, $temporaryPassword);
+    $token = bin2hex(random_bytes(32));
+    $this->users->createPasswordResetToken($userId, $token, 60);
+    $resetUrl = \Core\app_url('/password/reset?token=' . urlencode($token));
+
     AuditService::record('admin.user.password_reset', 'user', $userId, [
       'target_email' => $user['email'] ?? null,
       'target_role' => $user['role'] ?? null,
+      'expires_in_minutes' => 60,
       'must_change_password' => true,
     ]);
 
-    $session->flash('success', 'Senha temporária gerada para ' . ($user['email'] ?? 'usuário') . ': ' . $temporaryPassword . '. O usuário deverá trocar a senha no próximo acesso.');
+    $session->flash('success', 'Link de redefinição gerado para ' . ($user['email'] ?? 'usuário') . ' válido por 60 minutos: ' . $resetUrl);
     View::redirect('/admin/users');
   }
 

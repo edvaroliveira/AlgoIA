@@ -147,6 +147,54 @@ class AuthController
     $this->redirectByRole();
   }
 
+  public function showResetPassword(): void
+  {
+    $token = trim((string) Request::get('token', ''));
+    $user = $this->users->findByValidPasswordResetToken($token);
+
+    View::render('auth/reset_password', [
+      'token' => $token,
+      'validToken' => $user !== false,
+    ], 'layouts/guest');
+  }
+
+  public function resetPassword(): void
+  {
+    Request::validateCsrf();
+
+    $token = trim((string) Request::post('token', ''));
+    $password = (string) ($_POST['password'] ?? '');
+    $passwordConf = (string) ($_POST['password_confirm'] ?? '');
+    $user = $this->users->findByValidPasswordResetToken($token);
+    $errors = [];
+
+    if (!$user) {
+      $errors[] = 'Link de redefinição inválido ou expirado.';
+    }
+    if (!$this->isStrongPassword($password)) {
+      $errors[] = 'Nova senha deve ter ao menos 10 caracteres, com letra maiúscula, minúscula e número.';
+    }
+    if ($password !== $passwordConf) {
+      $errors[] = 'As senhas não coincidem.';
+    }
+
+    if ($errors) {
+      View::render('auth/reset_password', [
+        'token' => $token,
+        'validToken' => $user !== false,
+        'errors' => $errors,
+      ], 'layouts/guest');
+      return;
+    }
+
+    $this->users->updatePassword((int) $user['id'], $password);
+    \App\Services\AuditService::record('auth.password_reset_token_completed', 'user', (int) $user['id']);
+
+    global $session;
+    $session->flash('success', 'Senha redefinida com sucesso. Faça login com a nova senha.');
+    View::redirect('/login');
+  }
+
   public function showRegister(): void
   {
     if (Auth::check()) {
