@@ -414,6 +414,95 @@ class Exercise extends Model
     );
   }
 
+  public function findOpenPublicationForStudent(int $exerciseId, int $studentId): array|false
+  {
+    return $this->db->fetchOne(
+      "SELECT et.turma_id, et.opens_at, et.closes_at, et.max_attempts, t.name AS turma_name
+             FROM exercise_turmas et
+             JOIN turmas t ON t.id = et.turma_id
+             JOIN student_turma st ON st.turma_id = et.turma_id
+             JOIN exercises e ON e.id = et.exercise_id
+             WHERE et.exercise_id = ?
+               AND e.status = 'active'
+               AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
+               AND st.student_id = ?
+               AND st.status = 'active'
+               AND et.opens_at <= NOW()
+               AND et.closes_at >= NOW()
+             ORDER BY et.closes_at ASC, et.opens_at ASC, et.turma_id ASC
+             LIMIT 1",
+      [$exerciseId, $studentId]
+    );
+  }
+
+  public function findCurrentPublicationForStudent(int $exerciseId, int $studentId): array|false
+  {
+    return $this->db->fetchOne(
+      "SELECT et.turma_id, et.opens_at, et.closes_at, et.max_attempts, t.name AS turma_name,
+                    CASE
+                      WHEN et.opens_at <= NOW() AND et.closes_at >= NOW() THEN 0
+                      WHEN et.opens_at > NOW() THEN 1
+                      ELSE 2
+                    END AS timing_rank
+             FROM exercise_turmas et
+             JOIN turmas t ON t.id = et.turma_id
+             JOIN student_turma st ON st.turma_id = et.turma_id
+             JOIN exercises e ON e.id = et.exercise_id
+             WHERE et.exercise_id = ?
+               AND e.status = 'active'
+               AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
+               AND st.student_id = ?
+               AND st.status = 'active'
+             ORDER BY timing_rank ASC,
+                      CASE WHEN et.opens_at > NOW() THEN et.opens_at END ASC,
+                      CASE WHEN et.closes_at < NOW() THEN et.closes_at END DESC,
+                      et.closes_at ASC,
+                      et.turma_id ASC
+             LIMIT 1",
+      [$exerciseId, $studentId]
+    );
+  }
+
+  public function findPublicationForStudentTurma(int $exerciseId, int $studentId, int $turmaId): array|false
+  {
+    return $this->db->fetchOne(
+      "SELECT et.turma_id, et.opens_at, et.closes_at, et.max_attempts, t.name AS turma_name
+             FROM exercise_turmas et
+             JOIN turmas t ON t.id = et.turma_id
+             JOIN student_turma st ON st.turma_id = et.turma_id
+             JOIN exercises e ON e.id = et.exercise_id
+             WHERE et.exercise_id = ?
+               AND et.turma_id = ?
+               AND e.status = 'active'
+               AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
+               AND st.student_id = ?
+               AND st.status = 'active'
+             LIMIT 1",
+      [$exerciseId, $turmaId, $studentId]
+    );
+  }
+
+  public function applyPublicationContext(array $exercise, array|false $publication): array
+  {
+    if ($publication === false) {
+      return $exercise;
+    }
+
+    $exercise['turma_id'] = (int) $publication['turma_id'];
+    $exercise['turma_name'] = $publication['turma_name'];
+    $exercise['turma_label'] = $publication['turma_name'];
+    $exercise['opens_at'] = $publication['opens_at'];
+    $exercise['closes_at'] = $publication['closes_at'];
+    $exercise['max_attempts'] = $publication['max_attempts'];
+    $exercise['has_open_publication'] = strtotime((string) $publication['opens_at']) <= time()
+      && strtotime((string) $publication['closes_at']) >= time()
+      ? 1
+      : 0;
+    $exercise['has_future_publication'] = strtotime((string) $publication['opens_at']) > time() ? 1 : 0;
+
+    return $exercise;
+  }
+
   public function updateDraft(
     int     $id,
     string  $title,

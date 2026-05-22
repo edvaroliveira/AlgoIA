@@ -216,8 +216,11 @@ class ExerciseController
 
     $exercises = $this->exercises->findAllForStudent($studentId);
     foreach ($exercises as &$ex) {
-      $ex['best_score']    = $attModel->getBestScore($studentId, (int) $ex['id']);
-      $ex['attempt_count'] = $attModel->countSubmitted($studentId, (int) $ex['id']);
+      $publication = $this->exercises->findCurrentPublicationForStudent((int) $ex['id'], $studentId);
+      $ex = $this->exercises->applyPublicationContext($ex, $publication);
+      $turmaId = !empty($ex['turma_id']) ? (int) $ex['turma_id'] : null;
+      $ex['best_score']    = $attModel->getBestScore($studentId, (int) $ex['id'], $turmaId);
+      $ex['attempt_count'] = $attModel->countSubmitted($studentId, (int) $ex['id'], $turmaId);
       $ex['is_open']       = $this->exercises->isOpen($ex);
       $ex['is_closed']     = $this->exercises->isClosed($ex);
     }
@@ -232,11 +235,14 @@ class ExerciseController
     $studentId = Auth::id();
     $exercise  = $this->getStudentExercise((int) $id, $studentId);
     $attModel  = new Attempt();
+    $publication = $this->exercises->findCurrentPublicationForStudent((int) $id, $studentId);
+    $exercise = $this->exercises->applyPublicationContext($exercise, $publication);
+    $turmaId = !empty($exercise['turma_id']) ? (int) $exercise['turma_id'] : null;
 
     $attempts     = $attModel->findByStudentAndExercise($studentId, (int) $id);
-    $attCount     = $attModel->countSubmitted($studentId, (int) $id);
-    $inProgress   = $attModel->getInProgress($studentId, (int) $id);
-    $bestScore    = $attModel->getBestScore($studentId, (int) $id);
+    $attCount     = $attModel->countSubmitted($studentId, (int) $id, $turmaId);
+    $inProgress   = $attModel->getInProgress($studentId, (int) $id, $turmaId);
+    $bestScore    = $attModel->getBestScore($studentId, (int) $id, $turmaId);
     $maxAttempts  = (int) $exercise['max_attempts'];
     $canAttempt   = $maxAttempts === 0 || $attCount < $maxAttempts;
     $isOpen       = $this->exercises->isOpen($exercise);
