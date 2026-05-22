@@ -1569,11 +1569,6 @@ class AdminController
     View::redirect('/admin/users');
   }
 
-  private function generateTemporaryPassword(): string
-  {
-    return 'AlgoIA' . strtoupper(bin2hex(random_bytes(3))) . '9a';
-  }
-
   private function getUserStatusTransitionBlockReason(array $user, string $targetStatus, int $remainingActiveAdmins): ?string
   {
     if ($targetStatus !== 'inactive') {

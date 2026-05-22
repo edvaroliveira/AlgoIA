@@ -22,11 +22,12 @@ class User extends Model
     string $password,
     string $role   = 'student',
     string $status = 'pending',
-    ?string $registrationNote = null
+    ?string $registrationNote = null,
+    string $registrationSource = 'manual'
   ): int {
     return $this->db->insert(
-      "INSERT INTO users (name, email, password_hash, role, status, registration_note) VALUES (?, ?, ?, ?, ?, ?)",
-      [$name, $email, password_hash($password, PASSWORD_BCRYPT), $role, $status, $registrationNote]
+      "INSERT INTO users (name, email, password_hash, role, status, registration_note, registration_source) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [$name, $email, password_hash($password, PASSWORD_BCRYPT), $role, $status, $registrationNote, $registrationSource]
     );
   }
 
@@ -63,16 +64,6 @@ class User extends Model
                  password_reset_expires_at = NULL
              WHERE id = ?",
       [password_hash($newPassword, PASSWORD_BCRYPT), $id]
-    );
-  }
-
-  public function resetPassword(int $id, string $temporaryPassword): void
-  {
-    $this->db->execute(
-      "UPDATE users
-             SET password_hash = ?, must_change_password = 1, password_reset_at = NOW()
-             WHERE id = ?",
-      [password_hash($temporaryPassword, PASSWORD_BCRYPT), $id]
     );
   }
 
@@ -374,7 +365,11 @@ class User extends Model
   public function countPendingTeacherRequests(): int
   {
     $row = $this->db->fetchOne(
-      "SELECT COUNT(*) AS total FROM users WHERE role = 'teacher' AND status = 'pending'"
+      "SELECT COUNT(*) AS total
+             FROM users
+             WHERE role = 'teacher'
+               AND status = 'pending'
+               AND registration_source = 'teacher_public'"
     );
 
     return (int) ($row['total'] ?? 0);
@@ -388,7 +383,9 @@ class User extends Model
     return $this->db->fetchAll(
       "SELECT id, name, email, registration_note, created_at
              FROM users
-             WHERE role = 'teacher' AND status = 'pending'
+             WHERE role = 'teacher'
+               AND status = 'pending'
+               AND registration_source = 'teacher_public'
              ORDER BY created_at ASC
              LIMIT {$safeLimit} OFFSET {$safeOffset}"
     );
@@ -397,7 +394,11 @@ class User extends Model
   public function countTeacherRequestHistory(): int
   {
     $row = $this->db->fetchOne(
-      "SELECT COUNT(*) AS total FROM users WHERE role = 'teacher' AND status IN ('active','rejected')"
+      "SELECT COUNT(*) AS total
+             FROM users
+             WHERE role = 'teacher'
+               AND status IN ('active','rejected')
+               AND registration_source = 'teacher_public'"
     );
 
     return (int) ($row['total'] ?? 0);
@@ -414,7 +415,9 @@ class User extends Model
                     approver.name AS approver_name
              FROM users u
              LEFT JOIN users approver ON approver.id = u.approved_by
-             WHERE u.role = 'teacher' AND u.status IN ('active','rejected')
+             WHERE u.role = 'teacher'
+               AND u.status IN ('active','rejected')
+               AND u.registration_source = 'teacher_public'
              ORDER BY COALESCE(u.approved_at, u.rejected_at) DESC
              LIMIT {$safeLimit} OFFSET {$safeOffset}"
     );
