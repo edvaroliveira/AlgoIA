@@ -98,6 +98,8 @@ Este backlog cobre os ajustes identificados apos a segunda revisao do sistema, j
 
 ## P2 - Remover ou renomear metodos legados de tentativa
 
+**Status:** implementado.
+
 **Problema:** `Attempt::submit()` ainda existe, mas o fluxo novo usa `markSubmitted()` e `markGraded()`. O nome antigo pode induzir uso incorreto.
 
 **Objetivo:** reduzir ambiguidade para manutencao futura.
@@ -105,7 +107,7 @@ Este backlog cobre os ajustes identificados apos a segunda revisao do sistema, j
 **Escopo:**
 - Verificar se `Attempt::submit()` ainda possui chamadas.
 - Remover o metodo se estiver sem uso.
-- Se for mantido, renomear para deixar claro que marca como corrigida.
+- Renomear contadores para deixar claro que tentativas enviadas e corrigidas contam como uso.
 - Ajustar comentarios e nomes para distinguir envio de correcao.
 
 **Criterios de aceite:**

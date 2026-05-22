@@ -16,14 +16,6 @@ class Attempt extends Model
     );
   }
 
-  public function submit(int $attemptId, float $totalScore): void
-  {
-    $this->db->execute(
-      "UPDATE attempts SET status = 'graded', submitted_at = NOW(), total_score = ? WHERE id = ?",
-      [$totalScore, $attemptId]
-    );
-  }
-
   public function markSubmitted(int $attemptId): void
   {
     $this->db->execute(
@@ -55,7 +47,7 @@ class Attempt extends Model
     );
   }
 
-  public function countSubmitted(int $studentId, int $exerciseId, ?int $turmaId = null): int
+  public function countUsedAttempts(int $studentId, int $exerciseId, ?int $turmaId = null): int
   {
     $turmaFilter = $turmaId !== null ? "AND (turma_id = ? OR turma_id IS NULL)" : '';
     $params = $turmaId !== null ? [$studentId, $exerciseId, $turmaId] : [$studentId, $exerciseId];

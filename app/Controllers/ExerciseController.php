@@ -220,7 +220,7 @@ class ExerciseController
       $ex = $this->exercises->applyPublicationContext($ex, $publication);
       $turmaId = !empty($ex['turma_id']) ? (int) $ex['turma_id'] : null;
       $ex['best_score']    = $attModel->getBestScore($studentId, (int) $ex['id'], $turmaId);
-      $ex['attempt_count'] = $attModel->countSubmitted($studentId, (int) $ex['id'], $turmaId);
+      $ex['attempt_count'] = $attModel->countUsedAttempts($studentId, (int) $ex['id'], $turmaId);
       $ex['is_open']       = $this->exercises->isOpen($ex);
       $ex['is_closed']     = $this->exercises->isClosed($ex);
     }
@@ -240,7 +240,7 @@ class ExerciseController
     $turmaId = !empty($exercise['turma_id']) ? (int) $exercise['turma_id'] : null;
 
     $attempts     = $attModel->findByStudentAndExercise($studentId, (int) $id);
-    $attCount     = $attModel->countSubmitted($studentId, (int) $id, $turmaId);
+    $attCount     = $attModel->countUsedAttempts($studentId, (int) $id, $turmaId);
     $inProgress   = $attModel->getInProgress($studentId, (int) $id, $turmaId);
     $bestScore    = $attModel->getBestScore($studentId, (int) $id, $turmaId);
     $maxAttempts  = (int) $exercise['max_attempts'];
