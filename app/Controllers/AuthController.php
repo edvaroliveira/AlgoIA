@@ -363,10 +363,10 @@ class AuthController
       return;
     }
 
-    $this->users->create($name, $email, $password, 'teacher', 'pending', $institution);
+    $newUserId = $this->users->create($name, $email, $password, 'teacher', 'pending', $institution);
     $this->clearTeacherRegThrottle();
 
-    \App\Services\AuditService::record('auth.teacher_registration_request', 'user', 0, [
+    \App\Services\AuditService::record('auth.teacher_registration_request', 'user', $newUserId, [
       'email' => $email,
       'name' => $name,
     ]);
