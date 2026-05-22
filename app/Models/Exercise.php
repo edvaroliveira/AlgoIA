@@ -133,6 +133,52 @@ class Exercise extends Model
     return (int) ($row['total'] ?? 0);
   }
 
+  public function countClosingSoonForAdmin(int $hoursAhead = 72): int
+  {
+    $safeHoursAhead = max(1, $hoursAhead);
+
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(*) AS total
+             FROM (
+               SELECT e.id
+               FROM exercises e
+               JOIN exercise_turmas et ON et.exercise_id = e.id
+               WHERE e.status = ?
+                 AND et.closes_at >= NOW()
+                 AND et.closes_at <= DATE_ADD(NOW(), INTERVAL {$safeHoursAhead} HOUR)
+               GROUP BY e.id
+             ) AS closing_exercises",
+      [self::STATUS_ACTIVE]
+    );
+
+    return (int) ($row['total'] ?? 0);
+  }
+
+  public function getClosingSoonForAdmin(int $limit = 5, int $hoursAhead = 72): array
+  {
+    $safeLimit = max(1, $limit);
+    $safeHoursAhead = max(1, $hoursAhead);
+
+    return $this->db->fetchAll(
+      "SELECT e.id, e.title, teacher.name AS teacher_name,
+                    COALESCE(NULLIF(GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', '), ''), 'Pendente de finalização') AS turma_label,
+                    MIN(et.closes_at) AS closes_at,
+                    COUNT(DISTINCT a.id) AS attempt_count
+             FROM exercises e
+             JOIN users teacher ON teacher.id = e.teacher_id
+             JOIN exercise_turmas et ON et.exercise_id = e.id
+             LEFT JOIN turmas t ON t.id = et.turma_id
+             LEFT JOIN attempts a ON a.exercise_id = e.id
+             WHERE e.status = ?
+               AND et.closes_at >= NOW()
+               AND et.closes_at <= DATE_ADD(NOW(), INTERVAL {$safeHoursAhead} HOUR)
+             GROUP BY e.id
+             ORDER BY closes_at ASC, e.title ASC
+             LIMIT {$safeLimit}",
+      [self::STATUS_ACTIVE]
+    );
+  }
+
   public function findForAdmin(int $id): array|false
   {
     $exercise = $this->db->fetchOne(
