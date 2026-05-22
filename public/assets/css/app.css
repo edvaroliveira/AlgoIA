@@ -942,6 +942,11 @@ a:hover { color: var(--brand-dark); }
   letter-spacing: 0.18em;
 }
 
+.overview-card__signal {
+  display: inline-flex;
+  margin-top: 0.65rem;
+}
+
 .overview-card__copy {
   margin: 0.7rem 0 0;
   color: var(--text-muted);
