@@ -260,48 +260,30 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
       <?php if (empty($closingExercises)): ?>
         <p class="empty-state">Nenhum exercício ativo com fechamento próximo.</p>
       <?php else: ?>
-        <table class="table table--closing-soon">
-          <colgroup>
-            <col class="col-exercise">
-            <col class="col-teacher">
-            <col class="col-turma">
-            <col class="col-deadline">
-            <col class="col-action">
-          </colgroup>
-          <thead>
-            <tr>
-              <th>Exercício</th>
-              <th>Docente</th>
-              <th>Turmas</th>
-              <th>Fecha em</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($closingExercises as $exercise): ?>
-              <?php
-              $closingDate = !empty($exercise['closes_at']) ? date('d/m/Y', strtotime((string) $exercise['closes_at'])) : 'Sem data';
-              $closingTime = !empty($exercise['closes_at']) ? date('H:i', strtotime((string) $exercise['closes_at'])) : '';
-              $attemptCount = (int) ($exercise['attempt_count'] ?? 0);
-              ?>
-              <tr>
-                <td>
-                  <strong><?= \Core\View::e($exercise['title'] ?? '—') ?></strong>
-                  <span class="table-subtext"><?= $attemptCount ?> tentativa<?= $attemptCount === 1 ? '' : 's' ?></span>
-                </td>
-                <td><?= \Core\View::e($exercise['teacher_name'] ?? '—') ?></td>
-                <td><span class="badge badge--info"><?= \Core\View::e($exercise['turma_label'] ?? '—') ?></span></td>
-                <td>
-                  <span class="deadline-badge">
-                    <strong><?= \Core\View::e($closingDate) ?></strong>
-                    <?php if ($closingTime !== ''): ?><small><?= \Core\View::e($closingTime) ?></small><?php endif; ?>
-                  </span>
-                </td>
-                <td class="td-actions"><a href="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0)) ?>" class="btn btn--sm">Abrir</a></td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+        <div class="closing-list">
+          <?php foreach ($closingExercises as $exercise): ?>
+            <?php
+            $closingDate = !empty($exercise['closes_at']) ? date('d/m/Y', strtotime((string) $exercise['closes_at'])) : 'Sem data';
+            $closingTime = !empty($exercise['closes_at']) ? date('H:i', strtotime((string) $exercise['closes_at'])) : '';
+            $attemptCount = (int) ($exercise['attempt_count'] ?? 0);
+            ?>
+            <article class="closing-item">
+              <div class="closing-item__main">
+                <strong><?= \Core\View::e($exercise['title'] ?? '—') ?></strong>
+                <span><?= $attemptCount ?> tentativa<?= $attemptCount === 1 ? '' : 's' ?></span>
+              </div>
+              <div class="closing-item__meta">
+                <span><?= \Core\View::e($exercise['teacher_name'] ?? '—') ?></span>
+                <span class="badge badge--info"><?= \Core\View::e($exercise['turma_label'] ?? '—') ?></span>
+              </div>
+              <span class="deadline-badge">
+                <strong><?= \Core\View::e($closingDate) ?></strong>
+                <?php if ($closingTime !== ''): ?><small><?= \Core\View::e($closingTime) ?></small><?php endif; ?>
+              </span>
+              <a href="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0)) ?>" class="btn btn--sm">Abrir</a>
+            </article>
+          <?php endforeach; ?>
+        </div>
       <?php endif; ?>
     </div>
   </section>
