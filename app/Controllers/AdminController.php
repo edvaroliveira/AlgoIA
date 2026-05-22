@@ -116,6 +116,8 @@ class AdminController
       'search' => trim((string) Request::get('search', '')),
       'action' => trim((string) Request::get('action', '')),
       'entity_type' => trim((string) Request::get('entity_type', '')),
+      'from_date' => trim((string) Request::get('from_date', '')),
+      'to_date' => trim((string) Request::get('to_date', '')),
     ];
 
     $pagination = $this->buildPagination('/admin/audit', $filters, $this->auditLogs->countForAdmin($filters));
@@ -183,6 +185,38 @@ class AdminController
     View::redirect('/admin/turmas/' . $turmaId);
   }
 
+  public function reactivateTurma(string $id): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    /** @var Turma $turmasModel */
+    $turmasModel = $this->turmas;
+
+    $turmaId = (int) $id;
+    $turma = $turmasModel->findForAdmin($turmaId);
+    global $session;
+
+    if (!$turma) {
+      $session->flash('error', 'Turma não encontrada.');
+      View::redirect('/admin/turmas');
+    }
+
+    if ((bool) ($turma['active'] ?? false)) {
+      $session->flash('error', 'A turma já está ativa.');
+      View::redirect('/admin/turmas/' . $turmaId);
+    }
+
+    $turmasModel->reactivate($turmaId);
+    AuditService::record('admin.turma.reactivate', 'turma', $turmaId, [
+      'turma_name' => $turma['name'] ?? null,
+      'teacher_name' => $turma['teacher_name'] ?? null,
+    ]);
+
+    $session->flash('success', 'Turma reativada. A chave voltou a aceitar novas entradas.');
+    View::redirect('/admin/turmas/' . $turmaId);
+  }
+
   public function showExercise(string $id): void
   {
     Auth::requireAdmin();
@@ -232,6 +266,49 @@ class AdminController
     View::redirect('/admin/exercises/' . $exerciseId);
   }
 
+  public function reopenExercise(string $id): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $exerciseId = (int) $id;
+    $exercise = $this->exercises->findForAdmin($exerciseId);
+    global $session;
+
+    if (!$exercise) {
+      $session->flash('error', 'Exercício não encontrado.');
+      View::redirect('/admin/exercises');
+    }
+
+    if (($exercise['status'] ?? '') !== Exercise::STATUS_ACTIVE || empty($exercise['publication_settings'])) {
+      $session->flash('error', 'Este exercício não possui publicações para reabertura administrativa.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $reopenUntil = trim((string) Request::post('reopen_until', ''));
+    if ($reopenUntil === '') {
+      $session->flash('error', 'Informe uma nova data de encerramento para reabrir as publicações.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $reopenTimestamp = strtotime($reopenUntil);
+    if ($reopenTimestamp === false || $reopenTimestamp <= time()) {
+      $session->flash('error', 'A nova data de encerramento deve estar no futuro.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $formattedClosesAt = date('Y-m-d H:i:s', $reopenTimestamp);
+    $this->exercises->reopenPublications($exerciseId, $formattedClosesAt);
+    AuditService::record('admin.exercise.reopen_publications', 'exercise', $exerciseId, [
+      'exercise_title' => $exercise['title'] ?? null,
+      'teacher_name' => $exercise['teacher_name'] ?? null,
+      'new_closes_at' => $formattedClosesAt,
+    ]);
+
+    $session->flash('success', 'Publicações do exercício reabertas até ' . date('d/m/Y H:i', $reopenTimestamp) . '.');
+    View::redirect('/admin/exercises/' . $exerciseId);
+  }
+
   public function editUser(string $id): void
   {
     Auth::requireAdmin();
@@ -246,6 +323,44 @@ class AdminController
 
     View::render('admin/users/edit', [
       'user' => $user,
+    ]);
+  }
+
+  public function showUser(string $id): void
+  {
+    Auth::requireAdmin();
+
+    $userId = (int) $id;
+    $user = $this->users->findForAdmin($userId);
+
+    global $session;
+    if (!$user) {
+      $session->flash('error', 'Usuário não encontrado.');
+      View::redirect('/admin/users');
+    }
+
+    $teacherTurmas = [];
+    $teacherExercises = [];
+    $studentTurmas = [];
+    $studentAttempts = [];
+
+    if (($user['role'] ?? '') === 'teacher') {
+      $teacherTurmas = $this->users->getTeacherTurmasForAdmin($userId);
+      $teacherExercises = $this->users->getTeacherExercisesForAdmin($userId);
+    }
+
+    if (($user['role'] ?? '') === 'student') {
+      $studentTurmas = $this->users->getStudentTurmasForAdmin($userId);
+      $studentAttempts = $this->users->getStudentAttemptsForAdmin($userId);
+    }
+
+    View::render('admin/users/show', [
+      'user' => $user,
+      'teacherTurmas' => $teacherTurmas,
+      'teacherExercises' => $teacherExercises,
+      'studentTurmas' => $studentTurmas,
+      'studentAttempts' => $studentAttempts,
+      'auditLogs' => $this->auditLogs->getRecentForUserContext($userId),
     ]);
   }
 

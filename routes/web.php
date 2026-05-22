@@ -18,6 +18,7 @@ $router->get('/teacher/dashboard', 'DashboardController@teacher');
 // ── Admin ───────────────────────────────────────────────────────────────────
 $router->get('/admin/dashboard', 'AdminController@dashboard');
 $router->get('/admin/users',     'AdminController@users');
+$router->get('/admin/users/{id}', 'AdminController@showUser');
 $router->get('/admin/users/{id}/edit', 'AdminController@editUser');
 $router->post('/admin/users/{id}', 'AdminController@updateUser');
 $router->post('/admin/users/{id}/status', 'AdminController@updateUserStatus');
@@ -25,9 +26,11 @@ $router->post('/admin/users/{id}/reset-password', 'AdminController@resetUserPass
 $router->get('/admin/turmas',    'AdminController@turmas');
 $router->get('/admin/turmas/{id}', 'AdminController@showTurma');
 $router->post('/admin/turmas/{id}/deactivate', 'AdminController@deactivateTurma');
+$router->post('/admin/turmas/{id}/reactivate', 'AdminController@reactivateTurma');
 $router->get('/admin/exercises', 'AdminController@exercises');
 $router->get('/admin/exercises/{id}', 'AdminController@showExercise');
 $router->post('/admin/exercises/{id}/close', 'AdminController@closeExercise');
+$router->post('/admin/exercises/{id}/reopen', 'AdminController@reopenExercise');
 $router->get('/admin/audit',     'AdminController@audit');
 
 // Turmas

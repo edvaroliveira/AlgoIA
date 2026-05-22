@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+/**
+ * @method void reactivate(int $id)
+ */
 class Turma extends Model
 {
   protected string $table = 'turmas';
@@ -117,6 +120,11 @@ class Turma extends Model
   public function deactivate(int $id): void
   {
     $this->db->execute("UPDATE turmas SET active = 0 WHERE id = ?", [$id]);
+  }
+
+  public function reactivate(int $id): void
+  {
+    $this->db->execute("UPDATE turmas SET active = 1 WHERE id = ?", [$id]);
   }
 
   // ── Enrollment ───────────────────────────────────────────────────────────

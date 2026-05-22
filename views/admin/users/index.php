@@ -144,6 +144,7 @@ global $session;
               <td><?= $context ?></td>
               <td><?= date('d/m/Y', strtotime($user['created_at'])) ?></td>
               <td class="td-actions">
+                <a href="<?= \Core\app_url('/admin/users/' . $user['id']) ?>" class="btn btn--sm btn--ghost">Detalhes</a>
                 <a href="<?= \Core\app_url('/admin/users/' . $user['id'] . '/edit') ?>" class="btn btn--sm">Editar</a>
                 <form method="POST" action="<?= \Core\app_url('/admin/users/' . $user['id'] . '/status') ?>">
                   <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">

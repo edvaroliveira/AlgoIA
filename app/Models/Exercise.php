@@ -173,6 +173,16 @@ class Exercise extends Model
     );
   }
 
+  public function reopenPublications(int $exerciseId, string $newClosesAt): void
+  {
+    $this->db->execute(
+      "UPDATE exercise_turmas
+             SET closes_at = ?
+             WHERE exercise_id = ?",
+      [$newClosesAt, $exerciseId]
+    );
+  }
+
   private function buildAdminFilters(array $filters): array
   {
     $conditions = [];
