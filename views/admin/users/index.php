@@ -106,9 +106,19 @@ global $session;
       </div>
     </div>
     <div class="surface-block__body">
+      <form id="admin-users-batch-form" method="POST">
+        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+        <input type="hidden" name="return_query" value="<?= \Core\View::e($exportQuery) ?>">
+      </form>
       <table class="table">
         <thead>
           <tr>
+            <th>
+              <label>
+                <input type="checkbox" form="admin-users-batch-form" data-select-all="admin-users-list" aria-label="Selecionar todos os usuários da listagem">
+                Todos
+              </label>
+            </th>
             <th>Nome</th>
             <th>E-mail</th>
             <th>Perfil</th>
@@ -124,6 +134,7 @@ global $session;
             $role = $user['role'] ?? 'student';
             $status = $user['status'] ?? 'inactive';
             $context = '—';
+            $statusStateLabel = $status === 'active' ? 'ativos' : ($status === 'pending' ? 'pendentes' : 'inativos');
 
             if ($role === 'teacher') {
               $context = (int) ($user['owned_turma_count'] ?? 0) . ' turma(s) · ' . (int) ($user['exercise_count'] ?? 0) . ' exercício(s)';
@@ -136,6 +147,7 @@ global $session;
             }
             ?>
             <tr>
+              <td><input type="checkbox" form="admin-users-batch-form" name="user_ids[]" value="<?= (int) ($user['id'] ?? 0) ?>" data-select-item="admin-users-list" data-item-state="<?= \Core\View::e($status) ?>" data-item-state-label="<?= \Core\View::e($statusStateLabel) ?>"></td>
               <td><strong><?= \Core\View::e($user['name']) ?></strong></td>
               <td><?= \Core\View::e($user['email']) ?></td>
               <td>
@@ -177,6 +189,18 @@ global $session;
           <?php endforeach; ?>
         </tbody>
       </table>
+      <div class="form-row">
+        <div class="form-group" style="justify-content: flex-end;">
+          <label class="form-label">Ações em lote</label>
+          <div class="td-actions">
+            <span class="selection-summary" data-selection-count="admin-users-list">0 selecionados</span>
+            <span class="selection-summary" data-selection-breakdown="admin-users-list"></span>
+            <span class="selection-summary" data-selection-compatibility="admin-users-list"></span>
+            <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-activate') ?>" class="btn btn--primary" data-requires-selection="admin-users-list" data-allowed-states="inactive,pending" disabled>Ativar selecionados</button>
+            <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-users-list" data-allowed-states="active" onclick="return confirm('Inativar os usuários selecionados?');" disabled>Inativar selecionados</button>
+          </div>
+        </div>
+      </div>
       <?php \Core\View::partial('partials/pagination', ['pagination' => $pagination]); ?>
     </div>
   </section>

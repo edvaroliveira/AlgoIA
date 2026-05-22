@@ -1257,33 +1257,122 @@ class AdminController
       View::redirect('/admin/users');
     }
 
-    if ($targetStatus === 'inactive' && (int) ($user['id'] ?? 0) === (int) Auth::id()) {
-      $session->flash('error', 'Você não pode inativar a própria conta administrativa.');
-      View::redirect('/admin/users');
-    }
-
-    if (
-      $targetStatus === 'inactive'
-      && ($user['role'] ?? '') === 'admin'
-      && ($user['status'] ?? '') === 'active'
-      && $this->users->countActiveAdmins() <= 1
-    ) {
-      $session->flash('error', 'Não é possível inativar o último administrador ativo do sistema.');
+    $blockReason = $this->getUserStatusTransitionBlockReason($user, $targetStatus, $this->users->countActiveAdmins());
+    if ($blockReason !== null) {
+      $session->flash('error', $blockReason);
       View::redirect('/admin/users');
     }
 
     $this->users->updateStatus($userId, $targetStatus);
-    AuditService::record('admin.user.status_update', 'user', $userId, [
-      'target_email' => $user['email'] ?? null,
-      'target_role' => $user['role'] ?? null,
-      'previous_status' => $user['status'] ?? null,
-      'new_status' => $targetStatus,
-    ]);
+    $this->recordUserStatusAudit($user, $targetStatus);
 
     $session->flash('success', $targetStatus === 'active'
       ? 'Usuário ativado com sucesso.'
       : 'Usuário inativado com sucesso.');
     View::redirect('/admin/users');
+  }
+
+  public function activateUsersBatch(): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $selectedUserIds = $this->extractSelectedIdsFromRequest('user_ids');
+    $redirectPath = $this->buildBatchReturnPath('/admin/users');
+
+    global $session;
+
+    if ($selectedUserIds === []) {
+      $session->flash('error', 'Selecione pelo menos um usuário para ativar.');
+      View::redirect($redirectPath);
+    }
+
+    $selectedUsers = array_values(array_filter(array_map(fn(int $id): array|false => $this->users->find($id), $selectedUserIds)));
+    $activatableUsers = array_values(array_filter($selectedUsers, static function (array $user): bool {
+      return in_array((string) ($user['status'] ?? ''), ['inactive', 'pending'], true);
+    }));
+
+    if ($activatableUsers === []) {
+      $session->flash('error', 'Nenhum usuário pendente ou inativo válido foi selecionado.');
+      View::redirect($redirectPath);
+    }
+
+    foreach ($activatableUsers as $user) {
+      $this->users->updateStatus((int) ($user['id'] ?? 0), 'active');
+      $this->recordUserStatusAudit($user, 'active', 'batch_activate');
+    }
+
+    $ignoredCount = count($selectedUserIds) - count($activatableUsers);
+    $message = count($activatableUsers) . ' usuário(s) ativado(s) com sucesso.';
+    if ($ignoredCount > 0) {
+      $message .= ' ' . $ignoredCount . ' item(ns) foram ignorado(s).';
+    }
+
+    $session->flash('success', $message);
+    View::redirect($redirectPath);
+  }
+
+  public function deactivateUsersBatch(): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $selectedUserIds = $this->extractSelectedIdsFromRequest('user_ids');
+    $redirectPath = $this->buildBatchReturnPath('/admin/users');
+
+    global $session;
+
+    if ($selectedUserIds === []) {
+      $session->flash('error', 'Selecione pelo menos um usuário para inativar.');
+      View::redirect($redirectPath);
+    }
+
+    $selectedUsers = array_values(array_filter(array_map(fn(int $id): array|false => $this->users->find($id), $selectedUserIds)));
+    $activeUsers = array_values(array_filter($selectedUsers, static function (array $user): bool {
+      return (string) ($user['status'] ?? '') === 'active';
+    }));
+
+    if ($activeUsers === []) {
+      $session->flash('error', 'Nenhum usuário ativo válido foi selecionado.');
+      View::redirect($redirectPath);
+    }
+
+    $remainingActiveAdmins = $this->users->countActiveAdmins();
+    $updatedCount = 0;
+    $blockedCount = 0;
+    $firstBlockReason = null;
+
+    foreach ($activeUsers as $user) {
+      $blockReason = $this->getUserStatusTransitionBlockReason($user, 'inactive', $remainingActiveAdmins);
+      if ($blockReason !== null) {
+        $blockedCount++;
+        $firstBlockReason ??= $blockReason;
+        continue;
+      }
+
+      $this->users->updateStatus((int) ($user['id'] ?? 0), 'inactive');
+      $this->recordUserStatusAudit($user, 'inactive', 'batch_deactivate');
+      $updatedCount++;
+
+      if (($user['role'] ?? '') === 'admin') {
+        $remainingActiveAdmins--;
+      }
+    }
+
+    $ignoredCount = count($selectedUserIds) - count($activeUsers);
+    if ($updatedCount === 0) {
+      $session->flash('error', $firstBlockReason ?? 'Nenhum usuário ativo válido pôde ser inativado.');
+      View::redirect($redirectPath);
+    }
+
+    $message = $updatedCount . ' usuário(s) inativado(s) com sucesso.';
+    $totalIgnored = $ignoredCount + $blockedCount;
+    if ($totalIgnored > 0) {
+      $message .= ' ' . $totalIgnored . ' item(ns) foram ignorado(s).';
+    }
+
+    $session->flash('success', $message);
+    View::redirect($redirectPath);
   }
 
   public function resetUserPassword(string $id): void
@@ -1315,6 +1404,43 @@ class AdminController
   private function generateTemporaryPassword(): string
   {
     return 'AlgoIA' . strtoupper(bin2hex(random_bytes(3))) . '9a';
+  }
+
+  private function getUserStatusTransitionBlockReason(array $user, string $targetStatus, int $remainingActiveAdmins): ?string
+  {
+    if ($targetStatus !== 'inactive') {
+      return null;
+    }
+
+    if ((int) ($user['id'] ?? 0) === (int) Auth::id()) {
+      return 'Você não pode inativar a própria conta administrativa.';
+    }
+
+    if (
+      ($user['role'] ?? '') === 'admin'
+      && ($user['status'] ?? '') === 'active'
+      && $remainingActiveAdmins <= 1
+    ) {
+      return 'Não é possível inativar o último administrador ativo do sistema.';
+    }
+
+    return null;
+  }
+
+  private function recordUserStatusAudit(array $user, string $targetStatus, ?string $batchAction = null): void
+  {
+    $metadata = [
+      'target_email' => $user['email'] ?? null,
+      'target_role' => $user['role'] ?? null,
+      'previous_status' => $user['status'] ?? null,
+      'new_status' => $targetStatus,
+    ];
+
+    if ($batchAction !== null) {
+      $metadata['batch_action'] = $batchAction;
+    }
+
+    AuditService::record('admin.user.status_update', 'user', (int) ($user['id'] ?? 0), $metadata);
   }
 
   private function getUserFiltersFromRequest(): array

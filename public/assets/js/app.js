@@ -116,7 +116,7 @@
     });
     var activeAllowedStates = [];
     var pendingSubmitButton = null;
-    var form = toggle.closest("form");
+    var form = toggle.form || toggle.closest("form");
 
     var escapeHtml = function (value) {
       return String(value)

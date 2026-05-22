@@ -20,6 +20,8 @@ $router->get('/admin/dashboard', 'AdminController@dashboard');
 $router->get('/admin/users',     'AdminController@users');
 $router->get('/admin/users/export', 'AdminController@exportUsers');
 $router->get('/admin/users/export.json', 'AdminController@exportUsersJson');
+$router->post('/admin/users/batch-activate', 'AdminController@activateUsersBatch');
+$router->post('/admin/users/batch-deactivate', 'AdminController@deactivateUsersBatch');
 $router->get('/admin/users/{id}', 'AdminController@showUser');
 $router->get('/admin/users/{id}/edit', 'AdminController@editUser');
 $router->post('/admin/users/{id}', 'AdminController@updateUser');
