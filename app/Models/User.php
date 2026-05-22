@@ -44,6 +44,15 @@ class User extends Model
     );
   }
 
+  public function countActiveAdmins(): int
+  {
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(*) AS total FROM users WHERE role = 'admin' AND status = 'active'"
+    );
+
+    return (int) ($row['total'] ?? 0);
+  }
+
   public function updatePassword(int $id, string $newPassword): void
   {
     $this->db->execute(

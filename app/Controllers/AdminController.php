@@ -7,7 +7,9 @@ namespace App\Controllers;
 use App\Models\Exercise;
 use App\Models\Turma;
 use App\Models\User;
+use App\Services\AuditService;
 use Core\Auth;
+use Core\Request;
 use Core\View;
 
 class AdminController
@@ -68,5 +70,86 @@ class AdminController
     View::render('admin/exercises/index', [
       'exercises' => $exercises,
     ]);
+  }
+
+  public function updateUserStatus(string $id): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $userId = (int) $id;
+    $targetStatus = Request::str('status');
+    $user = $this->users->find($userId);
+
+    global $session;
+
+    if (!$user) {
+      $session->flash('error', 'Usuário não encontrado.');
+      View::redirect('/admin/users');
+    }
+
+    if (!in_array($targetStatus, ['active', 'inactive'], true)) {
+      $session->flash('error', 'Status solicitado é inválido.');
+      View::redirect('/admin/users');
+    }
+
+    if ($targetStatus === 'inactive' && (int) ($user['id'] ?? 0) === (int) Auth::id()) {
+      $session->flash('error', 'Você não pode inativar a própria conta administrativa.');
+      View::redirect('/admin/users');
+    }
+
+    if (
+      $targetStatus === 'inactive'
+      && ($user['role'] ?? '') === 'admin'
+      && ($user['status'] ?? '') === 'active'
+      && $this->users->countActiveAdmins() <= 1
+    ) {
+      $session->flash('error', 'Não é possível inativar o último administrador ativo do sistema.');
+      View::redirect('/admin/users');
+    }
+
+    $this->users->updateStatus($userId, $targetStatus);
+    AuditService::record('admin.user.status_update', 'user', $userId, [
+      'target_email' => $user['email'] ?? null,
+      'target_role' => $user['role'] ?? null,
+      'previous_status' => $user['status'] ?? null,
+      'new_status' => $targetStatus,
+    ]);
+
+    $session->flash('success', $targetStatus === 'active'
+      ? 'Usuário ativado com sucesso.'
+      : 'Usuário inativado com sucesso.');
+    View::redirect('/admin/users');
+  }
+
+  public function resetUserPassword(string $id): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $userId = (int) $id;
+    $user = $this->users->find($userId);
+
+    global $session;
+
+    if (!$user) {
+      $session->flash('error', 'Usuário não encontrado.');
+      View::redirect('/admin/users');
+    }
+
+    $temporaryPassword = $this->generateTemporaryPassword();
+    $this->users->updatePassword($userId, $temporaryPassword);
+    AuditService::record('admin.user.password_reset', 'user', $userId, [
+      'target_email' => $user['email'] ?? null,
+      'target_role' => $user['role'] ?? null,
+    ]);
+
+    $session->flash('success', 'Senha temporária gerada para ' . ($user['email'] ?? 'usuário') . ': ' . $temporaryPassword);
+    View::redirect('/admin/users');
+  }
+
+  private function generateTemporaryPassword(): string
+  {
+    return 'AlgoIA' . strtoupper(bin2hex(random_bytes(3))) . '9a';
   }
 }

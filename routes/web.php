@@ -18,6 +18,8 @@ $router->get('/teacher/dashboard', 'DashboardController@teacher');
 // ── Admin ───────────────────────────────────────────────────────────────────
 $router->get('/admin/dashboard', 'AdminController@dashboard');
 $router->get('/admin/users',     'AdminController@users');
+$router->post('/admin/users/{id}/status', 'AdminController@updateUserStatus');
+$router->post('/admin/users/{id}/reset-password', 'AdminController@resetUserPassword');
 $router->get('/admin/turmas',    'AdminController@turmas');
 $router->get('/admin/exercises', 'AdminController@exercises');
 
