@@ -167,6 +167,11 @@ class AuthController
 
   private function redirectByRole(): never
   {
+    $role = Auth::user()['role'] ?? null;
+
+    if ($role === 'admin') {
+      View::redirect('/admin/dashboard');
+    }
     if (Auth::isTeacher()) {
       View::redirect('/teacher/dashboard');
     }

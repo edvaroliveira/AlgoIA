@@ -51,6 +51,12 @@ class Auth
     return $u && $u['role'] === 'teacher';
   }
 
+  public static function isAdmin(): bool
+  {
+    $u = self::user();
+    return $u && $u['role'] === 'admin';
+  }
+
   public static function isStudent(): bool
   {
     $u = self::user();
@@ -68,7 +74,15 @@ class Auth
   {
     self::requireAuth();
     if (!self::isTeacher()) {
-      View::redirect('/student/dashboard');
+      View::redirect(self::isAdmin() ? '/admin/dashboard' : '/student/dashboard');
+    }
+  }
+
+  public static function requireAdmin(): void
+  {
+    self::requireAuth();
+    if (!self::isAdmin()) {
+      View::redirect(self::isTeacher() ? '/teacher/dashboard' : '/student/dashboard');
     }
   }
 
@@ -76,7 +90,7 @@ class Auth
   {
     self::requireAuth();
     if (!self::isStudent()) {
-      View::redirect('/teacher/dashboard');
+      View::redirect(self::isAdmin() ? '/admin/dashboard' : '/teacher/dashboard');
     }
   }
 
