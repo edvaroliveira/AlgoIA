@@ -714,6 +714,20 @@ a:hover { color: var(--brand-dark); }
   margin-left: 0.55rem;
 }
 
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.pagination-bar__summary {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
 .form {
   display: flex;
   flex-direction: column;

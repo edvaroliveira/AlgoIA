@@ -76,8 +76,11 @@ class User extends Model
     );
   }
 
-  public function getAllForAdmin(): array
+  public function getAllForAdmin(array $filters = [], ?int $limit = null, ?int $offset = null): array
   {
+    ['where' => $where, 'params' => $params] = $this->buildAdminFilters($filters);
+    $limitSql = $limit !== null ? ' LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, (int) $offset) : '';
+
     return $this->db->fetchAll(
       "SELECT u.*,
                     COUNT(DISTINCT CASE WHEN u.role = 'student' THEN st.turma_id END) AS turma_count,
@@ -89,8 +92,36 @@ class User extends Model
              LEFT JOIN turmas t ON t.id = st.turma_id
              LEFT JOIN turmas tt ON tt.teacher_id = u.id
              LEFT JOIN exercises e ON e.teacher_id = u.id
+             {$where}
              GROUP BY u.id
-             ORDER BY FIELD(u.role, 'admin', 'teacher', 'student'), u.name"
+             ORDER BY FIELD(u.role, 'admin', 'teacher', 'student'), u.name{$limitSql}",
+      $params
+    );
+  }
+
+  public function countForAdmin(array $filters = []): int
+  {
+    ['where' => $where, 'params' => $params] = $this->buildAdminFilters($filters);
+
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(DISTINCT u.id) AS total
+             FROM users u
+             LEFT JOIN student_turma st ON st.student_id = u.id
+             LEFT JOIN turmas t ON t.id = st.turma_id
+             LEFT JOIN turmas tt ON tt.teacher_id = u.id
+             LEFT JOIN exercises e ON e.teacher_id = u.id
+             {$where}",
+      $params
+    );
+
+    return (int) ($row['total'] ?? 0);
+  }
+
+  public function updateAdminManagedProfile(int $id, string $name, string $email, string $role, string $status): void
+  {
+    $this->db->execute(
+      "UPDATE users SET name = ?, email = ?, role = ?, status = ? WHERE id = ?",
+      [$name, $email, $role, $status, $id]
     );
   }
 
@@ -171,5 +202,35 @@ class User extends Model
       [$email, $excludeId]
     );
     return $row !== false;
+  }
+
+  private function buildAdminFilters(array $filters): array
+  {
+    $conditions = [];
+    $params = [];
+
+    $role = (string) ($filters['role'] ?? '');
+    if (in_array($role, ['admin', 'teacher', 'student'], true)) {
+      $conditions[] = 'u.role = ?';
+      $params[] = $role;
+    }
+
+    $status = (string) ($filters['status'] ?? '');
+    if (in_array($status, ['active', 'pending', 'inactive'], true)) {
+      $conditions[] = 'u.status = ?';
+      $params[] = $status;
+    }
+
+    $search = trim((string) ($filters['search'] ?? ''));
+    if ($search !== '') {
+      $conditions[] = '(u.name LIKE ? OR u.email LIKE ?)';
+      $params[] = '%' . $search . '%';
+      $params[] = '%' . $search . '%';
+    }
+
+    return [
+      'where' => $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '',
+      'params' => $params,
+    ];
   }
 }
