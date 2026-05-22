@@ -42,7 +42,7 @@
 
       <section class="guest-card">
         <div class="guest-brand">
-          <img src="<?= \Core\app_url('/assets/img/AlgoIA_logo.png') ?>" alt="Logo AlgoIA" class="brand-logo brand-logo--guest-card">
+          <img src="<?= \Core\app_url('/assets/img/AlgoIA_logo_transp.png') ?>" alt="Logo AlgoIA" class="brand-logo brand-logo--guest-card">
           <div>
             <p class="brand-sub">Acesso ao ambiente institucional</p>
           </div>
