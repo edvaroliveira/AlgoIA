@@ -3,6 +3,7 @@ $pageTitle = 'Auditoria — Administração';
 $logs = $logs ?? [];
 $filters = $filters ?? ['search' => '', 'action' => '', 'entity_type' => '', 'from_date' => '', 'to_date' => ''];
 $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($logs), 'path' => '/admin/audit', 'query' => $filters];
+$exportQuery = http_build_query(array_filter($filters, static fn($value): bool => (string) $value !== ''));
 ?>
 
 <div class="page-header">
@@ -50,6 +51,7 @@ $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems
           <label class="form-label">Ações</label>
           <div class="td-actions">
             <button type="submit" class="btn btn--primary">Filtrar</button>
+            <a href="<?= \Core\app_url('/admin/audit/export' . ($exportQuery !== '' ? '?' . $exportQuery : '')) ?>" class="btn btn--ghost">Exportar CSV</a>
             <a href="<?= \Core\app_url('/admin/audit') ?>" class="btn btn--ghost">Limpar</a>
           </div>
         </div>
