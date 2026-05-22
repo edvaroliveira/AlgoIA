@@ -3,6 +3,7 @@ $pageTitle = 'Exercícios — Administração';
 $exercises = $exercises ?? [];
 $filters = $filters ?? ['search' => '', 'status' => ''];
 $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($exercises), 'path' => '/admin/exercises', 'query' => $filters];
+$exportQuery = http_build_query(array_filter($filters, static fn($value): bool => (string) $value !== ''));
 $now = time();
 $activeExercises = count(array_filter($exercises, static fn(array $exercise): bool => ($exercise['status'] ?? '') === 'active'));
 $draftExercises = count(array_filter($exercises, static fn(array $exercise): bool => ($exercise['status'] ?? '') === 'draft'));
@@ -37,6 +38,7 @@ $attemptTotal = array_sum(array_map(static fn(array $exercise): int => (int) ($e
       </div>
       <div class="td-actions">
         <button type="submit" class="btn btn--primary">Filtrar</button>
+        <a href="<?= \Core\app_url('/admin/exercises/export' . ($exportQuery !== '' ? '?' . $exportQuery : '')) ?>" class="btn btn--ghost">Exportar CSV</a>
         <a href="<?= \Core\app_url('/admin/exercises') ?>" class="btn btn--ghost">Limpar</a>
       </div>
     </form>
