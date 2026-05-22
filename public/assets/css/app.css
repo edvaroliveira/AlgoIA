@@ -375,12 +375,16 @@ a:hover { color: var(--brand-dark); }
 .guest-brand {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.75rem;
   padding: 0.1rem 0 1.35rem;
   margin-bottom: 1rem;
   border-bottom: 1px solid var(--border);
-  text-align: left;
+  text-align: center;
+}
+
+.guest-brand .brand-sub {
+  color: var(--brand-ink);
 }
 
 .guest-card__body {
