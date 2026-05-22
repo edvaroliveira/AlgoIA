@@ -143,8 +143,9 @@ global $session;
           <div class="form-group" style="justify-content: flex-end;">
             <label class="form-label">Ações em lote</label>
             <div class="td-actions">
-              <span class="hint" data-selection-count="admin-turmas-list">0 selecionadas</span>
-              <span class="hint" data-selection-breakdown="admin-turmas-list"></span>
+              <span class="selection-summary" data-selection-count="admin-turmas-list">0 selecionadas</span>
+              <span class="selection-summary" data-selection-breakdown="admin-turmas-list"></span>
+              <span class="selection-summary" data-selection-compatibility="admin-turmas-list"></span>
               <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-turmas-list" data-allowed-states="active" onclick="return confirm('Inativar as turmas selecionadas?');" disabled>Inativar selecionadas</button>
               <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/batch-reactivate') ?>" class="btn btn--primary" data-requires-selection="admin-turmas-list" data-allowed-states="inactive" disabled>Reativar selecionadas</button>
             </div>

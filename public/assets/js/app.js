@@ -106,10 +106,83 @@
     var breakdownEls = Array.from(
       document.querySelectorAll('[data-selection-breakdown="' + group + '"]'),
     );
+    var compatibilityEls = Array.from(
+      document.querySelectorAll(
+        '[data-selection-compatibility="' + group + '"]',
+      ),
+    );
     var rows = items.map(function (item) {
       return item.closest("tr");
     });
     var activeAllowedStates = [];
+    var pendingSubmitButton = null;
+    var form = toggle.closest("form");
+
+    var escapeHtml = function (value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    };
+
+    var buildBadgeMarkup = function (label, variant) {
+      return (
+        '<span class="badge badge--' +
+        escapeHtml(variant) +
+        '">' +
+        escapeHtml(label) +
+        "</span>"
+      );
+    };
+
+    var getSelectedItems = function () {
+      return items.filter(function (item) {
+        return item.checked;
+      });
+    };
+
+    var getCompatibilityCounts = function (selectedItems, allowedStates) {
+      if (!allowedStates.length) {
+        return {
+          compatibleCount: selectedItems.length,
+          ignoredCount: 0,
+        };
+      }
+
+      var compatibleCount = selectedItems.filter(function (item) {
+        var itemState = item.getAttribute("data-item-state") || "";
+        return allowedStates.indexOf(itemState) !== -1;
+      }).length;
+
+      return {
+        compatibleCount: compatibleCount,
+        ignoredCount: selectedItems.length - compatibleCount,
+      };
+    };
+
+    var renderCompatibility = function (selectedItems, allowedStates) {
+      compatibilityEls.forEach(function (el) {
+        if (!selectedItems.length || !allowedStates.length) {
+          el.innerHTML = "";
+          return;
+        }
+
+        var counts = getCompatibilityCounts(selectedItems, allowedStates);
+        var parts = [
+          buildBadgeMarkup(counts.compatibleCount + " compatíveis", "success"),
+        ];
+
+        if (counts.ignoredCount > 0) {
+          parts.push(
+            buildBadgeMarkup(counts.ignoredCount + " ignorados", "warning"),
+          );
+        }
+
+        el.innerHTML = parts.join("");
+      });
+    };
 
     var clearRowHighlights = function () {
       rows.forEach(function (row) {
@@ -125,9 +198,7 @@
     };
 
     var syncToggle = function () {
-      var selectedItems = items.filter(function (item) {
-        return item.checked;
-      });
+      var selectedItems = getSelectedItems();
       var checkedCount = selectedItems.length;
 
       toggle.checked = checkedCount === items.length;
@@ -135,12 +206,12 @@
 
       counterEls.forEach(function (el) {
         var label = checkedCount === 1 ? "selecionado" : "selecionados";
-        el.textContent = checkedCount + " " + label;
+        el.innerHTML = buildBadgeMarkup(checkedCount + " " + label, "neutral");
       });
 
       breakdownEls.forEach(function (el) {
         if (!checkedCount) {
-          el.textContent = "";
+          el.innerHTML = "";
           return;
         }
 
@@ -156,10 +227,10 @@
         });
 
         var parts = Object.keys(countsByLabel).map(function (label) {
-          return countsByLabel[label] + " " + label;
+          return buildBadgeMarkup(countsByLabel[label] + " " + label, "info");
         });
 
-        el.textContent = parts.length ? "· " + parts.join(", ") : "";
+        el.innerHTML = parts.join("");
       });
 
       controlledButtons.forEach(function (button) {
@@ -187,6 +258,8 @@
 
         button.disabled = !hasCompatibleSelection;
       });
+
+      renderCompatibility(selectedItems, activeAllowedStates);
 
       clearRowHighlights();
 
@@ -224,6 +297,11 @@
         syncToggle();
       };
 
+      button.addEventListener("click", function () {
+        pendingSubmitButton = button;
+        syncButtonFocus(true);
+      });
+
       button.addEventListener("mouseenter", function () {
         syncButtonFocus(true);
       });
@@ -252,6 +330,49 @@
     items.forEach(function (item) {
       item.addEventListener("change", syncToggle);
     });
+
+    if (form) {
+      form.addEventListener("submit", function (event) {
+        var submitter = event.submitter || pendingSubmitButton;
+
+        if (!submitter) {
+          return;
+        }
+
+        var allowedStates = (
+          submitter.getAttribute("data-allowed-states") || ""
+        )
+          .split(",")
+          .map(function (state) {
+            return state.trim();
+          })
+          .filter(Boolean);
+
+        if (!allowedStates.length) {
+          return;
+        }
+
+        var selectedItems = getSelectedItems();
+        var counts = getCompatibilityCounts(selectedItems, allowedStates);
+
+        if (!counts.compatibleCount) {
+          event.preventDefault();
+          activeAllowedStates = allowedStates;
+          syncToggle();
+          return;
+        }
+
+        selectedItems.forEach(function (item) {
+          var itemState = item.getAttribute("data-item-state") || "";
+          if (allowedStates.indexOf(itemState) === -1) {
+            item.checked = false;
+          }
+        });
+
+        activeAllowedStates = allowedStates;
+        syncToggle();
+      });
+    }
 
     syncToggle();
   });

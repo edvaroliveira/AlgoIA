@@ -168,8 +168,9 @@ global $session;
               <div class="form-group" style="justify-content: flex-end;">
                 <label class="form-label">Ações em lote</label>
                 <div class="td-actions">
-                  <span class="hint" data-selection-count="exercise-publications">0 selecionadas</span>
-                  <span class="hint" data-selection-breakdown="exercise-publications"></span>
+                  <span class="selection-summary" data-selection-count="exercise-publications">0 selecionadas</span>
+                  <span class="selection-summary" data-selection-breakdown="exercise-publications"></span>
+                  <span class="selection-summary" data-selection-compatibility="exercise-publications"></span>
                   <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="exercise-publications" data-allowed-states="open,scheduled" onclick="return confirm('Encerrar todas as publicações selecionadas?');" disabled>Encerrar selecionadas</button>
                   <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="exercise-publications" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
                 </div>

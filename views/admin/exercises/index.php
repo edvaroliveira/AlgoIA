@@ -166,8 +166,9 @@ global $session;
           <div class="form-group" style="justify-content: flex-end;">
             <label class="form-label">Ações em lote</label>
             <div class="td-actions">
-              <span class="hint" data-selection-count="admin-exercises-list">0 selecionados</span>
-              <span class="hint" data-selection-breakdown="admin-exercises-list"></span>
+              <span class="selection-summary" data-selection-count="admin-exercises-list">0 selecionados</span>
+              <span class="selection-summary" data-selection-breakdown="admin-exercises-list"></span>
+              <span class="selection-summary" data-selection-compatibility="admin-exercises-list"></span>
               <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/batch-close') ?>" class="btn btn--danger" data-requires-selection="admin-exercises-list" data-allowed-states="active,closed" onclick="return confirm('Encerrar os exercícios selecionados?');" disabled>Encerrar selecionados</button>
               <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="admin-exercises-list" data-allowed-states="active,closed" disabled>Reabrir selecionados</button>
             </div>

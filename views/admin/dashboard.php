@@ -257,6 +257,12 @@ $last30Days = date('Y-m-d', strtotime('-30 days'));
     <div class="content-note">
       <strong>Usuários</strong>
       <p>Gestão global com filtros, edição, ativação, reset de senha e exportação CSV.</p>
+      <div class="badge-strip">
+        <span class="badge badge--info">filtros globais</span>
+        <span class="badge badge--success">ativação</span>
+        <span class="badge badge--warning">pendentes</span>
+        <span class="badge badge--neutral">exportação</span>
+      </div>
       <div class="td-actions">
         <a href="<?= \Core\app_url('/admin/users') ?>" class="btn btn--sm">Abrir módulo</a>
         <a href="<?= \Core\app_url('/admin/users/export') ?>" class="btn btn--sm btn--ghost">Exportar CSV</a>
@@ -267,6 +273,12 @@ $last30Days = date('Y-m-d', strtotime('-30 days'));
     <div class="content-note">
       <strong>Turmas</strong>
       <p>Supervisão global da operação das turmas com drill-down e reativação administrativa.</p>
+      <div class="badge-strip">
+        <span class="badge badge--info">drill-down</span>
+        <span class="badge badge--warning">pendências</span>
+        <span class="badge badge--success">reativação</span>
+        <span class="badge badge--neutral">exportação</span>
+      </div>
       <div class="td-actions">
         <a href="<?= \Core\app_url('/admin/turmas') ?>" class="btn btn--sm">Abrir módulo</a>
         <a href="<?= \Core\app_url('/admin/turmas/export') ?>" class="btn btn--sm btn--ghost">Exportar CSV</a>
@@ -277,6 +289,12 @@ $last30Days = date('Y-m-d', strtotime('-30 days'));
     <div class="content-note">
       <strong>Exercícios</strong>
       <p>Visão global das atividades com encerramento, reabertura e exportação administrativa.</p>
+      <div class="badge-strip">
+        <span class="badge badge--error">encerramento</span>
+        <span class="badge badge--success">reabertura</span>
+        <span class="badge badge--warning">fechando em breve</span>
+        <span class="badge badge--neutral">exportação</span>
+      </div>
       <div class="td-actions">
         <a href="<?= \Core\app_url('/admin/exercises') ?>" class="btn btn--sm">Abrir módulo</a>
         <a href="<?= \Core\app_url('/admin/exercises/export') ?>" class="btn btn--sm btn--ghost">Exportar CSV</a>
@@ -287,6 +305,12 @@ $last30Days = date('Y-m-d', strtotime('-30 days'));
     <div class="content-note">
       <strong>Auditoria</strong>
       <p>Trilha operacional com filtros por ação, entidade, período e exportação CSV.</p>
+      <div class="badge-strip">
+        <span class="badge badge--neutral">atividade admin</span>
+        <span class="badge badge--info">entidade</span>
+        <span class="badge badge--warning">7 dias</span>
+        <span class="badge badge--neutral">30 dias</span>
+      </div>
       <div class="td-actions">
         <a href="<?= \Core\app_url('/admin/audit') ?>" class="btn btn--sm">Abrir módulo</a>
         <a href="<?= \Core\app_url('/admin/audit/export') ?>" class="btn btn--sm btn--ghost">Exportar CSV</a>
