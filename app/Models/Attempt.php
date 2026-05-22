@@ -24,6 +24,24 @@ class Attempt extends Model
     );
   }
 
+  public function markSubmitted(int $attemptId): void
+  {
+    $this->db->execute(
+      "UPDATE attempts
+             SET status = 'submitted', submitted_at = COALESCE(submitted_at, NOW())
+             WHERE id = ? AND status = 'in_progress'",
+      [$attemptId]
+    );
+  }
+
+  public function markGraded(int $attemptId, float $totalScore): void
+  {
+    $this->db->execute(
+      "UPDATE attempts SET status = 'graded', total_score = ? WHERE id = ?",
+      [$totalScore, $attemptId]
+    );
+  }
+
   public function getInProgress(int $studentId, int $exerciseId, ?int $turmaId = null): array|false
   {
     $turmaFilter = $turmaId !== null ? "AND (turma_id = ? OR turma_id IS NULL)" : '';
@@ -44,7 +62,7 @@ class Attempt extends Model
 
     $row = $this->db->fetchOne(
       "SELECT COUNT(*) AS c FROM attempts
-             WHERE student_id = ? AND exercise_id = ? AND status = 'graded' {$turmaFilter}",
+             WHERE student_id = ? AND exercise_id = ? AND status IN ('submitted', 'graded') {$turmaFilter}",
       $params
     );
     return (int) ($row['c'] ?? 0);
