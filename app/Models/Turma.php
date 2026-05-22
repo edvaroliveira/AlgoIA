@@ -29,6 +29,20 @@ class Turma extends Model
     );
   }
 
+  public function getAllForAdmin(): array
+  {
+    return $this->db->fetchAll(
+      "SELECT t.*,
+                    teacher.name AS teacher_name,
+                    (SELECT COUNT(*) FROM student_turma st WHERE st.turma_id = t.id AND st.status = 'active') AS active_count,
+                    (SELECT COUNT(*) FROM student_turma st WHERE st.turma_id = t.id AND st.status = 'pending') AS pending_count,
+                    (SELECT COUNT(DISTINCT et.exercise_id) FROM exercise_turmas et WHERE et.turma_id = t.id) AS exercise_count
+             FROM turmas t
+             JOIN users teacher ON teacher.id = t.teacher_id
+             ORDER BY teacher.name, t.name"
+    );
+  }
+
   public function create(int $teacherId, string $name): int
   {
     $key = $this->generateUniqueKey();

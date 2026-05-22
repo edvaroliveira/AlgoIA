@@ -90,6 +90,27 @@ class Exercise extends Model
     );
   }
 
+  public function getAllForAdmin(): array
+  {
+    return $this->db->fetchAll(
+      "SELECT e.*,
+                    teacher.name AS teacher_name,
+                    COALESCE(NULLIF(GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', '), ''), 'Pendente de finalização') AS turma_label,
+                    COUNT(DISTINCT et.turma_id) AS turma_count,
+                    MIN(et.opens_at) AS opens_at,
+                    MAX(et.closes_at) AS closes_at,
+                    MAX(et.max_attempts) AS max_attempts,
+                    COUNT(DISTINCT a.id) AS attempt_count
+             FROM exercises e
+             JOIN users teacher ON teacher.id = e.teacher_id
+             LEFT JOIN exercise_turmas et ON et.exercise_id = e.id
+             LEFT JOIN turmas t ON t.id = et.turma_id
+             LEFT JOIN attempts a ON a.exercise_id = e.id
+             GROUP BY e.id
+             ORDER BY e.created_at DESC"
+    );
+  }
+
   public function getWithTurma(int $id): array|false
   {
     $exercise = $this->db->fetchOne(
