@@ -701,6 +701,22 @@ a:hover { color: var(--brand-dark); }
   background: rgba(12, 79, 121, 0.03);
 }
 
+.table tr.table-row--compatible td {
+  background: rgba(35, 119, 74, 0.08);
+}
+
+.table tr.table-row--incompatible td {
+  background: rgba(182, 82, 68, 0.08);
+}
+
+.table tr.table-row--compatible:hover td {
+  background: rgba(35, 119, 74, 0.12);
+}
+
+.table tr.table-row--incompatible:hover td {
+  background: rgba(182, 82, 68, 0.12);
+}
+
 .td-actions {
   white-space: nowrap;
 }

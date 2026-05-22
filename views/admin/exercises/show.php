@@ -3,6 +3,7 @@ $exercise = $exercise ?? [];
 $questions = $questions ?? [];
 $results = $results ?? [];
 $maxScore = $maxScore ?? 0;
+$returnPath = $returnPath ?? '/admin/exercises';
 $pageTitle = 'Exercício — Administração';
 $isDraft = ($exercise['status'] ?? '') === 'draft';
 $isReady = ($exercise['status'] ?? '') === 'ready';
@@ -16,6 +17,7 @@ $isClosed = ($exercise['status'] ?? '') === 'active'
   && strtotime((string) $exercise['closes_at']) < time();
 $defaultReopenUntil = date('Y-m-d\TH:i', strtotime('+7 days'));
 $defaultPublicationMin = date('Y-m-d\TH:i', strtotime('+1 hour'));
+$currentPath = '/admin/exercises/' . (int) ($exercise['id'] ?? 0) . '?return_to=' . urlencode($returnPath);
 global $session;
 ?>
 
@@ -25,7 +27,7 @@ global $session;
     <p class="subtitle">Visão administrativa do exercício com autoria, publicações, questões e desempenho dos alunos.</p>
   </div>
   <div class="td-actions">
-    <a href="<?= \Core\app_url('/admin/exercises') ?>" class="btn btn--ghost">Voltar</a>
+    <a href="<?= \Core\app_url($returnPath) ?>" class="btn btn--ghost">Voltar</a>
     <?php if (($exercise['status'] ?? '') === 'active' && !empty($exercise['publication_settings'])): ?>
       <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/close') ?>" onsubmit="return confirm('Encerrar administrativamente as publicações deste exercício?');">
         <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
@@ -119,42 +121,58 @@ global $session;
       <?php else: ?>
         <div class="content-note">
           <strong>Ações em lote</strong>
-          <p>Selecione múltiplas turmas para encerrar ou reabrir suas publicações de uma vez.</p>
-          <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-close') ?>" class="form" onsubmit="return confirm('Encerrar todas as publicações selecionadas?');">
+          <p>Marque as turmas desejadas e aplique a ação em lote sem usar seleção múltipla do navegador.</p>
+          <form method="POST" class="form">
             <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>
+                    <label>
+                      <input type="checkbox" data-select-all="exercise-publications" aria-label="Selecionar todas as turmas desta publicação">
+                      Todas
+                    </label>
+                  </th>
+                  <th>Turma</th>
+                  <th>Chave</th>
+                  <th>Fecha em</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($exercise['publication_settings'] as $publication): ?>
+                  <?php
+                  $publicationClosesTimestamp = !empty($publication['closes_at']) ? strtotime((string) $publication['closes_at']) : false;
+                  $publicationOpensTimestamp = !empty($publication['opens_at']) ? strtotime((string) $publication['opens_at']) : false;
+                  $publicationBatchState = 'scheduled';
+                  if ($publicationClosesTimestamp !== false && $publicationClosesTimestamp < time()) {
+                    $publicationBatchState = 'closed';
+                  } elseif ($publicationOpensTimestamp !== false && $publicationClosesTimestamp !== false && $publicationOpensTimestamp <= time() && $publicationClosesTimestamp >= time()) {
+                    $publicationBatchState = 'open';
+                  }
+                  $publicationBatchLabel = $publicationBatchState === 'open' ? 'abertas' : ($publicationBatchState === 'closed' ? 'encerradas' : 'agendadas');
+                  ?>
+                  <tr>
+                    <td><input type="checkbox" name="turma_ids[]" value="<?= (int) ($publication['turma_id'] ?? 0) ?>" data-select-item="exercise-publications" data-item-state="<?= $publicationBatchState ?>" data-item-state-label="<?= $publicationBatchLabel ?>"></td>
+                    <td><?= \Core\View::e($publication['turma_name'] ?? 'Turma') ?></td>
+                    <td><?= \Core\View::e($publication['access_key'] ?? '—') ?></td>
+                    <td><?= !empty($publication['closes_at']) ? date('d/m/Y H:i', strtotime((string) $publication['closes_at'])) : '—' ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
             <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="batch-close-publications">Turmas selecionadas</label>
-                <select id="batch-close-publications" name="turma_ids[]" class="form-input" multiple size="<?= min(6, max(3, count($exercise['publication_settings']))) ?>">
-                  <?php foreach ($exercise['publication_settings'] as $publication): ?>
-                    <option value="<?= (int) ($publication['turma_id'] ?? 0) ?>"><?= \Core\View::e(($publication['turma_name'] ?? 'Turma') . ' (' . ($publication['access_key'] ?? '—') . ')') ?></option>
-                  <?php endforeach; ?>
-                </select>
-              </div>
-              <div class="form-group" style="justify-content: flex-end;">
-                <label class="form-label">Encerrar em lote</label>
-                <button type="submit" class="btn btn--danger">Encerrar selecionadas</button>
-              </div>
-            </div>
-          </form>
-          <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-reopen') ?>" class="form">
-            <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="batch-reopen-publications">Turmas selecionadas</label>
-                <select id="batch-reopen-publications" name="turma_ids[]" class="form-input" multiple size="<?= min(6, max(3, count($exercise['publication_settings']))) ?>">
-                  <?php foreach ($exercise['publication_settings'] as $publication): ?>
-                    <option value="<?= (int) ($publication['turma_id'] ?? 0) ?>"><?= \Core\View::e(($publication['turma_name'] ?? 'Turma') . ' (' . ($publication['access_key'] ?? '—') . ')') ?></option>
-                  <?php endforeach; ?>
-                </select>
-              </div>
               <div class="form-group">
                 <label class="form-label" for="batch-reopen-until">Reabrir até</label>
                 <input id="batch-reopen-until" type="datetime-local" name="reopen_until" class="form-input" value="<?= $defaultReopenUntil ?>" min="<?= $defaultPublicationMin ?>">
               </div>
               <div class="form-group" style="justify-content: flex-end;">
-                <label class="form-label">Reabrir em lote</label>
-                <button type="submit" class="btn btn--primary">Reabrir selecionadas</button>
+                <label class="form-label">Ações em lote</label>
+                <div class="td-actions">
+                  <span class="hint" data-selection-count="exercise-publications">0 selecionadas</span>
+                  <span class="hint" data-selection-breakdown="exercise-publications"></span>
+                  <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="exercise-publications" data-allowed-states="open,scheduled" onclick="return confirm('Encerrar todas as publicações selecionadas?');" disabled>Encerrar selecionadas</button>
+                  <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="exercise-publications" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
+                </div>
               </div>
             </div>
           </form>
@@ -170,7 +188,7 @@ global $session;
             && $publicationClosesAt >= time();
           ?>
           <div class="content-note">
-            <strong><?= \Core\View::e($publication['turma_name']) ?> <span class="hint">(<?= \Core\View::e($publication['access_key']) ?>)</span></strong>
+            <strong><a href="<?= \Core\app_url('/admin/turmas/' . ($publication['turma_id'] ?? 0) . '?return_to=' . urlencode($currentPath)) ?>"><?= \Core\View::e($publication['turma_name']) ?></a> <span class="hint">(<?= \Core\View::e($publication['access_key']) ?>)</span></strong>
             <p>
               Abre em <?= date('d/m/Y H:i', strtotime((string) $publication['opens_at'])) ?> ·
               Fecha em <?= date('d/m/Y H:i', strtotime((string) $publication['closes_at'])) ?> ·
