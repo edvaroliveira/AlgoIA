@@ -58,6 +58,7 @@ $router->post('/admin/exercises/{id}/reopen', 'AdminController@reopenExercise');
 $router->post('/admin/exercises/{id}/publications/{turmaId}/close', 'AdminController@closeExercisePublication');
 $router->post('/admin/exercises/{id}/publications/{turmaId}/reopen', 'AdminController@reopenExercisePublication');
 $router->post('/admin/questions/{id}/moderate', 'AdminController@moderateQuestion');
+$router->get('/admin/attempts/pending', 'AttemptController@pendingAdmin');
 $router->post('/admin/attempts/{id}/regrade', 'AttemptController@regradeAdmin');
 $router->get('/admin/audit/export', 'AdminController@exportAudit');
 $router->get('/admin/audit/export.json', 'AdminController@exportAuditJson');
@@ -92,6 +93,8 @@ $router->post('/teacher/questions/{id}/delete',                  'QuestionContro
 $router->get('/teacher/students', 'StudentController@index');
 $router->post('/teacher/students/{id}/detach', 'StudentController@destroy');
 $router->post('/teacher/students/{id}/delete', 'StudentController@destroy');
+$router->get('/teacher/attempts/pending', 'AttemptController@pendingTeacher');
+$router->post('/teacher/attempts/{id}/regrade',     'AttemptController@regradeTeacher');
 
 // ── Student ───────────────────────────────────────────────────────────────────
 $router->get('/student/dashboard',                  'DashboardController@student');
@@ -102,4 +105,3 @@ $router->post('/student/attempts/{id}/answer',      'AttemptController@saveAnswe
 $router->post('/student/attempts/{id}/submit',      'AttemptController@submit');
 $router->get('/student/attempts/{id}/result',       'AttemptController@result');
 $router->post('/student/turma/join',                'TurmaController@join');
-$router->post('/teacher/attempts/{id}/regrade',     'AttemptController@regradeTeacher');

@@ -149,6 +149,68 @@ class Attempt extends Model
     );
   }
 
+  public function getPendingGradingForAdminFiltered(array $filters = [], int $limit = 100, int $offset = 0): array
+  {
+    ['where' => $where, 'params' => $params] = $this->buildPendingGradingFilters($filters);
+    $safeLimit = max(1, $limit);
+    $safeOffset = max(0, $offset);
+
+    return $this->db->fetchAll(
+      "SELECT a.*, e.title AS exercise_title, student.name AS student_name, student.email AS student_email,
+                    teacher.name AS teacher_name, t.name AS turma_name,
+                    TIMESTAMPDIFF(HOUR, COALESCE(a.submitted_at, a.started_at), NOW()) AS pending_hours
+             FROM attempts a
+             JOIN exercises e ON e.id = a.exercise_id
+             JOIN users student ON student.id = a.student_id
+             JOIN users teacher ON teacher.id = e.teacher_id
+             LEFT JOIN turmas t ON t.id = a.turma_id
+             {$where}
+             ORDER BY COALESCE(a.submitted_at, a.started_at) ASC
+             LIMIT {$safeLimit} OFFSET {$safeOffset}",
+      $params
+    );
+  }
+
+  public function getPendingGradingForTeacherFiltered(int $teacherId, array $filters = [], int $limit = 100, int $offset = 0): array
+  {
+    ['where' => $where, 'params' => $params] = $this->buildPendingGradingFilters($filters, $teacherId);
+    $safeLimit = max(1, $limit);
+    $safeOffset = max(0, $offset);
+
+    return $this->db->fetchAll(
+      "SELECT a.*, e.title AS exercise_title, student.name AS student_name, student.email AS student_email,
+                    t.name AS turma_name,
+                    TIMESTAMPDIFF(HOUR, COALESCE(a.submitted_at, a.started_at), NOW()) AS pending_hours
+             FROM attempts a
+             JOIN exercises e ON e.id = a.exercise_id
+             JOIN users student ON student.id = a.student_id
+             JOIN users teacher ON teacher.id = e.teacher_id
+             LEFT JOIN turmas t ON t.id = a.turma_id
+             {$where}
+             ORDER BY COALESCE(a.submitted_at, a.started_at) ASC
+             LIMIT {$safeLimit} OFFSET {$safeOffset}",
+      $params
+    );
+  }
+
+  public function countPendingGradingFiltered(array $filters = [], ?int $teacherId = null): int
+  {
+    ['where' => $where, 'params' => $params] = $this->buildPendingGradingFilters($filters, $teacherId);
+
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(*) AS total
+             FROM attempts a
+             JOIN exercises e ON e.id = a.exercise_id
+             JOIN users student ON student.id = a.student_id
+             JOIN users teacher ON teacher.id = e.teacher_id
+             LEFT JOIN turmas t ON t.id = a.turma_id
+             {$where}",
+      $params
+    );
+
+    return (int) ($row['total'] ?? 0);
+  }
+
   public function belongsToStudent(int $attemptId, int $studentId): bool
   {
     $row = $this->db->fetchOne(
@@ -190,5 +252,46 @@ class Attempt extends Model
              GROUP BY a.id",
       [$attemptId]
     );
+  }
+
+  private function buildPendingGradingFilters(array $filters = [], ?int $teacherId = null): array
+  {
+    $conditions = ["a.status = 'submitted'"];
+    $params = [];
+
+    if ($teacherId !== null) {
+      $conditions[] = 'e.teacher_id = ?';
+      $params[] = $teacherId;
+    }
+
+    $search = trim((string) ($filters['search'] ?? ''));
+    if ($search !== '') {
+      $conditions[] = '(student.name LIKE ? OR student.email LIKE ? OR e.title LIKE ? OR teacher.name LIKE ? OR t.name LIKE ?)';
+      $like = '%' . $search . '%';
+      array_push($params, $like, $like, $like, $like, $like);
+    }
+
+    $fromDate = trim((string) ($filters['from_date'] ?? ''));
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fromDate)) {
+      $conditions[] = 'COALESCE(a.submitted_at, a.started_at) >= ?';
+      $params[] = $fromDate . ' 00:00:00';
+    }
+
+    $toDate = trim((string) ($filters['to_date'] ?? ''));
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $toDate)) {
+      $conditions[] = 'COALESCE(a.submitted_at, a.started_at) <= ?';
+      $params[] = $toDate . ' 23:59:59';
+    }
+
+    $minAgeHours = (int) ($filters['min_age_hours'] ?? 0);
+    if ($minAgeHours > 0) {
+      $conditions[] = 'COALESCE(a.submitted_at, a.started_at) <= DATE_SUB(NOW(), INTERVAL ? HOUR)';
+      $params[] = $minAgeHours;
+    }
+
+    return [
+      'where' => 'WHERE ' . implode(' AND ', $conditions),
+      'params' => $params,
+    ];
   }
 }

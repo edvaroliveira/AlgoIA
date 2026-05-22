@@ -76,6 +76,8 @@ Este backlog cobre os ajustes identificados apos a segunda revisao do sistema, j
 
 ## P1 - Criar painel de correcoes pendentes
 
+**Status:** implementado.
+
 **Problema:** tentativas `submitted` ficam visiveis para o aluno como "Em correcao", mas nao ha visao administrativa/docente consolidada.
 
 **Objetivo:** facilitar suporte e acompanhamento de falhas ou atrasos na correcao automatica.

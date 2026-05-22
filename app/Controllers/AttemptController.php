@@ -16,6 +16,8 @@ use Core\View;
 
 class AttemptController
 {
+  private const PENDING_PER_PAGE = 20;
+
   private Exercise $exercises;
   private Question $questions;
   private Attempt  $attempts;
@@ -147,6 +149,21 @@ class AttemptController
     $this->regrade((int) $id, 'admin.attempt.regrade', '/admin/dashboard');
   }
 
+  public function pendingAdmin(): void
+  {
+    Auth::requireAdmin();
+
+    $filters = $this->pendingFiltersFromRequest();
+    $pagination = $this->pendingPagination('/admin/attempts/pending', $filters, $this->attempts->countPendingGradingFiltered($filters));
+    $attempts = $this->attempts->getPendingGradingForAdminFiltered($filters, $pagination['perPage'], $pagination['offset']);
+
+    View::render('admin/attempts/pending', [
+      'attempts' => $attempts,
+      'filters' => $filters,
+      'pagination' => $pagination,
+    ]);
+  }
+
   public function regradeTeacher(string $id): void
   {
     Auth::requireTeacher();
@@ -154,6 +171,22 @@ class AttemptController
 
     Auth::ensure($this->attempts->belongsToTeacher((int) $id, (int) Auth::id()));
     $this->regrade((int) $id, 'teacher.attempt.regrade', '/teacher/dashboard');
+  }
+
+  public function pendingTeacher(): void
+  {
+    Auth::requireTeacher();
+
+    $teacherId = (int) Auth::id();
+    $filters = $this->pendingFiltersFromRequest();
+    $pagination = $this->pendingPagination('/teacher/attempts/pending', $filters, $this->attempts->countPendingGradingFiltered($filters, $teacherId));
+    $attempts = $this->attempts->getPendingGradingForTeacherFiltered($teacherId, $filters, $pagination['perPage'], $pagination['offset']);
+
+    View::render('teacher/attempts/pending', [
+      'attempts' => $attempts,
+      'filters' => $filters,
+      'pagination' => $pagination,
+    ]);
   }
 
   /** GET /student/attempts/{id}/result */
@@ -262,5 +295,32 @@ class AttemptController
     }
 
     return $fallbackPath;
+  }
+
+  private function pendingFiltersFromRequest(): array
+  {
+    return [
+      'search' => trim((string) Request::get('search', '')),
+      'from_date' => trim((string) Request::get('from_date', '')),
+      'to_date' => trim((string) Request::get('to_date', '')),
+      'min_age_hours' => max(0, (int) Request::get('min_age_hours', 0)),
+    ];
+  }
+
+  private function pendingPagination(string $path, array $filters, int $totalItems): array
+  {
+    $requestedPage = max(1, (int) Request::get('page', 1));
+    $totalPages = max(1, (int) ceil($totalItems / self::PENDING_PER_PAGE));
+    $currentPage = min($requestedPage, $totalPages);
+
+    return [
+      'path' => $path,
+      'query' => $filters,
+      'perPage' => self::PENDING_PER_PAGE,
+      'totalItems' => $totalItems,
+      'totalPages' => $totalPages,
+      'currentPage' => $currentPage,
+      'offset' => ($currentPage - 1) * self::PENDING_PER_PAGE,
+    ];
   }
 }
