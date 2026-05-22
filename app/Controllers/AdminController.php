@@ -112,13 +112,7 @@ class AdminController
   {
     Auth::requireAdmin();
 
-    $filters = [
-      'search' => trim((string) Request::get('search', '')),
-      'action' => trim((string) Request::get('action', '')),
-      'entity_type' => trim((string) Request::get('entity_type', '')),
-      'from_date' => trim((string) Request::get('from_date', '')),
-      'to_date' => trim((string) Request::get('to_date', '')),
-    ];
+    $filters = $this->getAuditFiltersFromRequest();
 
     $pagination = $this->buildPagination('/admin/audit', $filters, $this->auditLogs->countForAdmin($filters));
     $logs = $this->auditLogs->getAllForAdmin($filters, $pagination['perPage'], $pagination['offset']);
@@ -128,6 +122,46 @@ class AdminController
       'filters' => $filters,
       'pagination' => $pagination,
     ]);
+  }
+
+  public function exportAudit(): void
+  {
+    Auth::requireAdmin();
+
+    $filters = $this->getAuditFiltersFromRequest();
+    $logs = $this->auditLogs->getAllForAdmin($filters, null, null);
+
+    $filename = 'audit-log-' . date('Ymd-His') . '.csv';
+
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
+    $output = fopen('php://output', 'wb');
+    if ($output === false) {
+      http_response_code(500);
+      exit('Não foi possível gerar a exportação.');
+    }
+
+    fwrite($output, "\xEF\xBB\xBF");
+    fputcsv($output, ['quando', 'ator_nome', 'ator_email', 'ator_role', 'acao', 'entidade', 'entidade_id', 'contexto', 'ip'], ';');
+
+    foreach ($logs as $log) {
+      fputcsv($output, [
+        (string) ($log['created_at'] ?? ''),
+        (string) ($log['actor_name'] ?? 'Sistema'),
+        (string) ($log['actor_email'] ?? ''),
+        (string) ($log['actor_role'] ?? ''),
+        (string) ($log['action'] ?? ''),
+        (string) ($log['entity_type'] ?? ''),
+        (string) ($log['entity_id'] ?? ''),
+        $this->buildAuditContextText($log),
+        (string) ($log['ip_address'] ?? ''),
+      ], ';');
+    }
+
+    fclose($output);
+    exit;
   }
 
   public function showTurma(string $id): void
@@ -526,6 +560,40 @@ class AdminController
   private function generateTemporaryPassword(): string
   {
     return 'AlgoIA' . strtoupper(bin2hex(random_bytes(3))) . '9a';
+  }
+
+  private function getAuditFiltersFromRequest(): array
+  {
+    return [
+      'search' => trim((string) Request::get('search', '')),
+      'action' => trim((string) Request::get('action', '')),
+      'entity_type' => trim((string) Request::get('entity_type', '')),
+      'from_date' => trim((string) Request::get('from_date', '')),
+      'to_date' => trim((string) Request::get('to_date', '')),
+    ];
+  }
+
+  private function buildAuditContextText(array $log): string
+  {
+    $metadata = json_decode((string) ($log['metadata_json'] ?? ''), true);
+    if (!is_array($metadata)) {
+      return 'Sem metadados adicionais';
+    }
+
+    $contextParts = [];
+    foreach ($metadata as $key => $value) {
+      if (is_array($value)) {
+        $value = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+      }
+
+      if ($value === null || $value === '') {
+        continue;
+      }
+
+      $contextParts[] = $key . ': ' . (string) $value;
+    }
+
+    return $contextParts ? implode(' | ', $contextParts) : 'Sem metadados adicionais';
   }
 
   private function buildPagination(string $path, array $filters, int $totalItems): array

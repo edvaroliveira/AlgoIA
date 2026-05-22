@@ -31,6 +31,7 @@ $router->get('/admin/exercises', 'AdminController@exercises');
 $router->get('/admin/exercises/{id}', 'AdminController@showExercise');
 $router->post('/admin/exercises/{id}/close', 'AdminController@closeExercise');
 $router->post('/admin/exercises/{id}/reopen', 'AdminController@reopenExercise');
+$router->get('/admin/audit/export', 'AdminController@exportAudit');
 $router->get('/admin/audit',     'AdminController@audit');
 
 // Turmas
