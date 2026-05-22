@@ -85,6 +85,7 @@ $router->post('/teacher/questions/{id}/delete',                  'QuestionContro
 
 // Students list
 $router->get('/teacher/students', 'StudentController@index');
+$router->post('/teacher/students/{id}/detach', 'StudentController@destroy');
 $router->post('/teacher/students/{id}/delete', 'StudentController@destroy');
 
 // ── Student ───────────────────────────────────────────────────────────────────

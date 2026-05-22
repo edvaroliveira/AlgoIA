@@ -30,21 +30,22 @@ class StudentController
     $student = $users->find((int) $id);
 
     try {
-      $deleted = $users->deleteStudentWithRelations((int) $id, (int) Auth::id());
+      $detachResult = $users->detachStudentFromTeacherTurmas((int) $id, (int) Auth::id());
     } catch (\Throwable $e) {
-      error_log('delete student failed: ' . $e->getMessage());
-      $deleted = false;
+      error_log('detach student failed: ' . $e->getMessage());
+      $detachResult = ['removed_count' => 0, 'turmas' => []];
     }
 
     global $session;
-    if ($deleted) {
-      AuditService::record('teacher.student.delete', 'student', (int) $id, [
+    if ((int) ($detachResult['removed_count'] ?? 0) > 0) {
+      AuditService::record('teacher.student.detach', 'student', (int) $id, [
         'student_name' => $student['name'] ?? null,
         'student_email' => $student['email'] ?? null,
+        'turmas' => $detachResult['turmas'] ?? [],
       ]);
-      $session->flash('success', 'Aluno removido com todos os registros relacionados.');
+      $session->flash('success', 'Aluno desvinculado das suas turmas. O cadastro e o histórico foram preservados.');
     } else {
-      $session->flash('error', 'Não foi possível excluir o aluno solicitado.');
+      $session->flash('error', 'Não foi possível desvincular o aluno solicitado.');
     }
 
     View::redirect('/teacher/students');
