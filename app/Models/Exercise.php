@@ -640,9 +640,12 @@ class Exercise extends Model
     return $this->db->fetchAll(
       "SELECT u.name, u.email,
                     MAX(a.total_score) AS best_score,
-                    COUNT(a.id)        AS attempt_count
+                    COUNT(DISTINCT a.id) AS attempt_count,
+                    COUNT(DISTINCT il.answer_id) AS injection_flag_count
              FROM users u
              JOIN attempts a ON a.student_id = u.id
+             LEFT JOIN answers ans ON ans.attempt_id = a.id
+             LEFT JOIN injection_logs il ON il.answer_id = ans.id
              WHERE a.exercise_id = ? AND a.status = 'graded'
              GROUP BY u.id
              ORDER BY best_score DESC",

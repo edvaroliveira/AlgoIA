@@ -51,6 +51,7 @@ class AttemptGradingService
         'answer_id' => (int) $answer['id'],
         'score' => (float) $result['score'],
         'feedback' => (string) $result['feedback'],
+        'deduction_reasons' => $result['deduction_reasons'] ?? [],
       ];
       $totalScore += (float) $result['score'];
     }
@@ -64,7 +65,8 @@ class AttemptGradingService
         $this->answers->updateAiResult(
           $evaluation['answer_id'],
           $evaluation['score'],
-          $evaluation['feedback']
+          $evaluation['feedback'],
+          $evaluation['deduction_reasons']
         );
       }
 

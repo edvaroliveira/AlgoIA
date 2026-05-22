@@ -4,6 +4,8 @@ Este backlog cobre ajustes recomendados para tornar a avaliacao automatica mais 
 
 ## P0 - Adicionar rubrica objetiva de pontuacao ao prompt
 
+**Status:** implementado.
+
 **Problema:** a IA atribui nota de forma livre, sem faixas claras de pontuacao. Isso pode gerar variacao entre respostas parecidas.
 
 **Objetivo:** tornar a nota mais previsivel e consistente.
@@ -23,6 +25,8 @@ Este backlog cobre ajustes recomendados para tornar a avaliacao automatica mais 
 **Risco:** alto, pois afeta diretamente notas dos alunos.
 
 ## P0 - Reequilibrar o prompt para reduzir benevolencia excessiva
+
+**Status:** implementado.
 
 **Problema:** o prompt atual repete muitas vezes que abordagens alternativas nao devem ser penalizadas, o que pode deixar a avaliacao permissiva demais.
 
@@ -44,6 +48,8 @@ Este backlog cobre ajustes recomendados para tornar a avaliacao automatica mais 
 
 ## P1 - Salvar motivos de desconto no banco
 
+**Status:** implementado.
+
 **Problema:** `deduction_reasons` e retornado pela IA, mas nao e persistido em `answers`.
 
 **Objetivo:** permitir auditoria pedagogica, filtros e analise de padroes de erro.
@@ -63,6 +69,8 @@ Este backlog cobre ajustes recomendados para tornar a avaliacao automatica mais 
 **Risco:** medio, pois altera schema e fluxo de persistencia.
 
 ## P1 - Exibir alerta de possivel prompt injection para professor/admin
+
+**Status:** implementado.
 
 **Problema:** tentativas de prompt injection sao registradas em `injection_logs`, mas nao aparecem de forma operacional para quem revisa resultados.
 
@@ -84,6 +92,8 @@ Este backlog cobre ajustes recomendados para tornar a avaliacao automatica mais 
 
 ## P1 - Tornar modelo configuravel via ambiente
 
+**Status:** implementado.
+
 **Problema:** o modelo esta fixo em `config/openai.php` como `gpt-4o`.
 
 **Objetivo:** permitir troca de modelo sem editar codigo.
@@ -102,6 +112,8 @@ Este backlog cobre ajustes recomendados para tornar a avaliacao automatica mais 
 **Risco:** baixo.
 
 ## P2 - Criar testes/casos de avaliacao do prompt
+
+**Status:** implementado em base manual em `docs/casos_avaliacao_prompt_ia.md`.
 
 **Problema:** nao ha conjunto de exemplos para verificar se mudancas no prompt melhoram ou pioram a avaliacao.
 
