@@ -27,5 +27,7 @@
 </form>
 
 <p class="form-footer">
-  Não tem conta? <a href="<?= \Core\app_url('/register') ?>">Cadastre-se</a>
+  Não tem conta? <a href="<?= \Core\app_url('/register') ?>">Cadastre-se como aluno</a>
+  &nbsp;·&nbsp;
+  <a href="<?= \Core\app_url('/register/teacher') ?>">Sou docente</a>
 </p>
