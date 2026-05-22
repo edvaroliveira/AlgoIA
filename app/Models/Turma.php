@@ -6,6 +6,8 @@ namespace App\Models;
 
 /**
  * @method void reactivate(int $id)
+ * @method int countPendingEnrollmentsForAdmin()
+ * @method array getPendingTurmasForAdmin(int $limit = 5)
  */
 class Turma extends Model
 {
