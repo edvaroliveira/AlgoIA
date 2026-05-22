@@ -56,6 +56,7 @@ $router->post('/admin/exercises/{id}/reopen', 'AdminController@reopenExercise');
 $router->post('/admin/exercises/{id}/publications/{turmaId}/close', 'AdminController@closeExercisePublication');
 $router->post('/admin/exercises/{id}/publications/{turmaId}/reopen', 'AdminController@reopenExercisePublication');
 $router->post('/admin/questions/{id}/moderate', 'AdminController@moderateQuestion');
+$router->post('/admin/attempts/{id}/regrade', 'AttemptController@regradeAdmin');
 $router->get('/admin/audit/export', 'AdminController@exportAudit');
 $router->get('/admin/audit/export.json', 'AdminController@exportAuditJson');
 $router->get('/admin/audit',     'AdminController@audit');
@@ -99,3 +100,4 @@ $router->post('/student/attempts/{id}/answer',      'AttemptController@saveAnswe
 $router->post('/student/attempts/{id}/submit',      'AttemptController@submit');
 $router->get('/student/attempts/{id}/result',       'AttemptController@result');
 $router->post('/student/turma/join',                'TurmaController@join');
+$router->post('/teacher/attempts/{id}/regrade',     'AttemptController@regradeTeacher');

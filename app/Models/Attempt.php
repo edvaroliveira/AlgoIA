@@ -91,12 +91,84 @@ class Attempt extends Model
     );
   }
 
+  public function countPendingGradingForAdmin(): int
+  {
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(*) AS total FROM attempts WHERE status = 'submitted'"
+    );
+
+    return (int) ($row['total'] ?? 0);
+  }
+
+  public function countPendingGradingForTeacher(int $teacherId): int
+  {
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(*) AS total
+             FROM attempts a
+             JOIN exercises e ON e.id = a.exercise_id
+             WHERE a.status = 'submitted' AND e.teacher_id = ?",
+      [$teacherId]
+    );
+
+    return (int) ($row['total'] ?? 0);
+  }
+
+  public function getPendingGradingForAdmin(int $limit = 10): array
+  {
+    $safeLimit = max(1, $limit);
+
+    return $this->db->fetchAll(
+      "SELECT a.*, e.title AS exercise_title, student.name AS student_name, student.email AS student_email,
+                    teacher.name AS teacher_name, t.name AS turma_name
+             FROM attempts a
+             JOIN exercises e ON e.id = a.exercise_id
+             JOIN users student ON student.id = a.student_id
+             JOIN users teacher ON teacher.id = e.teacher_id
+             LEFT JOIN turmas t ON t.id = a.turma_id
+             WHERE a.status = 'submitted'
+             ORDER BY COALESCE(a.submitted_at, a.started_at) ASC
+             LIMIT {$safeLimit}"
+    );
+  }
+
+  public function getPendingGradingForTeacher(int $teacherId, int $limit = 10): array
+  {
+    $safeLimit = max(1, $limit);
+
+    return $this->db->fetchAll(
+      "SELECT a.*, e.title AS exercise_title, student.name AS student_name, student.email AS student_email,
+                    t.name AS turma_name
+             FROM attempts a
+             JOIN exercises e ON e.id = a.exercise_id
+             JOIN users student ON student.id = a.student_id
+             LEFT JOIN turmas t ON t.id = a.turma_id
+             WHERE a.status = 'submitted' AND e.teacher_id = ?
+             ORDER BY COALESCE(a.submitted_at, a.started_at) ASC
+             LIMIT {$safeLimit}",
+      [$teacherId]
+    );
+  }
+
   public function belongsToStudent(int $attemptId, int $studentId): bool
   {
     $row = $this->db->fetchOne(
       "SELECT id FROM attempts WHERE id = ? AND student_id = ?",
       [$attemptId, $studentId]
     );
+    return $row !== false;
+  }
+
+  public function belongsToTeacher(int $attemptId, int $teacherId): bool
+  {
+    $row = $this->db->fetchOne(
+      "SELECT a.id
+             FROM attempts a
+             JOIN exercises e ON e.id = a.exercise_id
+             WHERE a.id = ? AND e.teacher_id = ?
+             LIMIT 1",
+      [$attemptId, $teacherId]
+    );
+
     return $row !== false;
   }
 

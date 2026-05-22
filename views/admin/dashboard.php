@@ -10,11 +10,14 @@ $auditCount = $auditCount ?? 0;
 $pendingUserCount = $pendingUserCount ?? 0;
 $pendingEnrollmentCount = $pendingEnrollmentCount ?? 0;
 $closingSoonCount = $closingSoonCount ?? 0;
+$pendingGradingCount = $pendingGradingCount ?? 0;
 $pendingUsers = $pendingUsers ?? [];
 $pendingTurmas = $pendingTurmas ?? [];
 $closingExercises = $closingExercises ?? [];
+$pendingGradingAttempts = $pendingGradingAttempts ?? [];
 $recentAdminEvents = $recentAdminEvents ?? [];
 $pendingActions = $pendingActions ?? [];
+global $session;
 $today = date('Y-m-d');
 $last7Days = date('Y-m-d', strtotime('-7 days'));
 $last30Days = date('Y-m-d', strtotime('-30 days'));
@@ -106,7 +109,56 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
     <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($closingSoonBadgeVariant) ?>"><?= \Core\View::e($closingSoonBadgeText) ?></span></span>
     <p class="overview-card__copy">Exercícios ativos com encerramento previsto nas próximas 72 horas.</p>
   </article>
+  <article class="overview-card">
+    <span class="overview-card__label">Correções pendentes</span>
+    <strong class="overview-card__value"><?= $pendingGradingCount ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= $pendingGradingCount > 0 ? 'error' : 'success' ?>"><?= $pendingGradingCount > 0 ? 'reprocessar' : 'sem fila' ?></span></span>
+    <p class="overview-card__copy">Tentativas enviadas que ainda aguardam nota automática.</p>
+  </article>
 </div>
+
+<?php if (!empty($pendingGradingAttempts)): ?>
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Correções pendentes</h2>
+        <p class="surface-copy">Tentativas enviadas que ficaram aguardando reprocessamento da avaliação automática.</p>
+      </div>
+    </div>
+    <div class="surface-block__body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Aluno</th>
+            <th>Exercício</th>
+            <th>Docente</th>
+            <th>Turma</th>
+            <th>Enviada em</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($pendingGradingAttempts as $attempt): ?>
+            <tr>
+              <td><?= \Core\View::e($attempt['student_name'] ?? '—') ?></td>
+              <td><?= \Core\View::e($attempt['exercise_title'] ?? '—') ?></td>
+              <td><?= \Core\View::e($attempt['teacher_name'] ?? '—') ?></td>
+              <td><?= \Core\View::e($attempt['turma_name'] ?? '—') ?></td>
+              <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : '—' ?></td>
+              <td class="td-actions">
+                <form method="POST" action="<?= \Core\app_url('/admin/attempts/' . (int) ($attempt['id'] ?? 0) . '/regrade') ?>">
+                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                  <input type="hidden" name="return_to" value="<?= \Core\View::e(\Core\app_request_path()) ?>">
+                  <button type="submit" class="btn btn--sm btn--primary">Reprocessar</button>
+                </form>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </section>
+<?php endif; ?>
 
 <?php if (!empty($pendingActions)): ?>
   <section class="surface-block">
