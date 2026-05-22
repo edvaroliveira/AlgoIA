@@ -18,10 +18,17 @@ $router->get('/teacher/dashboard', 'DashboardController@teacher');
 // ── Admin ───────────────────────────────────────────────────────────────────
 $router->get('/admin/dashboard', 'AdminController@dashboard');
 $router->get('/admin/users',     'AdminController@users');
+$router->get('/admin/users/{id}/edit', 'AdminController@editUser');
+$router->post('/admin/users/{id}', 'AdminController@updateUser');
 $router->post('/admin/users/{id}/status', 'AdminController@updateUserStatus');
 $router->post('/admin/users/{id}/reset-password', 'AdminController@resetUserPassword');
 $router->get('/admin/turmas',    'AdminController@turmas');
+$router->get('/admin/turmas/{id}', 'AdminController@showTurma');
+$router->post('/admin/turmas/{id}/deactivate', 'AdminController@deactivateTurma');
 $router->get('/admin/exercises', 'AdminController@exercises');
+$router->get('/admin/exercises/{id}', 'AdminController@showExercise');
+$router->post('/admin/exercises/{id}/close', 'AdminController@closeExercise');
+$router->get('/admin/audit',     'AdminController@audit');
 
 // Turmas
 $router->get('/teacher/turmas',                                   'TurmaController@index');

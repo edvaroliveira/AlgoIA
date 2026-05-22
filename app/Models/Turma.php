@@ -29,8 +29,11 @@ class Turma extends Model
     );
   }
 
-  public function getAllForAdmin(): array
+  public function getAllForAdmin(array $filters = [], ?int $limit = null, ?int $offset = null): array
   {
+    ['where' => $where, 'params' => $params] = $this->buildAdminFilters($filters);
+    $limitSql = $limit !== null ? ' LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, (int) $offset) : '';
+
     return $this->db->fetchAll(
       "SELECT t.*,
                     teacher.name AS teacher_name,
@@ -39,7 +42,56 @@ class Turma extends Model
                     (SELECT COUNT(DISTINCT et.exercise_id) FROM exercise_turmas et WHERE et.turma_id = t.id) AS exercise_count
              FROM turmas t
              JOIN users teacher ON teacher.id = t.teacher_id
-             ORDER BY teacher.name, t.name"
+             {$where}
+             ORDER BY teacher.name, t.name{$limitSql}",
+      $params
+    );
+  }
+
+  public function countForAdmin(array $filters = []): int
+  {
+    ['where' => $where, 'params' => $params] = $this->buildAdminFilters($filters);
+
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(*) AS total
+             FROM turmas t
+             JOIN users teacher ON teacher.id = t.teacher_id
+             {$where}",
+      $params
+    );
+
+    return (int) ($row['total'] ?? 0);
+  }
+
+  public function findForAdmin(int $id): array|false
+  {
+    return $this->db->fetchOne(
+      "SELECT t.*, teacher.name AS teacher_name, teacher.email AS teacher_email,
+                    (SELECT COUNT(*) FROM student_turma st WHERE st.turma_id = t.id AND st.status = 'active') AS active_count,
+                    (SELECT COUNT(*) FROM student_turma st WHERE st.turma_id = t.id AND st.status = 'pending') AS pending_count,
+                    (SELECT COUNT(DISTINCT et.exercise_id) FROM exercise_turmas et WHERE et.turma_id = t.id) AS exercise_count
+             FROM turmas t
+             JOIN users teacher ON teacher.id = t.teacher_id
+             WHERE t.id = ?
+             LIMIT 1",
+      [$id]
+    );
+  }
+
+  public function getExercisePublicationsForAdmin(int $turmaId): array
+  {
+    return $this->db->fetchAll(
+      "SELECT e.id, e.title, e.status, teacher.name AS teacher_name,
+                    et.opens_at, et.closes_at, et.max_attempts,
+                    COUNT(DISTINCT a.id) AS attempt_count
+             FROM exercise_turmas et
+             JOIN exercises e ON e.id = et.exercise_id
+             JOIN users teacher ON teacher.id = e.teacher_id
+             LEFT JOIN attempts a ON a.exercise_id = e.id
+             WHERE et.turma_id = ?
+             GROUP BY et.exercise_id, et.turma_id
+             ORDER BY et.opens_at DESC, e.title",
+      [$turmaId]
     );
   }
 
@@ -150,6 +202,32 @@ class Turma extends Model
       [$turmaId, $teacherId]
     );
     return $row !== false;
+  }
+
+  private function buildAdminFilters(array $filters): array
+  {
+    $conditions = [];
+    $params = [];
+
+    $status = (string) ($filters['status'] ?? '');
+    if ($status === 'active') {
+      $conditions[] = 't.active = 1';
+    } elseif ($status === 'inactive') {
+      $conditions[] = 't.active = 0';
+    }
+
+    $search = trim((string) ($filters['search'] ?? ''));
+    if ($search !== '') {
+      $conditions[] = '(t.name LIKE ? OR teacher.name LIKE ? OR t.access_key LIKE ?)';
+      $params[] = '%' . $search . '%';
+      $params[] = '%' . $search . '%';
+      $params[] = '%' . strtoupper($search) . '%';
+    }
+
+    return [
+      'where' => $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '',
+      'params' => $params,
+    ];
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────

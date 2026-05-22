@@ -1,6 +1,8 @@
 <?php
 $pageTitle = 'Usuários — Administração';
 $users = $users ?? [];
+$filters = $filters ?? ['search' => '', 'role' => '', 'status' => ''];
+$pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($users), 'path' => '/admin/users', 'query' => $filters];
 $totalUsers = count($users);
 $adminCount = count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'admin'));
 $teacherCount = count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'teacher'));
@@ -14,6 +16,46 @@ global $session;
     <p class="subtitle">Visão global inicial de administradores, docentes e alunos com seus vínculos principais.</p>
   </div>
 </div>
+
+<section class="card card--narrow">
+  <div class="card-body">
+    <form method="GET" action="<?= \Core\app_url('/admin/users') ?>" class="form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="user-search">Buscar</label>
+          <input id="user-search" type="text" name="search" class="form-input" value="<?= \Core\View::e($filters['search'] ?? '') ?>" placeholder="Nome ou e-mail">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="user-role">Perfil</label>
+          <select id="user-role" name="role" class="form-input">
+            <option value="">Todos</option>
+            <option value="admin" <?= ($filters['role'] ?? '') === 'admin' ? 'selected' : '' ?>>Administrador</option>
+            <option value="teacher" <?= ($filters['role'] ?? '') === 'teacher' ? 'selected' : '' ?>>Docente</option>
+            <option value="student" <?= ($filters['role'] ?? '') === 'student' ? 'selected' : '' ?>>Aluno</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="user-status">Status</label>
+          <select id="user-status" name="status" class="form-input">
+            <option value="">Todos</option>
+            <option value="active" <?= ($filters['status'] ?? '') === 'active' ? 'selected' : '' ?>>Ativo</option>
+            <option value="pending" <?= ($filters['status'] ?? '') === 'pending' ? 'selected' : '' ?>>Pendente</option>
+            <option value="inactive" <?= ($filters['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inativo</option>
+          </select>
+        </div>
+        <div class="form-group" style="justify-content: flex-end;">
+          <label class="form-label">Ações</label>
+          <div class="td-actions">
+            <button type="submit" class="btn btn--primary">Filtrar</button>
+            <a href="<?= \Core\app_url('/admin/users') ?>" class="btn btn--ghost">Limpar</a>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
 
 <div class="overview-grid">
   <article class="overview-card">
@@ -102,6 +144,7 @@ global $session;
               <td><?= $context ?></td>
               <td><?= date('d/m/Y', strtotime($user['created_at'])) ?></td>
               <td class="td-actions">
+                <a href="<?= \Core\app_url('/admin/users/' . $user['id'] . '/edit') ?>" class="btn btn--sm">Editar</a>
                 <form method="POST" action="<?= \Core\app_url('/admin/users/' . $user['id'] . '/status') ?>">
                   <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                   <input type="hidden" name="status" value="<?= $status === 'active' ? 'inactive' : 'active' ?>">
@@ -118,6 +161,7 @@ global $session;
           <?php endforeach; ?>
         </tbody>
       </table>
+      <?php \Core\View::partial('partials/pagination', ['pagination' => $pagination]); ?>
     </div>
   </section>
 <?php endif; ?>

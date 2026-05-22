@@ -1,6 +1,8 @@
 <?php
 $pageTitle = 'Turmas — Administração';
 $turmas = $turmas ?? [];
+$filters = $filters ?? ['search' => '', 'status' => ''];
+$pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($turmas), 'path' => '/admin/turmas', 'query' => $filters];
 $activeTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['active_count'] ?? 0), $turmas));
 $pendingTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['pending_count'] ?? 0), $turmas));
 $exerciseTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['exercise_count'] ?? 0), $turmas));
@@ -12,6 +14,31 @@ $exerciseTotal = array_sum(array_map(static fn(array $turma): int => (int) ($tur
     <p class="subtitle">Visão global inicial das turmas com docente responsável, volume de alunos e carga de exercícios publicada.</p>
   </div>
 </div>
+
+<section class="card card--narrow">
+  <div class="card-body">
+    <form method="GET" action="<?= \Core\app_url('/admin/turmas') ?>" class="form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="turma-search">Buscar</label>
+          <input id="turma-search" type="text" name="search" class="form-input" value="<?= \Core\View::e($filters['search'] ?? '') ?>" placeholder="Turma, docente ou chave">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="turma-status">Situação</label>
+          <select id="turma-status" name="status" class="form-input">
+            <option value="">Todas</option>
+            <option value="active" <?= ($filters['status'] ?? '') === 'active' ? 'selected' : '' ?>>Ativas</option>
+            <option value="inactive" <?= ($filters['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inativas</option>
+          </select>
+        </div>
+      </div>
+      <div class="td-actions">
+        <button type="submit" class="btn btn--primary">Filtrar</button>
+        <a href="<?= \Core\app_url('/admin/turmas') ?>" class="btn btn--ghost">Limpar</a>
+      </div>
+    </form>
+  </div>
+</section>
 
 <div class="overview-grid">
   <article class="overview-card">
@@ -82,10 +109,14 @@ $exerciseTotal = array_sum(array_map(static fn(array $turma): int => (int) ($tur
                   <span class="badge badge--success">Operação normal</span>
                 <?php endif; ?>
               </td>
+              <td class="td-actions">
+                <a href="<?= \Core\app_url('/admin/turmas/' . $turma['id']) ?>" class="btn btn--sm">Detalhes</a>
+              </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
       </table>
+      <?php \Core\View::partial('partials/pagination', ['pagination' => $pagination]); ?>
     </div>
   </section>
 <?php endif; ?>

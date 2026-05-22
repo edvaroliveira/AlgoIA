@@ -1,6 +1,8 @@
 <?php
 $pageTitle = 'Exercícios — Administração';
 $exercises = $exercises ?? [];
+$filters = $filters ?? ['search' => '', 'status' => ''];
+$pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($exercises), 'path' => '/admin/exercises', 'query' => $filters];
 $now = time();
 $activeExercises = count(array_filter($exercises, static fn(array $exercise): bool => ($exercise['status'] ?? '') === 'active'));
 $draftExercises = count(array_filter($exercises, static fn(array $exercise): bool => ($exercise['status'] ?? '') === 'draft'));
@@ -14,6 +16,32 @@ $attemptTotal = array_sum(array_map(static fn(array $exercise): int => (int) ($e
     <p class="subtitle">Visão global inicial da biblioteca de exercícios com autoria docente, publicação por turma e volume de tentativas.</p>
   </div>
 </div>
+
+<section class="card card--narrow">
+  <div class="card-body">
+    <form method="GET" action="<?= \Core\app_url('/admin/exercises') ?>" class="form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="exercise-search">Buscar</label>
+          <input id="exercise-search" type="text" name="search" class="form-input" value="<?= \Core\View::e($filters['search'] ?? '') ?>" placeholder="Título, docente ou turma">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="exercise-status">Status</label>
+          <select id="exercise-status" name="status" class="form-input">
+            <option value="">Todos</option>
+            <option value="draft" <?= ($filters['status'] ?? '') === 'draft' ? 'selected' : '' ?>>Rascunho</option>
+            <option value="ready" <?= ($filters['status'] ?? '') === 'ready' ? 'selected' : '' ?>>Pronto</option>
+            <option value="active" <?= ($filters['status'] ?? '') === 'active' ? 'selected' : '' ?>>Publicado</option>
+          </select>
+        </div>
+      </div>
+      <div class="td-actions">
+        <button type="submit" class="btn btn--primary">Filtrar</button>
+        <a href="<?= \Core\app_url('/admin/exercises') ?>" class="btn btn--ghost">Limpar</a>
+      </div>
+    </form>
+  </div>
+</section>
 
 <div class="overview-grid">
   <article class="overview-card">
@@ -63,6 +91,7 @@ $attemptTotal = array_sum(array_map(static fn(array $exercise): int => (int) ($e
             <th>Fecha</th>
             <th>Tentativas</th>
             <th>Status</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -99,10 +128,14 @@ $attemptTotal = array_sum(array_map(static fn(array $exercise): int => (int) ($e
                   <span class="badge badge--info">Agendado</span>
                 <?php endif; ?>
               </td>
+              <td class="td-actions">
+                <a href="<?= \Core\app_url('/admin/exercises/' . $exercise['id']) ?>" class="btn btn--sm">Detalhes</a>
+              </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
       </table>
+      <?php \Core\View::partial('partials/pagination', ['pagination' => $pagination]); ?>
     </div>
   </section>
 <?php endif; ?>
