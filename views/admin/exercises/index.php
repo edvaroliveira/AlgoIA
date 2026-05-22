@@ -9,6 +9,7 @@ $activeExercises = count(array_filter($exercises, static fn(array $exercise): bo
 $draftExercises = count(array_filter($exercises, static fn(array $exercise): bool => ($exercise['status'] ?? '') === 'draft'));
 $readyExercises = count(array_filter($exercises, static fn(array $exercise): bool => ($exercise['status'] ?? '') === 'ready'));
 $attemptTotal = array_sum(array_map(static fn(array $exercise): int => (int) ($exercise['attempt_count'] ?? 0), $exercises));
+global $session;
 ?>
 
 <div class="page-header">
@@ -91,60 +92,88 @@ $attemptTotal = array_sum(array_map(static fn(array $exercise): int => (int) ($e
       </div>
     </div>
     <div class="surface-block__body">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Título</th>
-            <th>Docente</th>
-            <th>Turmas</th>
-            <th>Abre</th>
-            <th>Fecha</th>
-            <th>Tentativas</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($exercises as $exercise): ?>
-            <?php
-            $isDraft = ($exercise['status'] ?? '') === 'draft';
-            $isReady = ($exercise['status'] ?? '') === 'ready';
-            $isOpen = ($exercise['status'] ?? '') === 'active'
-              && !empty($exercise['opens_at'])
-              && !empty($exercise['closes_at'])
-              && strtotime($exercise['opens_at']) <= $now
-              && strtotime($exercise['closes_at']) >= $now;
-            $isClosed = ($exercise['status'] ?? '') === 'active'
-              && !empty($exercise['closes_at'])
-              && strtotime($exercise['closes_at']) < $now;
-            ?>
+      <form method="POST" class="form">
+        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+        <input type="hidden" name="return_query" value="<?= \Core\View::e($exportQuery) ?>">
+        <table class="table">
+          <thead>
             <tr>
-              <td><strong><?= \Core\View::e($exercise['title']) ?></strong></td>
-              <td><?= \Core\View::e($exercise['teacher_name'] ?? '—') ?></td>
-              <td><?= \Core\View::e($exercise['turma_label'] ?? 'Pendente de finalização') ?></td>
-              <td><?= !empty($exercise['opens_at']) ? date('d/m/Y H:i', strtotime($exercise['opens_at'])) : '—' ?></td>
-              <td><?= !empty($exercise['closes_at']) ? date('d/m/Y H:i', strtotime($exercise['closes_at'])) : '—' ?></td>
-              <td><?= (int) ($exercise['attempt_count'] ?? 0) ?></td>
-              <td>
-                <?php if ($isDraft): ?>
-                  <span class="badge badge--warning">Rascunho</span>
-                <?php elseif ($isReady): ?>
-                  <span class="badge badge--info">Pronto</span>
-                <?php elseif ($isClosed): ?>
-                  <span class="badge badge--neutral">Encerrado</span>
-                <?php elseif ($isOpen): ?>
-                  <span class="badge badge--success">Aberto</span>
-                <?php else: ?>
-                  <span class="badge badge--info">Agendado</span>
-                <?php endif; ?>
-              </td>
-              <td class="td-actions">
-                <a href="<?= \Core\app_url('/admin/exercises/' . $exercise['id']) ?>" class="btn btn--sm">Detalhes</a>
-              </td>
+              <th>
+                <label>
+                  <input type="checkbox" data-select-all="admin-exercises-list" aria-label="Selecionar todos os exercícios da listagem">
+                  Todos
+                </label>
+              </th>
+              <th>Título</th>
+              <th>Docente</th>
+              <th>Turmas</th>
+              <th>Abre</th>
+              <th>Fecha</th>
+              <th>Tentativas</th>
+              <th>Status</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($exercises as $exercise): ?>
+              <?php
+              $isDraft = ($exercise['status'] ?? '') === 'draft';
+              $isReady = ($exercise['status'] ?? '') === 'ready';
+              $isOpen = ($exercise['status'] ?? '') === 'active'
+                && !empty($exercise['opens_at'])
+                && !empty($exercise['closes_at'])
+                && strtotime($exercise['opens_at']) <= $now
+                && strtotime($exercise['closes_at']) >= $now;
+              $isClosed = ($exercise['status'] ?? '') === 'active'
+                && !empty($exercise['closes_at'])
+                && strtotime($exercise['closes_at']) < $now;
+              $batchState = ($exercise['status'] ?? '') === 'active' ? ($isClosed ? 'closed' : 'active') : 'inactive';
+              $batchStateLabel = $batchState === 'active' ? 'publicados' : ($batchState === 'closed' ? 'encerrados' : 'não publicados');
+              ?>
+              <tr>
+                <td><input type="checkbox" name="exercise_ids[]" value="<?= (int) ($exercise['id'] ?? 0) ?>" data-select-item="admin-exercises-list" data-item-state="<?= $batchState ?>" data-item-state-label="<?= $batchStateLabel ?>"></td>
+                <td><strong><?= \Core\View::e($exercise['title']) ?></strong></td>
+                <td><?= \Core\View::e($exercise['teacher_name'] ?? '—') ?></td>
+                <td><?= \Core\View::e($exercise['turma_label'] ?? 'Pendente de finalização') ?></td>
+                <td><?= !empty($exercise['opens_at']) ? date('d/m/Y H:i', strtotime($exercise['opens_at'])) : '—' ?></td>
+                <td><?= !empty($exercise['closes_at']) ? date('d/m/Y H:i', strtotime($exercise['closes_at'])) : '—' ?></td>
+                <td><?= (int) ($exercise['attempt_count'] ?? 0) ?></td>
+                <td>
+                  <?php if ($isDraft): ?>
+                    <span class="badge badge--warning">Rascunho</span>
+                  <?php elseif ($isReady): ?>
+                    <span class="badge badge--info">Pronto</span>
+                  <?php elseif ($isClosed): ?>
+                    <span class="badge badge--neutral">Encerrado</span>
+                  <?php elseif ($isOpen): ?>
+                    <span class="badge badge--success">Aberto</span>
+                  <?php else: ?>
+                    <span class="badge badge--info">Agendado</span>
+                  <?php endif; ?>
+                </td>
+                <td class="td-actions">
+                  <a href="<?= \Core\app_url('/admin/exercises/' . $exercise['id'] . ($exportQuery !== '' ? '?return_query=' . urlencode($exportQuery) : '')) ?>" class="btn btn--sm">Detalhes</a>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="exercises-list-reopen-until">Reabrir até</label>
+            <input id="exercises-list-reopen-until" type="datetime-local" name="reopen_until" class="form-input" value="<?= date('Y-m-d\TH:i', strtotime('+7 days')) ?>" min="<?= date('Y-m-d\TH:i', strtotime('+1 hour')) ?>">
+          </div>
+          <div class="form-group" style="justify-content: flex-end;">
+            <label class="form-label">Ações em lote</label>
+            <div class="td-actions">
+              <span class="hint" data-selection-count="admin-exercises-list">0 selecionados</span>
+              <span class="hint" data-selection-breakdown="admin-exercises-list"></span>
+              <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/batch-close') ?>" class="btn btn--danger" data-requires-selection="admin-exercises-list" data-allowed-states="active,closed" onclick="return confirm('Encerrar os exercícios selecionados?');" disabled>Encerrar selecionados</button>
+              <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="admin-exercises-list" data-allowed-states="active,closed" disabled>Reabrir selecionados</button>
+            </div>
+          </div>
+        </div>
+      </form>
       <?php \Core\View::partial('partials/pagination', ['pagination' => $pagination]); ?>
     </div>
   </section>

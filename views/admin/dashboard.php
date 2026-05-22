@@ -14,6 +14,9 @@ $pendingUsers = $pendingUsers ?? [];
 $pendingTurmas = $pendingTurmas ?? [];
 $closingExercises = $closingExercises ?? [];
 $recentAdminEvents = $recentAdminEvents ?? [];
+$today = date('Y-m-d');
+$last7Days = date('Y-m-d', strtotime('-7 days'));
+$last30Days = date('Y-m-d', strtotime('-30 days'));
 ?>
 
 <section class="hero-panel hero-panel--teacher">
@@ -292,6 +295,11 @@ $recentAdminEvents = $recentAdminEvents ?? [];
         <a href="<?= \Core\app_url('/admin/audit?entity_type=user') ?>" class="btn btn--sm btn--ghost">Usuários</a>
         <a href="<?= \Core\app_url('/admin/audit?entity_type=turma') ?>" class="btn btn--sm btn--ghost">Turmas</a>
         <a href="<?= \Core\app_url('/admin/audit?entity_type=exercise') ?>" class="btn btn--sm btn--ghost">Exercícios</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=user&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--sm btn--ghost">Usuários 7 dias</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=turma&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--sm btn--ghost">Turmas 7 dias</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=exercise&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--sm btn--ghost">Exercícios 7 dias</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=student&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--sm btn--ghost">Alunos 7 dias</a>
+        <a href="<?= \Core\app_url('/admin/audit?from_date=' . $last30Days . '&to_date=' . $today) ?>" class="btn btn--sm btn--ghost">Últimos 30 dias</a>
       </div>
     </div>
   </div>

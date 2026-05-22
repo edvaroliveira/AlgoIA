@@ -81,6 +81,181 @@
     }, 6000);
   });
 
+  // ── Select-all batch checkboxes ──────────────────────────────────────────
+  document.querySelectorAll("[data-select-all]").forEach(function (toggle) {
+    var group = toggle.getAttribute("data-select-all");
+
+    if (!group) {
+      return;
+    }
+
+    var items = Array.from(
+      document.querySelectorAll('[data-select-item="' + group + '"]'),
+    );
+
+    if (!items.length) {
+      return;
+    }
+
+    var controlledButtons = Array.from(
+      document.querySelectorAll('[data-requires-selection="' + group + '"]'),
+    );
+    var counterEls = Array.from(
+      document.querySelectorAll('[data-selection-count="' + group + '"]'),
+    );
+    var breakdownEls = Array.from(
+      document.querySelectorAll('[data-selection-breakdown="' + group + '"]'),
+    );
+    var rows = items.map(function (item) {
+      return item.closest("tr");
+    });
+    var activeAllowedStates = [];
+
+    var clearRowHighlights = function () {
+      rows.forEach(function (row) {
+        if (!row) {
+          return;
+        }
+
+        row.classList.remove(
+          "table-row--compatible",
+          "table-row--incompatible",
+        );
+      });
+    };
+
+    var syncToggle = function () {
+      var selectedItems = items.filter(function (item) {
+        return item.checked;
+      });
+      var checkedCount = selectedItems.length;
+
+      toggle.checked = checkedCount === items.length;
+      toggle.indeterminate = checkedCount > 0 && checkedCount < items.length;
+
+      counterEls.forEach(function (el) {
+        var label = checkedCount === 1 ? "selecionado" : "selecionados";
+        el.textContent = checkedCount + " " + label;
+      });
+
+      breakdownEls.forEach(function (el) {
+        if (!checkedCount) {
+          el.textContent = "";
+          return;
+        }
+
+        var countsByLabel = {};
+
+        selectedItems.forEach(function (item) {
+          var stateLabel = item.getAttribute("data-item-state-label") || "";
+          if (!stateLabel) {
+            return;
+          }
+
+          countsByLabel[stateLabel] = (countsByLabel[stateLabel] || 0) + 1;
+        });
+
+        var parts = Object.keys(countsByLabel).map(function (label) {
+          return countsByLabel[label] + " " + label;
+        });
+
+        el.textContent = parts.length ? "· " + parts.join(", ") : "";
+      });
+
+      controlledButtons.forEach(function (button) {
+        var allowedStates = (button.getAttribute("data-allowed-states") || "")
+          .split(",")
+          .map(function (state) {
+            return state.trim();
+          })
+          .filter(Boolean);
+
+        if (!checkedCount) {
+          button.disabled = true;
+          return;
+        }
+
+        if (!allowedStates.length) {
+          button.disabled = false;
+          return;
+        }
+
+        var hasCompatibleSelection = selectedItems.some(function (item) {
+          var itemState = item.getAttribute("data-item-state") || "";
+          return allowedStates.indexOf(itemState) !== -1;
+        });
+
+        button.disabled = !hasCompatibleSelection;
+      });
+
+      clearRowHighlights();
+
+      if (!activeAllowedStates.length) {
+        return;
+      }
+
+      selectedItems.forEach(function (item) {
+        var row = item.closest("tr");
+        if (!row) {
+          return;
+        }
+
+        var itemState = item.getAttribute("data-item-state") || "";
+        if (activeAllowedStates.indexOf(itemState) !== -1) {
+          row.classList.add("table-row--compatible");
+          return;
+        }
+
+        row.classList.add("table-row--incompatible");
+      });
+    };
+
+    controlledButtons.forEach(function (button) {
+      var syncButtonFocus = function (shouldActivate) {
+        activeAllowedStates = shouldActivate
+          ? (button.getAttribute("data-allowed-states") || "")
+              .split(",")
+              .map(function (state) {
+                return state.trim();
+              })
+              .filter(Boolean)
+          : [];
+
+        syncToggle();
+      };
+
+      button.addEventListener("mouseenter", function () {
+        syncButtonFocus(true);
+      });
+
+      button.addEventListener("focus", function () {
+        syncButtonFocus(true);
+      });
+
+      button.addEventListener("mouseleave", function () {
+        syncButtonFocus(false);
+      });
+
+      button.addEventListener("blur", function () {
+        syncButtonFocus(false);
+      });
+    });
+
+    toggle.addEventListener("change", function () {
+      items.forEach(function (item) {
+        item.checked = toggle.checked;
+      });
+
+      toggle.indeterminate = false;
+    });
+
+    items.forEach(function (item) {
+      item.addEventListener("change", syncToggle);
+    });
+
+    syncToggle();
+  });
+
   // ── Draft activation form validation ─────────────────────────────────────
   var activationForm = document.querySelector("[data-activation-form]");
 

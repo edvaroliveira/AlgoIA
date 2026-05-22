@@ -4,6 +4,9 @@ $logs = $logs ?? [];
 $filters = $filters ?? ['search' => '', 'action' => '', 'entity_type' => '', 'from_date' => '', 'to_date' => ''];
 $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($logs), 'path' => '/admin/audit', 'query' => $filters];
 $exportQuery = http_build_query(array_filter($filters, static fn($value): bool => (string) $value !== ''));
+$today = date('Y-m-d');
+$last7Days = date('Y-m-d', strtotime('-7 days'));
+$last30Days = date('Y-m-d', strtotime('-30 days'));
 ?>
 
 <div class="page-header">
@@ -19,6 +22,14 @@ $exportQuery = http_build_query(array_filter($filters, static fn($value): bool =
   <a href="<?= \Core\app_url('/admin/audit?entity_type=turma') ?>" class="btn btn--ghost btn--sm">Turmas</a>
   <a href="<?= \Core\app_url('/admin/audit?entity_type=exercise') ?>" class="btn btn--ghost btn--sm">Exercícios</a>
   <a href="<?= \Core\app_url('/admin/audit?entity_type=student') ?>" class="btn btn--ghost btn--sm">Alunos</a>
+</div>
+
+<div class="td-actions" style="margin-bottom: 1rem;">
+  <a href="<?= \Core\app_url('/admin/audit?entity_type=user&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Usuários 7 dias</a>
+  <a href="<?= \Core\app_url('/admin/audit?entity_type=turma&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Turmas 7 dias</a>
+  <a href="<?= \Core\app_url('/admin/audit?entity_type=exercise&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Exercícios 7 dias</a>
+  <a href="<?= \Core\app_url('/admin/audit?entity_type=student&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Alunos 7 dias</a>
+  <a href="<?= \Core\app_url('/admin/audit?from_date=' . $last30Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Últimos 30 dias</a>
 </div>
 
 <section class="card card--narrow">
@@ -106,7 +117,33 @@ $exportQuery = http_build_query(array_filter($filters, static fn($value): bool =
             if (is_array($metadata)) {
               foreach ($metadata as $key => $value) {
                 if (is_array($value)) {
-                  $value = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                  $items = array_slice($value, 0, 2);
+                  $renderedItems = array_map(static function ($item): string {
+                    if (is_array($item)) {
+                      $summary = [];
+                      foreach ($item as $itemKey => $itemValue) {
+                        if ($itemValue === null || $itemValue === '') {
+                          continue;
+                        }
+
+                        if (is_array($itemValue)) {
+                          $summary[] = $itemKey . ': [' . count($itemValue) . ' item(ns)]';
+                          continue;
+                        }
+
+                        $summary[] = $itemKey . ': ' . (string) $itemValue;
+                      }
+
+                      return '{' . implode(', ', $summary) . '}';
+                    }
+
+                    return (string) $item;
+                  }, $items);
+
+                  $value = implode('; ', $renderedItems);
+                  if (count($value === '' ? [] : $items) < count($metadata[$key])) {
+                    $value .= ' … +' . (count($metadata[$key]) - count($items)) . ' item(ns)';
+                  }
                 }
                 if ($value === null || $value === '') {
                   continue;

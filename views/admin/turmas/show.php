@@ -3,8 +3,10 @@ $turma = $turma ?? [];
 $pending = $pending ?? [];
 $students = $students ?? [];
 $publications = $publications ?? [];
+$returnPath = $returnPath ?? '/admin/turmas';
 $pageTitle = 'Turma — Administração';
 $defaultPublicationMin = date('Y-m-d\TH:i', strtotime('+1 hour'));
+$currentPath = '/admin/turmas/' . (int) ($turma['id'] ?? 0) . '?return_to=' . urlencode($returnPath);
 global $session;
 ?>
 
@@ -14,7 +16,7 @@ global $session;
     <p class="subtitle">Visão administrativa da turma com docente responsável, alunos vinculados e publicações associadas.</p>
   </div>
   <div class="td-actions">
-    <a href="<?= \Core\app_url('/admin/turmas') ?>" class="btn btn--ghost">Voltar</a>
+    <a href="<?= \Core\app_url($returnPath) ?>" class="btn btn--ghost">Voltar</a>
     <?php if ((bool) ($turma['active'] ?? false)): ?>
       <form method="POST" action="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/deactivate') ?>" onsubmit="return confirm('Inativar esta turma para novas entradas?');">
         <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
@@ -63,6 +65,64 @@ global $session;
     <?php if (empty($publications)): ?>
       <p class="empty-state">Nenhum exercício publicado para esta turma.</p>
     <?php else: ?>
+      <div class="content-note">
+        <strong>Ações em lote da turma</strong>
+        <p>Marque os exercícios publicados que devem ser encerrados ou reabertos de uma vez.</p>
+        <form method="POST" class="form">
+          <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>
+                  <label>
+                    <input type="checkbox" data-select-all="turma-publications" aria-label="Selecionar todos os exercícios publicados da turma">
+                    Todos
+                  </label>
+                </th>
+                <th>Exercício</th>
+                <th>Docente</th>
+                <th>Fecha em</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($publications as $publication): ?>
+                <?php
+                $publicationClosesTimestamp = !empty($publication['closes_at']) ? strtotime((string) $publication['closes_at']) : false;
+                $publicationOpensTimestamp = !empty($publication['opens_at']) ? strtotime((string) $publication['opens_at']) : false;
+                $publicationState = 'scheduled';
+                if ($publicationClosesTimestamp !== false && $publicationClosesTimestamp < time()) {
+                  $publicationState = 'closed';
+                } elseif ($publicationOpensTimestamp !== false && $publicationClosesTimestamp !== false && $publicationOpensTimestamp <= time() && $publicationClosesTimestamp >= time()) {
+                  $publicationState = 'open';
+                }
+                $publicationStateLabel = $publicationState === 'open' ? 'abertas' : ($publicationState === 'closed' ? 'encerradas' : 'agendadas');
+                ?>
+                <tr>
+                  <td><input type="checkbox" name="exercise_ids[]" value="<?= (int) ($publication['id'] ?? 0) ?>" data-select-item="turma-publications" data-item-state="<?= $publicationState ?>" data-item-state-label="<?= $publicationStateLabel ?>"></td>
+                  <td><?= \Core\View::e($publication['title'] ?? '—') ?></td>
+                  <td><?= \Core\View::e($publication['teacher_name'] ?? '—') ?></td>
+                  <td><?= !empty($publication['closes_at']) ? date('d/m/Y H:i', strtotime((string) $publication['closes_at'])) : '—' ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="turma-batch-reopen-until">Reabrir até</label>
+              <input id="turma-batch-reopen-until" type="datetime-local" name="reopen_until" class="form-input" value="<?= date('Y-m-d\TH:i', strtotime('+7 days')) ?>" min="<?= $defaultPublicationMin ?>">
+            </div>
+            <div class="form-group" style="justify-content: flex-end;">
+              <label class="form-label">Ações em lote</label>
+              <div class="td-actions">
+                <span class="hint" data-selection-count="turma-publications">0 selecionados</span>
+                <span class="hint" data-selection-breakdown="turma-publications"></span>
+                <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="turma-publications" data-allowed-states="open,scheduled" onclick="return confirm('Encerrar as publicações selecionadas desta turma?');" disabled>Encerrar selecionadas</button>
+                <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="turma-publications" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
       <table class="table">
         <thead>
           <tr>
@@ -90,7 +150,7 @@ global $session;
               <td><?= ((string) ($publication['max_attempts'] ?? '')) === '0' ? 'Ilimitadas' : (int) ($publication['max_attempts'] ?? 0) ?></td>
               <td><?= (int) ($publication['attempt_count'] ?? 0) ?></td>
               <td class="td-actions">
-                <a href="<?= \Core\app_url('/admin/exercises/' . $publication['id']) ?>" class="btn btn--sm">Ver exercício</a>
+                <a href="<?= \Core\app_url('/admin/exercises/' . $publication['id'] . '?return_to=' . urlencode($currentPath)) ?>" class="btn btn--sm">Ver exercício</a>
                 <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . $publication['id'] . '/publications/' . $publicationTurmaId) ?>" class="form">
                   <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                   <div class="form-row">

@@ -7,6 +7,7 @@ $exportQuery = http_build_query(array_filter($filters, static fn($value): bool =
 $activeTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['active_count'] ?? 0), $turmas));
 $pendingTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['pending_count'] ?? 0), $turmas));
 $exerciseTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['exercise_count'] ?? 0), $turmas));
+global $session;
 ?>
 
 <div class="page-header">
@@ -84,48 +85,72 @@ $exerciseTotal = array_sum(array_map(static fn(array $turma): int => (int) ($tur
       </div>
     </div>
     <div class="surface-block__body">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Turma</th>
-            <th>Docente</th>
-            <th>Chave</th>
-            <th>Ativos</th>
-            <th>Pendentes</th>
-            <th>Exercícios</th>
-            <th>Situação</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($turmas as $turma): ?>
-            <?php
-            $pendingCount = (int) ($turma['pending_count'] ?? 0);
-            $activeCount = (int) ($turma['active_count'] ?? 0);
-            $exerciseCount = (int) ($turma['exercise_count'] ?? 0);
-            ?>
+      <form method="POST" class="form">
+        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+        <input type="hidden" name="return_query" value="<?= \Core\View::e($exportQuery) ?>">
+        <table class="table">
+          <thead>
             <tr>
-              <td><strong><?= \Core\View::e($turma['name']) ?></strong></td>
-              <td><?= \Core\View::e($turma['teacher_name'] ?? '—') ?></td>
-              <td><span class="overview-card__value overview-card__value--mono"><?= \Core\View::e($turma['access_key']) ?></span></td>
-              <td><?= $activeCount ?></td>
-              <td><?= $pendingCount ?></td>
-              <td><?= $exerciseCount ?></td>
-              <td>
-                <?php if (!(bool) ($turma['active'] ?? true)): ?>
-                  <span class="badge badge--neutral">Inativa</span>
-                <?php elseif ($pendingCount > 0): ?>
-                  <span class="badge badge--warning">Com pendências</span>
-                <?php else: ?>
-                  <span class="badge badge--success">Operação normal</span>
-                <?php endif; ?>
-              </td>
-              <td class="td-actions">
-                <a href="<?= \Core\app_url('/admin/turmas/' . $turma['id']) ?>" class="btn btn--sm">Detalhes</a>
-              </td>
+              <th>
+                <label>
+                  <input type="checkbox" data-select-all="admin-turmas-list" aria-label="Selecionar todas as turmas da listagem">
+                  Todas
+                </label>
+              </th>
+              <th>Turma</th>
+              <th>Docente</th>
+              <th>Chave</th>
+              <th>Ativos</th>
+              <th>Pendentes</th>
+              <th>Exercícios</th>
+              <th>Situação</th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($turmas as $turma): ?>
+              <?php
+              $pendingCount = (int) ($turma['pending_count'] ?? 0);
+              $activeCount = (int) ($turma['active_count'] ?? 0);
+              $exerciseCount = (int) ($turma['exercise_count'] ?? 0);
+              $turmaState = !(bool) ($turma['active'] ?? true) ? 'inactive' : 'active';
+              $turmaStateLabel = $turmaState === 'active' ? 'ativas' : 'inativas';
+              ?>
+              <tr>
+                <td><input type="checkbox" name="turma_ids[]" value="<?= (int) ($turma['id'] ?? 0) ?>" data-select-item="admin-turmas-list" data-item-state="<?= $turmaState ?>" data-item-state-label="<?= $turmaStateLabel ?>"></td>
+                <td><strong><?= \Core\View::e($turma['name']) ?></strong></td>
+                <td><?= \Core\View::e($turma['teacher_name'] ?? '—') ?></td>
+                <td><span class="overview-card__value overview-card__value--mono"><?= \Core\View::e($turma['access_key']) ?></span></td>
+                <td><?= $activeCount ?></td>
+                <td><?= $pendingCount ?></td>
+                <td><?= $exerciseCount ?></td>
+                <td>
+                  <?php if (!(bool) ($turma['active'] ?? true)): ?>
+                    <span class="badge badge--neutral">Inativa</span>
+                  <?php elseif ($pendingCount > 0): ?>
+                    <span class="badge badge--warning">Com pendências</span>
+                  <?php else: ?>
+                    <span class="badge badge--success">Operação normal</span>
+                  <?php endif; ?>
+                </td>
+                <td class="td-actions">
+                  <a href="<?= \Core\app_url('/admin/turmas/' . $turma['id'] . ($exportQuery !== '' ? '?return_query=' . urlencode($exportQuery) : '')) ?>" class="btn btn--sm">Detalhes</a>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+        <div class="form-row">
+          <div class="form-group" style="justify-content: flex-end;">
+            <label class="form-label">Ações em lote</label>
+            <div class="td-actions">
+              <span class="hint" data-selection-count="admin-turmas-list">0 selecionadas</span>
+              <span class="hint" data-selection-breakdown="admin-turmas-list"></span>
+              <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-turmas-list" data-allowed-states="active" onclick="return confirm('Inativar as turmas selecionadas?');" disabled>Inativar selecionadas</button>
+              <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/batch-reactivate') ?>" class="btn btn--primary" data-requires-selection="admin-turmas-list" data-allowed-states="inactive" disabled>Reativar selecionadas</button>
+            </div>
+          </div>
+        </div>
+      </form>
       <?php \Core\View::partial('partials/pagination', ['pagination' => $pagination]); ?>
     </div>
   </section>
