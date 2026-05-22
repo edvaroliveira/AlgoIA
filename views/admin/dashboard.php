@@ -23,6 +23,11 @@ $entityBadgeMap = [
   'exercise' => 'success',
   'student' => 'neutral',
 ];
+$roleBadgeMap = [
+  'admin' => 'neutral',
+  'teacher' => 'info',
+  'student' => 'success',
+];
 ?>
 
 <section class="hero-panel hero-panel--teacher">
@@ -118,11 +123,15 @@ $entityBadgeMap = [
           </thead>
           <tbody>
             <?php foreach ($pendingTurmas as $turma): ?>
+              <?php
+              $pendingCount = (int) ($turma['pending_count'] ?? 0);
+              $oldestPendingAt = !empty($turma['oldest_pending_at']) ? date('d/m/Y H:i', strtotime((string) $turma['oldest_pending_at'])) : 'Sem fila antiga';
+              ?>
               <tr>
                 <td><strong><?= \Core\View::e($turma['name'] ?? '—') ?></strong></td>
                 <td><?= \Core\View::e($turma['teacher_name'] ?? '—') ?></td>
-                <td><?= (int) ($turma['pending_count'] ?? 0) ?></td>
-                <td><?= !empty($turma['oldest_pending_at']) ? date('d/m/Y H:i', strtotime((string) $turma['oldest_pending_at'])) : '—' ?></td>
+                <td><span class="badge badge--warning"><?= $pendingCount ?> pendência<?= $pendingCount === 1 ? '' : 's' ?></span></td>
+                <td><span class="badge badge--neutral badge--code"><?= \Core\View::e($oldestPendingAt) ?></span></td>
                 <td class="td-actions"><a href="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0)) ?>" class="btn btn--sm">Detalhes</a></td>
               </tr>
             <?php endforeach; ?>
@@ -157,12 +166,16 @@ $entityBadgeMap = [
           </thead>
           <tbody>
             <?php foreach ($closingExercises as $exercise): ?>
+              <?php
+              $closingAt = !empty($exercise['closes_at']) ? date('d/m/Y H:i', strtotime((string) $exercise['closes_at'])) : 'Sem fechamento';
+              $attemptCount = (int) ($exercise['attempt_count'] ?? 0);
+              ?>
               <tr>
                 <td><strong><?= \Core\View::e($exercise['title'] ?? '—') ?></strong></td>
                 <td><?= \Core\View::e($exercise['teacher_name'] ?? '—') ?></td>
-                <td><?= \Core\View::e($exercise['turma_label'] ?? '—') ?></td>
-                <td><?= !empty($exercise['closes_at']) ? date('d/m/Y H:i', strtotime((string) $exercise['closes_at'])) : '—' ?></td>
-                <td><?= (int) ($exercise['attempt_count'] ?? 0) ?></td>
+                <td><span class="badge badge--info"><?= \Core\View::e($exercise['turma_label'] ?? '—') ?></span></td>
+                <td><span class="badge badge--error badge--code"><?= \Core\View::e($closingAt) ?></span></td>
+                <td><span class="badge badge--neutral"><?= $attemptCount ?> tentativa<?= $attemptCount === 1 ? '' : 's' ?></span></td>
                 <td class="td-actions"><a href="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0)) ?>" class="btn btn--sm">Detalhes</a></td>
               </tr>
             <?php endforeach; ?>
@@ -198,11 +211,16 @@ $entityBadgeMap = [
           </thead>
           <tbody>
             <?php foreach ($pendingUsers as $user): ?>
+              <?php
+              $userRole = (string) ($user['role'] ?? '—');
+              $userRoleVariant = $roleBadgeMap[$userRole] ?? 'neutral';
+              $createdAt = !empty($user['created_at']) ? date('d/m/Y H:i', strtotime((string) $user['created_at'])) : '—';
+              ?>
               <tr>
                 <td><strong><?= \Core\View::e($user['name'] ?? '—') ?></strong></td>
                 <td><?= \Core\View::e($user['email'] ?? '—') ?></td>
-                <td><?= \Core\View::e($user['role'] ?? '—') ?></td>
-                <td><?= !empty($user['created_at']) ? date('d/m/Y H:i', strtotime((string) $user['created_at'])) : '—' ?></td>
+                <td><span class="badge badge--<?= \Core\View::e($userRoleVariant) ?> badge--code"><?= \Core\View::e($userRole) ?></span></td>
+                <td><span class="badge badge--neutral badge--code"><?= \Core\View::e($createdAt) ?></span></td>
                 <td class="td-actions"><a href="<?= \Core\app_url('/admin/users/' . ($user['id'] ?? 0)) ?>" class="btn btn--sm">Detalhes</a></td>
               </tr>
             <?php endforeach; ?>
