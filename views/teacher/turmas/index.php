@@ -34,40 +34,48 @@ $activeTotal = array_sum(array_map(fn($turma) => (int) ($turma['active_count'] ?
 <?php if (empty($turmas)): ?>
   <p class="empty-state">Nenhuma turma criada. <a href="<?= \Core\app_url('/teacher/turmas/create') ?>">Criar a primeira</a>.</p>
 <?php else: ?>
-  <div class="cards-grid cards-grid--feature">
-    <?php foreach ($turmas as $t): ?>
-      <article class="card card--feature">
-        <div class="card-header card-header--split">
-          <div>
-            <h3><?= \Core\View::e($t['name']) ?></h3>
-            <p class="card-subtitle">Chave operacional e fluxo de matrícula em um só ponto.</p>
-          </div>
-          <?php if ($t['pending_count'] > 0): ?>
-            <span class="badge badge--warning"><?= $t['pending_count'] ?> pendente(s)</span>
-          <?php else: ?>
-            <span class="badge badge--success">Fluxo normal</span>
-          <?php endif; ?>
-        </div>
-        <div class="card-body card-body--stack">
-          <div class="key-strip">
-            <span class="key-strip__label">Chave da turma</span>
-            <code class="access-key"><?= \Core\View::e($t['access_key']) ?></code>
-          </div>
-          <div class="mini-stats">
-            <div class="mini-stats__item">
-              <strong><?= (int) $t['active_count'] ?></strong>
-              <span>ativos</span>
-            </div>
-            <div class="mini-stats__item">
-              <strong><?= (int) $t['pending_count'] ?></strong>
-              <span>pendentes</span>
-            </div>
-          </div>
-        </div>
-        <div class="card-footer card-footer--actions">
-          <a href="<?= \Core\app_url('/teacher/turmas/' . $t['id']) ?>" class="btn btn--sm">Gerenciar turma</a>
-        </div>
-      </article>
-    <?php endforeach; ?>
-  </div>
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Lista operacional de turmas</h2>
+        <p class="surface-copy">Visualização compacta para localizar turmas, acompanhar capacidade operacional e abrir a gestão detalhada sem expandir a página em excesso.</p>
+      </div>
+    </div>
+    <div class="surface-block__body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Turma</th>
+            <th>Chave</th>
+            <th>Ativos</th>
+            <th>Pendentes</th>
+            <th>Situação</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($turmas as $t): ?>
+            <tr>
+              <td>
+                <strong><?= \Core\View::e($t['name']) ?></strong>
+              </td>
+              <td><span class="overview-card__value overview-card__value--mono"><?= \Core\View::e($t['access_key']) ?></span></td>
+              <td><?= (int) $t['active_count'] ?></td>
+              <td><?= (int) $t['pending_count'] ?></td>
+              <td>
+                <?php if ($t['pending_count'] > 0): ?>
+                  <span class="badge badge--warning"><?= (int) $t['pending_count'] ?> pendente(s)</span>
+                <?php else: ?>
+                  <span class="badge badge--success">Fluxo normal</span>
+                <?php endif; ?>
+              </td>
+              <td class="td-actions">
+                <a href="<?= \Core\app_url('/teacher/turmas/' . $t['id']) ?>" class="btn btn--sm">Gerenciar</a>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </section>
 <?php endif; ?>
