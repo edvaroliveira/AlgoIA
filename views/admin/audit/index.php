@@ -16,21 +16,48 @@ $last30Days = date('Y-m-d', strtotime('-30 days'));
   </div>
 </div>
 
-<div class="td-actions" style="margin-bottom: 1rem;">
-  <a href="<?= \Core\app_url('/admin/audit?action=admin.') ?>" class="btn btn--ghost btn--sm">Atividade admin</a>
-  <a href="<?= \Core\app_url('/admin/audit?entity_type=user') ?>" class="btn btn--ghost btn--sm">Usuários</a>
-  <a href="<?= \Core\app_url('/admin/audit?entity_type=turma') ?>" class="btn btn--ghost btn--sm">Turmas</a>
-  <a href="<?= \Core\app_url('/admin/audit?entity_type=exercise') ?>" class="btn btn--ghost btn--sm">Exercícios</a>
-  <a href="<?= \Core\app_url('/admin/audit?entity_type=student') ?>" class="btn btn--ghost btn--sm">Alunos</a>
-</div>
-
-<div class="td-actions" style="margin-bottom: 1rem;">
-  <a href="<?= \Core\app_url('/admin/audit?entity_type=user&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Usuários 7 dias</a>
-  <a href="<?= \Core\app_url('/admin/audit?entity_type=turma&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Turmas 7 dias</a>
-  <a href="<?= \Core\app_url('/admin/audit?entity_type=exercise&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Exercícios 7 dias</a>
-  <a href="<?= \Core\app_url('/admin/audit?entity_type=student&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Alunos 7 dias</a>
-  <a href="<?= \Core\app_url('/admin/audit?from_date=' . $last30Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Últimos 30 dias</a>
-</div>
+<section class="surface-block">
+  <div class="surface-block__header">
+    <div>
+      <h2 class="surface-title">Atalhos de auditoria</h2>
+      <p class="surface-copy">Entradas rápidas para abrir a trilha já filtrada por entidade, atividade administrativa e período recente.</p>
+    </div>
+  </div>
+  <div class="surface-block__body surface-block__body--stack">
+    <div class="content-note">
+      <strong>Por entidade ou atividade</strong>
+      <div class="badge-strip">
+        <span class="badge badge--neutral">atividade administrativa</span>
+        <span class="badge badge--info">usuários</span>
+        <span class="badge badge--info">turmas</span>
+        <span class="badge badge--info">exercícios</span>
+        <span class="badge badge--info">alunos</span>
+      </div>
+      <div class="td-actions">
+        <a href="<?= \Core\app_url('/admin/audit?action=admin.') ?>" class="btn btn--ghost btn--sm">Atividade admin</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=user') ?>" class="btn btn--ghost btn--sm">Usuários</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=turma') ?>" class="btn btn--ghost btn--sm">Turmas</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=exercise') ?>" class="btn btn--ghost btn--sm">Exercícios</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=student') ?>" class="btn btn--ghost btn--sm">Alunos</a>
+      </div>
+    </div>
+    <div class="content-note">
+      <strong>Períodos rápidos</strong>
+      <div class="badge-strip">
+        <span class="badge badge--warning">últimos 7 dias</span>
+        <span class="badge badge--neutral">últimos 30 dias</span>
+        <span class="badge badge--success">monitoramento recente</span>
+      </div>
+      <div class="td-actions">
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=user&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Usuários 7 dias</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=turma&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Turmas 7 dias</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=exercise&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Exercícios 7 dias</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=student&from_date=' . $last7Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Alunos 7 dias</a>
+        <a href="<?= \Core\app_url('/admin/audit?from_date=' . $last30Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Últimos 30 dias</a>
+      </div>
+    </div>
+  </div>
+</section>
 
 <section class="card card--narrow">
   <div class="card-body">

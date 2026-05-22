@@ -114,8 +114,9 @@ global $session;
             <div class="form-group" style="justify-content: flex-end;">
               <label class="form-label">Ações em lote</label>
               <div class="td-actions">
-                <span class="hint" data-selection-count="turma-publications">0 selecionados</span>
-                <span class="hint" data-selection-breakdown="turma-publications"></span>
+                <span class="selection-summary" data-selection-count="turma-publications">0 selecionados</span>
+                <span class="selection-summary" data-selection-breakdown="turma-publications"></span>
+                <span class="selection-summary" data-selection-compatibility="turma-publications"></span>
                 <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="turma-publications" data-allowed-states="open,scheduled" onclick="return confirm('Encerrar as publicações selecionadas desta turma?');" disabled>Encerrar selecionadas</button>
                 <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="turma-publications" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
               </div>

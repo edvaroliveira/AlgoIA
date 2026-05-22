@@ -730,6 +730,32 @@ a:hover { color: var(--brand-dark); }
   margin-left: 0.55rem;
 }
 
+.selection-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.selection-summary:empty {
+  display: none;
+}
+
+.selection-summary .badge {
+  white-space: nowrap;
+}
+
+.badge-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.badge-strip + .td-actions,
+.badge-strip + p {
+  margin-top: 0.75rem;
+}
+
 .pagination-bar {
   display: flex;
   align-items: center;
