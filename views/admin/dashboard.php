@@ -28,6 +28,12 @@ $roleBadgeMap = [
   'teacher' => 'info',
   'student' => 'success',
 ];
+$pendingUsersBadgeVariant = $pendingUserCount > 0 ? 'warning' : 'neutral';
+$pendingUsersBadgeText = $pendingUserCount > 0 ? 'exige triagem' : 'sem fila';
+$pendingEnrollmentBadgeVariant = $pendingEnrollmentCount > 0 ? 'warning' : 'neutral';
+$pendingEnrollmentBadgeText = $pendingEnrollmentCount > 0 ? 'aguardando docentes' : 'sem bloqueios';
+$closingSoonBadgeVariant = $closingSoonCount > 0 ? 'error' : 'success';
+$closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo estável';
 ?>
 
 <section class="hero-panel hero-panel--teacher">
@@ -84,16 +90,19 @@ $roleBadgeMap = [
   <article class="overview-card">
     <span class="overview-card__label">Usuários pendentes</span>
     <strong class="overview-card__value"><?= $pendingUserCount ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($pendingUsersBadgeVariant) ?>"><?= \Core\View::e($pendingUsersBadgeText) ?></span></span>
     <p class="overview-card__copy">Cadastros ainda aguardando ativação ou decisão operacional.</p>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Pendências de entrada</span>
     <strong class="overview-card__value"><?= $pendingEnrollmentCount ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($pendingEnrollmentBadgeVariant) ?>"><?= \Core\View::e($pendingEnrollmentBadgeText) ?></span></span>
     <p class="overview-card__copy">Solicitações aguardando aprovação docente nas turmas.</p>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Fechando em breve</span>
     <strong class="overview-card__value"><?= $closingSoonCount ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($closingSoonBadgeVariant) ?>"><?= \Core\View::e($closingSoonBadgeText) ?></span></span>
     <p class="overview-card__copy">Exercícios ativos com encerramento previsto nas próximas 72 horas.</p>
   </article>
 </div>
