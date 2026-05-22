@@ -30,6 +30,7 @@ $content = $content ?? '';
       <nav class="sidebar__nav">
         <?php if (\Core\Auth::isAdmin()): ?>
           <a href="<?= \Core\app_url('/admin/dashboard') ?>" class="nav-link <?= str_contains($currentPath, 'admin') ? 'active' : '' ?>">Painel administrativo</a>
+          <a href="<?= \Core\app_url('/admin/users') ?>" class="nav-link <?= str_contains($currentPath, 'admin/users') ? 'active' : '' ?>">Usuários</a>
         <?php elseif (\Core\Auth::isTeacher()): ?>
           <a href="<?= \Core\app_url('/teacher/dashboard') ?>" class="nav-link <?= str_contains($currentPath, 'dashboard') ? 'active' : '' ?>">Painel docente</a>
           <a href="<?= \Core\app_url('/teacher/turmas') ?>" class="nav-link <?= str_contains($currentPath, 'turmas') ? 'active' : '' ?>">Turmas</a>
@@ -61,7 +62,7 @@ $content = $content ?? '';
           </div>
           <div class="topbar-card">
             <span class="topbar-dot"></span>
-            <span><?= \Core\Auth::isTeacher() ? 'Modo docente ativo' : 'Modo aluno ativo' ?></span>
+            <span><?= \Core\Auth::isAdmin() ? 'Modo administrativo ativo' : (\Core\Auth::isTeacher() ? 'Modo docente ativo' : 'Modo aluno ativo') ?></span>
           </div>
         </header>
 
