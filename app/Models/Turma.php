@@ -66,6 +66,35 @@ class Turma extends Model
     return (int) ($row['total'] ?? 0);
   }
 
+  public function countPendingEnrollmentsForAdmin(): int
+  {
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(*) AS total
+             FROM student_turma st
+             JOIN turmas t ON t.id = st.turma_id
+             WHERE st.status = 'pending'"
+    );
+
+    return (int) ($row['total'] ?? 0);
+  }
+
+  public function getPendingTurmasForAdmin(int $limit = 5): array
+  {
+    $safeLimit = max(1, $limit);
+
+    return $this->db->fetchAll(
+      "SELECT t.id, t.name, t.access_key, teacher.name AS teacher_name,
+                    COUNT(st.student_id) AS pending_count,
+                    MIN(st.joined_at) AS oldest_pending_at
+             FROM turmas t
+             JOIN users teacher ON teacher.id = t.teacher_id
+             JOIN student_turma st ON st.turma_id = t.id AND st.status = 'pending'
+             GROUP BY t.id
+             ORDER BY pending_count DESC, oldest_pending_at ASC, t.name ASC
+             LIMIT {$safeLimit}"
+    );
+  }
+
   public function findForAdmin(int $id): array|false
   {
     return $this->db->fetchOne(

@@ -38,12 +38,21 @@ class AdminController
     Auth::requireAdmin();
 
     $users = $this->users->getAllForAdmin();
+    $pendingTurmas = $this->turmas->getPendingTurmasForAdmin();
+    $closingExercises = $this->exercises->getClosingSoonForAdmin();
 
     View::render('admin/dashboard', [
       'totalUsers' => count($users),
       'adminCount' => count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'admin')),
       'teacherCount' => count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'teacher')),
       'studentCount' => count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'student')),
+      'turmaCount' => $this->turmas->countForAdmin(),
+      'exerciseCount' => $this->exercises->countForAdmin(),
+      'auditCount' => $this->auditLogs->countForAdmin(),
+      'pendingEnrollmentCount' => $this->turmas->countPendingEnrollmentsForAdmin(),
+      'closingSoonCount' => $this->exercises->countClosingSoonForAdmin(),
+      'pendingTurmas' => $pendingTurmas,
+      'closingExercises' => $closingExercises,
     ]);
   }
 
