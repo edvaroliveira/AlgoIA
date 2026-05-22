@@ -51,7 +51,7 @@ class AttemptController
     $turmaId = (int) $publication['turma_id'];
 
     // Check attempt limit
-    $submitted   = $this->attempts->countSubmitted($studentId, (int) $id, $turmaId);
+    $submitted   = $this->attempts->countUsedAttempts($studentId, (int) $id, $turmaId);
     $maxAttempts = (int) $exercise['max_attempts'];
 
     if ($maxAttempts > 0 && $submitted >= $maxAttempts) {
@@ -204,7 +204,7 @@ class AttemptController
     $maxScore   = array_sum(array_column($answers, 'max_score'));
     $attemptTurmaId = !empty($attempt['turma_id']) ? (int) $attempt['turma_id'] : null;
     $bestScore  = $this->attempts->getBestScore($studentId, (int) $attempt['exercise_id'], $attemptTurmaId);
-    $usedTries  = $this->attempts->countSubmitted($studentId, (int) $attempt['exercise_id'], $attemptTurmaId);
+    $usedTries  = $this->attempts->countUsedAttempts($studentId, (int) $attempt['exercise_id'], $attemptTurmaId);
     $maxTries   = (int) ($attempt['max_attempts'] ?? 0);
     $showReferenceAnswer = $isClosed || ($maxTries > 0 && $usedTries >= $maxTries);
 
