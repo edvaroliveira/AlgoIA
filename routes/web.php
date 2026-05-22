@@ -19,6 +19,7 @@ $router->get('/teacher/dashboard', 'DashboardController@teacher');
 $router->get('/admin/dashboard', 'AdminController@dashboard');
 $router->get('/admin/users',     'AdminController@users');
 $router->get('/admin/users/export', 'AdminController@exportUsers');
+$router->get('/admin/users/export.json', 'AdminController@exportUsersJson');
 $router->get('/admin/users/{id}', 'AdminController@showUser');
 $router->get('/admin/users/{id}/edit', 'AdminController@editUser');
 $router->post('/admin/users/{id}', 'AdminController@updateUser');
@@ -26,15 +27,20 @@ $router->post('/admin/users/{id}/status', 'AdminController@updateUserStatus');
 $router->post('/admin/users/{id}/reset-password', 'AdminController@resetUserPassword');
 $router->get('/admin/turmas',    'AdminController@turmas');
 $router->get('/admin/turmas/export', 'AdminController@exportTurmas');
+$router->get('/admin/turmas/export.json', 'AdminController@exportTurmasJson');
 $router->get('/admin/turmas/{id}', 'AdminController@showTurma');
 $router->post('/admin/turmas/{id}/deactivate', 'AdminController@deactivateTurma');
 $router->post('/admin/turmas/{id}/reactivate', 'AdminController@reactivateTurma');
 $router->get('/admin/exercises', 'AdminController@exercises');
 $router->get('/admin/exercises/export', 'AdminController@exportExercises');
+$router->get('/admin/exercises/export.json', 'AdminController@exportExercisesJson');
 $router->get('/admin/exercises/{id}', 'AdminController@showExercise');
 $router->post('/admin/exercises/{id}/close', 'AdminController@closeExercise');
 $router->post('/admin/exercises/{id}/reopen', 'AdminController@reopenExercise');
+$router->post('/admin/exercises/{id}/publications/{turmaId}/close', 'AdminController@closeExercisePublication');
+$router->post('/admin/exercises/{id}/publications/{turmaId}/reopen', 'AdminController@reopenExercisePublication');
 $router->get('/admin/audit/export', 'AdminController@exportAudit');
+$router->get('/admin/audit/export.json', 'AdminController@exportAuditJson');
 $router->get('/admin/audit',     'AdminController@audit');
 
 // Turmas

@@ -14,6 +14,8 @@ $isOpen = ($exercise['status'] ?? '') === 'active'
 $isClosed = ($exercise['status'] ?? '') === 'active'
   && !empty($exercise['closes_at'])
   && strtotime((string) $exercise['closes_at']) < time();
+$defaultReopenUntil = date('Y-m-d\TH:i', strtotime('+7 days'));
+$defaultPublicationMin = date('Y-m-d\TH:i', strtotime('+1 hour'));
 global $session;
 ?>
 
@@ -116,6 +118,15 @@ global $session;
         <p class="empty-state">Este exercício ainda não possui publicação por turma.</p>
       <?php else: ?>
         <?php foreach ($exercise['publication_settings'] as $publication): ?>
+          <?php
+          $publicationClosesAt = !empty($publication['closes_at']) ? strtotime((string) $publication['closes_at']) : false;
+          $publicationOpensAt = !empty($publication['opens_at']) ? strtotime((string) $publication['opens_at']) : false;
+          $publicationIsClosed = $publicationClosesAt !== false && $publicationClosesAt < time();
+          $publicationIsOpen = $publicationOpensAt !== false
+            && $publicationClosesAt !== false
+            && $publicationOpensAt <= time()
+            && $publicationClosesAt >= time();
+          ?>
           <div class="content-note">
             <strong><?= \Core\View::e($publication['turma_name']) ?> <span class="hint">(<?= \Core\View::e($publication['access_key']) ?>)</span></strong>
             <p>
@@ -123,6 +134,34 @@ global $session;
               Fecha em <?= date('d/m/Y H:i', strtotime((string) $publication['closes_at'])) ?> ·
               Tentativas: <?= ((string) $publication['max_attempts']) === '0' ? 'Ilimitadas' : $publication['max_attempts'] ?>
             </p>
+            <p class="hint">
+              Situação: <?= $publicationIsClosed ? 'Encerrada' : ($publicationIsOpen ? 'Aberta' : 'Agendada') ?>
+            </p>
+            <div class="td-actions">
+              <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/' . ($publication['turma_id'] ?? 0) . '/close') ?>" onsubmit="return confirm('Encerrar administrativamente apenas esta publicação?');">
+                <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                <button type="submit" class="btn btn--sm btn--ghost">Encerrar esta publicação</button>
+              </form>
+            </div>
+            <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/' . ($publication['turma_id'] ?? 0) . '/reopen') ?>" class="form">
+              <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="publication-reopen-<?= (int) ($publication['turma_id'] ?? 0) ?>">Reabrir só esta turma até</label>
+                  <input
+                    id="publication-reopen-<?= (int) ($publication['turma_id'] ?? 0) ?>"
+                    type="datetime-local"
+                    name="reopen_until"
+                    class="form-input"
+                    value="<?= $defaultReopenUntil ?>"
+                    min="<?= $defaultPublicationMin ?>">
+                </div>
+                <div class="form-group" style="justify-content: flex-end;">
+                  <label class="form-label">Ação por turma</label>
+                  <button type="submit" class="btn btn--sm btn--primary">Reabrir esta publicação</button>
+                </div>
+              </div>
+            </form>
           </div>
         <?php endforeach; ?>
       <?php endif; ?>

@@ -40,6 +40,8 @@ class AdminController
     $users = $this->users->getAllForAdmin();
     $pendingTurmas = $this->turmas->getPendingTurmasForAdmin();
     $closingExercises = $this->exercises->getClosingSoonForAdmin();
+    $pendingUsers = $this->users->getRecentPendingForAdmin();
+    $recentAdminEvents = $this->auditLogs->getRecentAdminEvents();
 
     View::render('admin/dashboard', [
       'totalUsers' => count($users),
@@ -49,10 +51,13 @@ class AdminController
       'turmaCount' => $this->turmas->countForAdmin(),
       'exerciseCount' => $this->exercises->countForAdmin(),
       'auditCount' => $this->auditLogs->countForAdmin(),
+      'pendingUserCount' => $this->users->countPendingForAdmin(),
       'pendingEnrollmentCount' => $this->turmas->countPendingEnrollmentsForAdmin(),
       'closingSoonCount' => $this->exercises->countClosingSoonForAdmin(),
       'pendingTurmas' => $pendingTurmas,
       'closingExercises' => $closingExercises,
+      'pendingUsers' => $pendingUsers,
+      'recentAdminEvents' => $recentAdminEvents,
     ]);
   }
 
@@ -93,6 +98,33 @@ class AdminController
           (string) ($user['created_at'] ?? ''),
         ];
       }
+    );
+  }
+
+  public function exportUsersJson(): void
+  {
+    Auth::requireAdmin();
+
+    $filters = $this->getUserFiltersFromRequest();
+    $users = $this->users->getAllForAdmin($filters, null, null);
+
+    $this->streamJsonDownload(
+      'users-' . date('Ymd-His') . '.json',
+      [
+        'filters' => $filters,
+        'exported_at' => date('c'),
+        'items' => array_map(function (array $user): array {
+          return [
+            'id' => (int) ($user['id'] ?? 0),
+            'name' => (string) ($user['name'] ?? ''),
+            'email' => (string) ($user['email'] ?? ''),
+            'role' => (string) ($user['role'] ?? ''),
+            'status' => (string) ($user['status'] ?? ''),
+            'context' => $this->buildAdminUserContextText($user),
+            'created_at' => (string) ($user['created_at'] ?? ''),
+          ];
+        }, $users),
+      ]
     );
   }
 
@@ -139,6 +171,35 @@ class AdminController
     );
   }
 
+  public function exportTurmasJson(): void
+  {
+    Auth::requireAdmin();
+
+    $filters = $this->getTurmaFiltersFromRequest();
+    $turmas = $this->turmas->getAllForAdmin($filters, null, null);
+
+    $this->streamJsonDownload(
+      'turmas-' . date('Ymd-His') . '.json',
+      [
+        'filters' => $filters,
+        'exported_at' => date('c'),
+        'items' => array_map(function (array $turma): array {
+          return [
+            'id' => (int) ($turma['id'] ?? 0),
+            'name' => (string) ($turma['name'] ?? ''),
+            'teacher_name' => (string) ($turma['teacher_name'] ?? ''),
+            'access_key' => (string) ($turma['access_key'] ?? ''),
+            'active_count' => (int) ($turma['active_count'] ?? 0),
+            'pending_count' => (int) ($turma['pending_count'] ?? 0),
+            'exercise_count' => (int) ($turma['exercise_count'] ?? 0),
+            'situation' => $this->buildAdminTurmaSituationText($turma),
+            'active' => (bool) ($turma['active'] ?? false),
+          ];
+        }, $turmas),
+      ]
+    );
+  }
+
   public function exercises(): void
   {
     Auth::requireAdmin();
@@ -176,6 +237,35 @@ class AdminController
           $this->buildAdminExerciseStatusText($exercise),
         ];
       }
+    );
+  }
+
+  public function exportExercisesJson(): void
+  {
+    Auth::requireAdmin();
+
+    $filters = $this->getExerciseFiltersFromRequest();
+    $exercises = $this->exercises->getAllForAdmin($filters, null, null);
+
+    $this->streamJsonDownload(
+      'exercises-' . date('Ymd-His') . '.json',
+      [
+        'filters' => $filters,
+        'exported_at' => date('c'),
+        'items' => array_map(function (array $exercise): array {
+          return [
+            'id' => (int) ($exercise['id'] ?? 0),
+            'title' => (string) ($exercise['title'] ?? ''),
+            'teacher_name' => (string) ($exercise['teacher_name'] ?? ''),
+            'turma_label' => (string) ($exercise['turma_label'] ?? ''),
+            'opens_at' => (string) ($exercise['opens_at'] ?? ''),
+            'closes_at' => (string) ($exercise['closes_at'] ?? ''),
+            'attempt_count' => (int) ($exercise['attempt_count'] ?? 0),
+            'status' => $this->buildAdminExerciseStatusText($exercise),
+            'raw_status' => (string) ($exercise['status'] ?? ''),
+          ];
+        }, $exercises),
+      ]
     );
   }
 
@@ -233,6 +323,39 @@ class AdminController
 
     fclose($output);
     exit;
+  }
+
+  public function exportAuditJson(): void
+  {
+    Auth::requireAdmin();
+
+    $filters = $this->getAuditFiltersFromRequest();
+    $logs = $this->auditLogs->getAllForAdmin($filters, null, null);
+
+    $this->streamJsonDownload(
+      'audit-log-' . date('Ymd-His') . '.json',
+      [
+        'filters' => $filters,
+        'exported_at' => date('c'),
+        'items' => array_map(function (array $log): array {
+          $metadata = json_decode((string) ($log['metadata_json'] ?? ''), true);
+
+          return [
+            'id' => (int) ($log['id'] ?? 0),
+            'created_at' => (string) ($log['created_at'] ?? ''),
+            'actor_name' => (string) ($log['actor_name'] ?? 'Sistema'),
+            'actor_email' => (string) ($log['actor_email'] ?? ''),
+            'actor_role' => (string) ($log['actor_role'] ?? ''),
+            'action' => (string) ($log['action'] ?? ''),
+            'entity_type' => (string) ($log['entity_type'] ?? ''),
+            'entity_id' => $log['entity_id'] ?? null,
+            'context' => $this->buildAuditContextText($log),
+            'metadata' => is_array($metadata) ? $metadata : [],
+            'ip_address' => (string) ($log['ip_address'] ?? ''),
+          ];
+        }, $logs),
+      ]
+    );
   }
 
   public function showTurma(string $id): void
@@ -411,6 +534,88 @@ class AdminController
     ]);
 
     $session->flash('success', 'Publicações do exercício reabertas até ' . date('d/m/Y H:i', $reopenTimestamp) . '.');
+    View::redirect('/admin/exercises/' . $exerciseId);
+  }
+
+  public function closeExercisePublication(string $id, string $turmaId): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $exerciseId = (int) $id;
+    $targetTurmaId = (int) $turmaId;
+    $exercise = $this->exercises->findForAdmin($exerciseId);
+    global $session;
+
+    if (!$exercise) {
+      $session->flash('error', 'Exercício não encontrado.');
+      View::redirect('/admin/exercises');
+    }
+
+    $publication = $this->findExercisePublicationByTurmaId($exercise, $targetTurmaId);
+    if (($exercise['status'] ?? '') !== Exercise::STATUS_ACTIVE || $publication === null) {
+      $session->flash('error', 'Publicação da turma não encontrada para encerramento administrativo.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $this->exercises->closePublication($exerciseId, $targetTurmaId);
+    AuditService::record('admin.exercise.close_publication', 'exercise', $exerciseId, [
+      'exercise_title' => $exercise['title'] ?? null,
+      'teacher_name' => $exercise['teacher_name'] ?? null,
+      'turma_id' => $targetTurmaId,
+      'turma_name' => $publication['turma_name'] ?? null,
+      'access_key' => $publication['access_key'] ?? null,
+    ]);
+
+    $session->flash('success', 'Publicação da turma encerrada administrativamente.');
+    View::redirect('/admin/exercises/' . $exerciseId);
+  }
+
+  public function reopenExercisePublication(string $id, string $turmaId): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $exerciseId = (int) $id;
+    $targetTurmaId = (int) $turmaId;
+    $exercise = $this->exercises->findForAdmin($exerciseId);
+    global $session;
+
+    if (!$exercise) {
+      $session->flash('error', 'Exercício não encontrado.');
+      View::redirect('/admin/exercises');
+    }
+
+    $publication = $this->findExercisePublicationByTurmaId($exercise, $targetTurmaId);
+    if (($exercise['status'] ?? '') !== Exercise::STATUS_ACTIVE || $publication === null) {
+      $session->flash('error', 'Publicação da turma não encontrada para reabertura administrativa.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $reopenUntil = trim((string) Request::post('reopen_until', ''));
+    if ($reopenUntil === '') {
+      $session->flash('error', 'Informe uma nova data de encerramento para a publicação selecionada.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $reopenTimestamp = strtotime($reopenUntil);
+    if ($reopenTimestamp === false || $reopenTimestamp <= time()) {
+      $session->flash('error', 'A nova data de encerramento deve estar no futuro.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $formattedClosesAt = date('Y-m-d H:i:s', $reopenTimestamp);
+    $this->exercises->reopenPublication($exerciseId, $targetTurmaId, $formattedClosesAt);
+    AuditService::record('admin.exercise.reopen_publication', 'exercise', $exerciseId, [
+      'exercise_title' => $exercise['title'] ?? null,
+      'teacher_name' => $exercise['teacher_name'] ?? null,
+      'turma_id' => $targetTurmaId,
+      'turma_name' => $publication['turma_name'] ?? null,
+      'access_key' => $publication['access_key'] ?? null,
+      'new_closes_at' => $formattedClosesAt,
+    ]);
+
+    $session->flash('success', 'Publicação da turma reaberta até ' . date('d/m/Y H:i', $reopenTimestamp) . '.');
     View::redirect('/admin/exercises/' . $exerciseId);
   }
 
@@ -690,6 +895,32 @@ class AdminController
 
     fclose($output);
     exit;
+  }
+
+  private function streamJsonDownload(string $filename, array $payload): void
+  {
+    header('Content-Type: application/json; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    exit;
+  }
+
+  private function findExercisePublicationByTurmaId(array $exercise, int $turmaId): ?array
+  {
+    $publications = $exercise['publication_settings'] ?? [];
+    if (!is_array($publications)) {
+      return null;
+    }
+
+    foreach ($publications as $publication) {
+      if ((int) ($publication['turma_id'] ?? 0) === $turmaId) {
+        return $publication;
+      }
+    }
+
+    return null;
   }
 
   private function buildAdminUserContextText(array $user): string

@@ -219,6 +219,16 @@ class Exercise extends Model
     );
   }
 
+  public function closePublication(int $exerciseId, int $turmaId): void
+  {
+    $this->db->execute(
+      "UPDATE exercise_turmas
+             SET closes_at = CASE WHEN closes_at > NOW() THEN NOW() ELSE closes_at END
+             WHERE exercise_id = ? AND turma_id = ?",
+      [$exerciseId, $turmaId]
+    );
+  }
+
   public function reopenPublications(int $exerciseId, string $newClosesAt): void
   {
     $this->db->execute(
@@ -226,6 +236,16 @@ class Exercise extends Model
              SET closes_at = ?
              WHERE exercise_id = ?",
       [$newClosesAt, $exerciseId]
+    );
+  }
+
+  public function reopenPublication(int $exerciseId, int $turmaId, string $newClosesAt): void
+  {
+    $this->db->execute(
+      "UPDATE exercise_turmas
+             SET closes_at = ?
+             WHERE exercise_id = ? AND turma_id = ?",
+      [$newClosesAt, $exerciseId, $turmaId]
     );
   }
 
