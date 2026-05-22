@@ -140,6 +140,28 @@ class User extends Model
     return (int) ($row['total'] ?? 0);
   }
 
+  public function countPendingForAdmin(): int
+  {
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(*) AS total FROM users WHERE status = 'pending'"
+    );
+
+    return (int) ($row['total'] ?? 0);
+  }
+
+  public function getRecentPendingForAdmin(int $limit = 5): array
+  {
+    $safeLimit = max(1, $limit);
+
+    return $this->db->fetchAll(
+      "SELECT id, name, email, role, created_at
+             FROM users
+             WHERE status = 'pending'
+             ORDER BY created_at DESC
+             LIMIT {$safeLimit}"
+    );
+  }
+
   public function updateAdminManagedProfile(int $id, string $name, string $email, string $role, string $status): void
   {
     $this->db->execute(

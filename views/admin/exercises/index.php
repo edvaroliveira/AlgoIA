@@ -39,6 +39,7 @@ $attemptTotal = array_sum(array_map(static fn(array $exercise): int => (int) ($e
       <div class="td-actions">
         <button type="submit" class="btn btn--primary">Filtrar</button>
         <a href="<?= \Core\app_url('/admin/exercises/export' . ($exportQuery !== '' ? '?' . $exportQuery : '')) ?>" class="btn btn--ghost">Exportar CSV</a>
+        <a href="<?= \Core\app_url('/admin/exercises/export.json' . ($exportQuery !== '' ? '?' . $exportQuery : '')) ?>" class="btn btn--ghost">Exportar JSON</a>
         <a href="<?= \Core\app_url('/admin/exercises') ?>" class="btn btn--ghost">Limpar</a>
       </div>
     </form>

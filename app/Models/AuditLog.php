@@ -54,6 +54,20 @@ class AuditLog extends Model
     );
   }
 
+  public function getRecentAdminEvents(int $limit = 5): array
+  {
+    $safeLimit = max(1, $limit);
+
+    return $this->db->fetchAll(
+      "SELECT al.*, actor.name AS actor_name, actor.email AS actor_email
+             FROM audit_logs al
+             LEFT JOIN users actor ON actor.id = al.actor_user_id
+             WHERE al.actor_role = 'admin' OR al.action LIKE 'admin.%'
+             ORDER BY al.created_at DESC
+             LIMIT {$safeLimit}"
+    );
+  }
+
   public function create(
     ?int   $actorUserId,
     string $actorRole,

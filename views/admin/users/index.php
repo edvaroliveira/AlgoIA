@@ -51,6 +51,7 @@ global $session;
           <div class="td-actions">
             <button type="submit" class="btn btn--primary">Filtrar</button>
             <a href="<?= \Core\app_url('/admin/users/export' . ($exportQuery !== '' ? '?' . $exportQuery : '')) ?>" class="btn btn--ghost">Exportar CSV</a>
+            <a href="<?= \Core\app_url('/admin/users/export.json' . ($exportQuery !== '' ? '?' . $exportQuery : '')) ?>" class="btn btn--ghost">Exportar JSON</a>
             <a href="<?= \Core\app_url('/admin/users') ?>" class="btn btn--ghost">Limpar</a>
           </div>
         </div>

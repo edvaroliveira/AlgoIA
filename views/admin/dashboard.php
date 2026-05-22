@@ -7,10 +7,13 @@ $studentCount = $studentCount ?? 0;
 $turmaCount = $turmaCount ?? 0;
 $exerciseCount = $exerciseCount ?? 0;
 $auditCount = $auditCount ?? 0;
+$pendingUserCount = $pendingUserCount ?? 0;
 $pendingEnrollmentCount = $pendingEnrollmentCount ?? 0;
 $closingSoonCount = $closingSoonCount ?? 0;
+$pendingUsers = $pendingUsers ?? [];
 $pendingTurmas = $pendingTurmas ?? [];
 $closingExercises = $closingExercises ?? [];
+$recentAdminEvents = $recentAdminEvents ?? [];
 ?>
 
 <section class="hero-panel hero-panel--teacher">
@@ -63,6 +66,11 @@ $closingExercises = $closingExercises ?? [];
     <span class="overview-card__label">Eventos de auditoria</span>
     <strong class="overview-card__value"><?= $auditCount ?></strong>
     <p class="overview-card__copy">Registros rastreáveis disponíveis para inspeção administrativa.</p>
+  </article>
+  <article class="overview-card">
+    <span class="overview-card__label">Usuários pendentes</span>
+    <strong class="overview-card__value"><?= $pendingUserCount ?></strong>
+    <p class="overview-card__copy">Cadastros ainda aguardando ativação ou decisão operacional.</p>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Pendências de entrada</span>
@@ -147,6 +155,85 @@ $closingExercises = $closingExercises ?? [];
                 <td><?= !empty($exercise['closes_at']) ? date('d/m/Y H:i', strtotime((string) $exercise['closes_at'])) : '—' ?></td>
                 <td><?= (int) ($exercise['attempt_count'] ?? 0) ?></td>
                 <td class="td-actions"><a href="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0)) ?>" class="btn btn--sm">Detalhes</a></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
+    </div>
+  </section>
+</div>
+
+<div class="cards-grid">
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Usuários aguardando decisão</h2>
+        <p class="surface-copy">Cadastros pendentes mais recentes que ainda exigem acompanhamento.</p>
+      </div>
+      <a href="<?= \Core\app_url('/admin/users?status=pending') ?>" class="btn btn--ghost btn--sm">Ver pendentes</a>
+    </div>
+    <div class="surface-block__body">
+      <?php if (empty($pendingUsers)): ?>
+        <p class="empty-state">Nenhum usuário pendente no momento.</p>
+      <?php else: ?>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Perfil</th>
+              <th>Criado em</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($pendingUsers as $user): ?>
+              <tr>
+                <td><strong><?= \Core\View::e($user['name'] ?? '—') ?></strong></td>
+                <td><?= \Core\View::e($user['email'] ?? '—') ?></td>
+                <td><?= \Core\View::e($user['role'] ?? '—') ?></td>
+                <td><?= !empty($user['created_at']) ? date('d/m/Y H:i', strtotime((string) $user['created_at'])) : '—' ?></td>
+                <td class="td-actions"><a href="<?= \Core\app_url('/admin/users/' . ($user['id'] ?? 0)) ?>" class="btn btn--sm">Detalhes</a></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
+    </div>
+  </section>
+
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Atividade administrativa recente</h2>
+        <p class="surface-copy">Últimas ações de administração registradas na trilha de auditoria.</p>
+      </div>
+      <a href="<?= \Core\app_url('/admin/audit?action=admin.') ?>" class="btn btn--ghost btn--sm">Abrir auditoria</a>
+    </div>
+    <div class="surface-block__body">
+      <?php if (empty($recentAdminEvents)): ?>
+        <p class="empty-state">Nenhuma ação administrativa registrada ainda.</p>
+      <?php else: ?>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Quando</th>
+              <th>Ator</th>
+              <th>Ação</th>
+              <th>Entidade</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($recentAdminEvents as $event): ?>
+              <tr>
+                <td><?= !empty($event['created_at']) ? date('d/m/Y H:i', strtotime((string) $event['created_at'])) : '—' ?></td>
+                <td>
+                  <strong><?= \Core\View::e($event['actor_name'] ?? 'Sistema') ?></strong><br>
+                  <span class="text-muted"><?= \Core\View::e($event['actor_email'] ?? ($event['actor_role'] ?? 'admin')) ?></span>
+                </td>
+                <td><?= \Core\View::e($event['action'] ?? '—') ?></td>
+                <td><?= \Core\View::e(($event['entity_type'] ?? '—') . (($event['entity_id'] ?? null) ? ' #' . $event['entity_id'] : '')) ?></td>
               </tr>
             <?php endforeach; ?>
           </tbody>

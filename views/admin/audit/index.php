@@ -52,6 +52,7 @@ $exportQuery = http_build_query(array_filter($filters, static fn($value): bool =
           <div class="td-actions">
             <button type="submit" class="btn btn--primary">Filtrar</button>
             <a href="<?= \Core\app_url('/admin/audit/export' . ($exportQuery !== '' ? '?' . $exportQuery : '')) ?>" class="btn btn--ghost">Exportar CSV</a>
+            <a href="<?= \Core\app_url('/admin/audit/export.json' . ($exportQuery !== '' ? '?' . $exportQuery : '')) ?>" class="btn btn--ghost">Exportar JSON</a>
             <a href="<?= \Core\app_url('/admin/audit') ?>" class="btn btn--ghost">Limpar</a>
           </div>
         </div>
