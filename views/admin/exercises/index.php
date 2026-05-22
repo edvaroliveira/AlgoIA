@@ -18,6 +18,7 @@ $readyExercisesBadgeVariant = $readyExercises > 0 ? 'info' : 'neutral';
 $readyExercisesBadgeText = $readyExercises > 0 ? 'fila pronta' : 'sem fila pronta';
 $attemptTotalBadgeVariant = $attemptTotal > 0 ? 'success' : 'neutral';
 $attemptTotalBadgeText = $attemptTotal > 0 ? 'atividade registrada' : 'sem submissões';
+$filterPresets = $filterPresets ?? [];
 global $session;
 ?>
 
@@ -60,6 +61,46 @@ global $session;
         <a href="<?= \Core\app_url('/admin/exercises') ?>" class="btn btn--ghost">Limpar</a>
       </div>
     </form>
+  </div>
+</section>
+
+<section class="card card--narrow">
+  <div class="card-body">
+    <form method="POST" action="<?= \Core\app_url('/admin/presets/exercises/save') ?>" class="form">
+      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+      <input type="hidden" name="return_query" value="<?= \Core\View::e($exportQuery) ?>">
+      <input type="hidden" name="search" value="<?= \Core\View::e($filters['search'] ?? '') ?>">
+      <input type="hidden" name="status" value="<?= \Core\View::e($filters['status'] ?? '') ?>">
+      <input type="hidden" name="timing" value="<?= \Core\View::e($filters['timing'] ?? '') ?>">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="exercises-preset-name">Salvar preset atual</label>
+          <input id="exercises-preset-name" type="text" name="preset_name" class="form-input" placeholder="Ex.: fechando em breve">
+        </div>
+        <div class="form-group" style="justify-content: flex-end;">
+          <label class="form-label">Preset</label>
+          <div class="td-actions">
+            <button type="submit" class="btn btn--ghost">Salvar preset</button>
+          </div>
+        </div>
+      </div>
+    </form>
+    <?php if (!empty($filterPresets)): ?>
+      <div class="content-note">
+        <strong>Presets salvos</strong>
+        <div class="td-actions">
+          <?php foreach ($filterPresets as $preset): ?>
+            <a href="<?= \Core\app_url('/admin/exercises' . (!empty($preset['query']) ? '?' . $preset['query'] : '')) ?>" class="btn btn--sm btn--ghost"><?= \Core\View::e($preset['name'] ?? 'Preset') ?></a>
+            <form method="POST" action="<?= \Core\app_url('/admin/presets/exercises/delete') ?>">
+              <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+              <input type="hidden" name="return_query" value="<?= \Core\View::e($exportQuery) ?>">
+              <input type="hidden" name="preset_id" value="<?= \Core\View::e($preset['id'] ?? '') ?>">
+              <button type="submit" class="btn btn--sm btn--ghost">Remover <?= \Core\View::e($preset['name'] ?? 'preset') ?></button>
+            </form>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    <?php endif; ?>
   </div>
 </section>
 
@@ -132,6 +173,7 @@ global $session;
               <?php
               $isDraft = ($exercise['status'] ?? '') === 'draft';
               $isReady = ($exercise['status'] ?? '') === 'ready';
+              $reviewStatus = (string) ($exercise['admin_review_status'] ?? 'approved');
               $isOpen = ($exercise['status'] ?? '') === 'active'
                 && !empty($exercise['opens_at'])
                 && !empty($exercise['closes_at'])
@@ -162,6 +204,11 @@ global $session;
                     <span class="badge badge--success">Aberto</span>
                   <?php else: ?>
                     <span class="badge badge--info">Agendado</span>
+                  <?php endif; ?>
+                  <?php if ($reviewStatus === 'blocked'): ?>
+                    <span class="badge badge--error">Bloqueado</span>
+                  <?php elseif ($reviewStatus === 'flagged'): ?>
+                    <span class="badge badge--warning">Sinalizado</span>
                   <?php endif; ?>
                 </td>
                 <td class="td-actions">

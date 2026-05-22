@@ -16,6 +16,8 @@ $entityBadgeMap = [
   'exercise' => 'success',
   'student' => 'neutral',
 ];
+$filterPresets = $filterPresets ?? [];
+global $session;
 ?>
 
 <div class="page-header">
@@ -65,6 +67,48 @@ $entityBadgeMap = [
         <a href="<?= \Core\app_url('/admin/audit?from_date=' . $last30Days . '&to_date=' . $today) ?>" class="btn btn--ghost btn--sm">Últimos 30 dias</a>
       </div>
     </div>
+  </div>
+</section>
+
+<section class="card card--narrow">
+  <div class="card-body">
+    <form method="POST" action="<?= \Core\app_url('/admin/presets/audit/save') ?>" class="form">
+      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+      <input type="hidden" name="return_query" value="<?= \Core\View::e($exportQuery) ?>">
+      <input type="hidden" name="search" value="<?= \Core\View::e($filters['search'] ?? '') ?>">
+      <input type="hidden" name="action" value="<?= \Core\View::e($filters['action'] ?? '') ?>">
+      <input type="hidden" name="entity_type" value="<?= \Core\View::e($filters['entity_type'] ?? '') ?>">
+      <input type="hidden" name="from_date" value="<?= \Core\View::e($filters['from_date'] ?? '') ?>">
+      <input type="hidden" name="to_date" value="<?= \Core\View::e($filters['to_date'] ?? '') ?>">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="audit-preset-name">Salvar preset atual</label>
+          <input id="audit-preset-name" type="text" name="preset_name" class="form-input" placeholder="Ex.: auditoria admin 7 dias">
+        </div>
+        <div class="form-group" style="justify-content: flex-end;">
+          <label class="form-label">Preset</label>
+          <div class="td-actions">
+            <button type="submit" class="btn btn--ghost">Salvar preset</button>
+          </div>
+        </div>
+      </div>
+    </form>
+    <?php if (!empty($filterPresets)): ?>
+      <div class="content-note">
+        <strong>Presets salvos</strong>
+        <div class="td-actions">
+          <?php foreach ($filterPresets as $preset): ?>
+            <a href="<?= \Core\app_url('/admin/audit' . (!empty($preset['query']) ? '?' . $preset['query'] : '')) ?>" class="btn btn--sm btn--ghost"><?= \Core\View::e($preset['name'] ?? 'Preset') ?></a>
+            <form method="POST" action="<?= \Core\app_url('/admin/presets/audit/delete') ?>">
+              <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+              <input type="hidden" name="return_query" value="<?= \Core\View::e($exportQuery) ?>">
+              <input type="hidden" name="preset_id" value="<?= \Core\View::e($preset['id'] ?? '') ?>">
+              <button type="submit" class="btn btn--sm btn--ghost">Remover <?= \Core\View::e($preset['name'] ?? 'preset') ?></button>
+            </form>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    <?php endif; ?>
   </div>
 </section>
 

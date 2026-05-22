@@ -9,6 +9,9 @@ class Exercise extends Model
   public const STATUS_DRAFT = 'draft';
   public const STATUS_READY = 'ready';
   public const STATUS_ACTIVE = 'active';
+  public const REVIEW_APPROVED = 'approved';
+  public const REVIEW_FLAGGED = 'flagged';
+  public const REVIEW_BLOCKED = 'blocked';
 
   protected string $table = 'exercises';
 
@@ -67,7 +70,12 @@ class Exercise extends Model
 
   public function canPublish(array $exercise): bool
   {
-    return $this->isReady($exercise);
+    return $this->isReady($exercise) && !$this->isBlockedForReview($exercise);
+  }
+
+  public function isBlockedForReview(array $exercise): bool
+  {
+    return (string) ($exercise['admin_review_status'] ?? self::REVIEW_APPROVED) === self::REVIEW_BLOCKED;
   }
 
   public function findByTeacher(int $teacherId): array
@@ -144,11 +152,12 @@ class Exercise extends Model
                FROM exercises e
                JOIN exercise_turmas et ON et.exercise_id = e.id
                WHERE e.status = ?
+                AND COALESCE(e.admin_review_status, 'approved') <> ?
                  AND et.closes_at >= NOW()
                  AND et.closes_at <= DATE_ADD(NOW(), INTERVAL {$safeHoursAhead} HOUR)
                GROUP BY e.id
              ) AS closing_exercises",
-      [self::STATUS_ACTIVE]
+      [self::STATUS_ACTIVE, self::REVIEW_BLOCKED]
     );
 
     return (int) ($row['total'] ?? 0);
@@ -170,12 +179,23 @@ class Exercise extends Model
              LEFT JOIN turmas t ON t.id = et.turma_id
              LEFT JOIN attempts a ON a.exercise_id = e.id
              WHERE e.status = ?
+               AND COALESCE(e.admin_review_status, 'approved') <> ?
                AND et.closes_at >= NOW()
                AND et.closes_at <= DATE_ADD(NOW(), INTERVAL {$safeHoursAhead} HOUR)
              GROUP BY e.id
              ORDER BY closes_at ASC, e.title ASC
              LIMIT {$safeLimit}",
-      [self::STATUS_ACTIVE]
+      [self::STATUS_ACTIVE, self::REVIEW_BLOCKED]
+    );
+  }
+
+  public function updateAdminReview(int $id, string $status, ?string $note, ?int $reviewedBy): void
+  {
+    $this->db->execute(
+      "UPDATE exercises
+             SET admin_review_status = ?, admin_review_note = ?, admin_reviewed_at = NOW(), admin_reviewed_by = ?
+             WHERE id = ?",
+      [$status, $note, $reviewedBy, $id]
     );
   }
 
@@ -334,6 +354,7 @@ class Exercise extends Model
              JOIN turmas t ON t.id = et.turma_id
              JOIN student_turma st ON st.turma_id = et.turma_id
              WHERE e.status = 'active'
+               AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
                AND st.student_id = ? AND st.status = 'active'
                AND et.opens_at <= NOW() AND et.closes_at >= NOW()
              GROUP BY e.id
@@ -359,6 +380,7 @@ class Exercise extends Model
              JOIN turmas t ON t.id = et.turma_id
              JOIN student_turma st ON st.turma_id = et.turma_id
              WHERE e.status = 'active'
+               AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
                AND st.student_id = ? AND st.status = 'active'
              GROUP BY e.id
              ORDER BY MAX(et.closes_at) DESC",
@@ -384,6 +406,7 @@ class Exercise extends Model
              JOIN student_turma st ON st.turma_id = et.turma_id
              WHERE e.id = ?
                AND e.status = 'active'
+               AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
                AND st.student_id = ?
                AND st.status = 'active'
              GROUP BY e.id",
@@ -473,6 +496,7 @@ class Exercise extends Model
              JOIN student_turma st ON st.turma_id = et.turma_id
              WHERE e.id = ?
                AND e.status = 'active'
+               AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
                AND st.student_id = ?
                AND st.status = 'active'
              LIMIT 1",

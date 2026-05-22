@@ -21,6 +21,7 @@ $isReady = ($exercise['status'] ?? 'active') === 'ready';
 global $session;
 $flashError = $session->getFlash('error');
 $flashSuccess = $session->getFlash('success');
+$reviewStatus = (string) ($exercise['admin_review_status'] ?? 'approved');
 $isOpen = !empty($exercise['opens_at']) && !empty($exercise['closes_at'])
   && strtotime((string) $exercise['opens_at']) <= time()
   && strtotime((string) $exercise['closes_at']) >= time();
@@ -33,6 +34,22 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
 
 <?php if ($flashSuccess): ?>
   <div class="alert alert--success"><?= \Core\View::e($flashSuccess) ?></div>
+<?php endif; ?>
+
+<?php if ($reviewStatus === 'blocked'): ?>
+  <div class="alert alert--error">
+    Este exercício está bloqueado pela administração.
+    <?php if (!empty($exercise['admin_review_note'])): ?>
+      Motivo: <?= \Core\View::e((string) $exercise['admin_review_note']) ?>
+    <?php endif; ?>
+  </div>
+<?php elseif ($reviewStatus === 'flagged'): ?>
+  <div class="alert alert--info">
+    Este exercício foi sinalizado pela administração para revisão.
+    <?php if (!empty($exercise['admin_review_note'])): ?>
+      Observação: <?= \Core\View::e((string) $exercise['admin_review_note']) ?>
+    <?php endif; ?>
+  </div>
 <?php endif; ?>
 
 <div class="page-header">
@@ -72,6 +89,11 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
       <span class="hero-chip">Aberto agora</span>
     <?php else: ?>
       <span class="hero-chip">Agendado</span>
+    <?php endif; ?>
+    <?php if ($reviewStatus === 'blocked'): ?>
+      <span class="hero-chip">Bloqueado</span>
+    <?php elseif ($reviewStatus === 'flagged'): ?>
+      <span class="hero-chip">Em revisão</span>
     <?php endif; ?>
     <span class="hero-chip hero-chip--soft">Turmas: <?= \Core\View::e($exercise['turma_label'] ?? 'Pendente de finalização') ?></span>
   </div>

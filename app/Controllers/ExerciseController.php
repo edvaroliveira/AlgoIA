@@ -378,6 +378,16 @@ class ExerciseController
     }
 
     global $session;
+    if (($exercise['admin_review_status'] ?? Exercise::REVIEW_APPROVED) === Exercise::REVIEW_BLOCKED) {
+      $message = 'Este exercício foi bloqueado pela administração e não pode ser publicado no momento.';
+      if (!empty($exercise['admin_review_note'])) {
+        $message .= ' Motivo: ' . trim((string) $exercise['admin_review_note']);
+      }
+
+      $session->flash('error', $message);
+      View::redirect('/teacher/exercises/' . $exercise['id']);
+    }
+
     $session->flash('error', 'Conclua o cadastro das questões antes de publicar o exercício para as turmas.');
     View::redirect('/teacher/exercises/' . $exercise['id']);
   }

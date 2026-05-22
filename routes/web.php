@@ -17,6 +17,8 @@ $router->get('/teacher/dashboard', 'DashboardController@teacher');
 
 // ── Admin ───────────────────────────────────────────────────────────────────
 $router->get('/admin/dashboard', 'AdminController@dashboard');
+$router->post('/admin/presets/{scope}/save', 'AdminController@saveFilterPreset');
+$router->post('/admin/presets/{scope}/delete', 'AdminController@deleteFilterPreset');
 $router->get('/admin/users',     'AdminController@users');
 $router->get('/admin/users/export', 'AdminController@exportUsers');
 $router->get('/admin/users/export.json', 'AdminController@exportUsersJson');
@@ -42,6 +44,7 @@ $router->get('/admin/exercises/export', 'AdminController@exportExercises');
 $router->get('/admin/exercises/export.json', 'AdminController@exportExercisesJson');
 $router->post('/admin/exercises/batch-close', 'AdminController@closeExercisesBatch');
 $router->post('/admin/exercises/batch-reopen', 'AdminController@reopenExercisesBatch');
+$router->post('/admin/exercises/{id}/moderate', 'AdminController@moderateExercise');
 $router->get('/admin/exercises/{id}', 'AdminController@showExercise');
 $router->post('/admin/exercises/{id}/publications/batch-close', 'AdminController@closeExercisePublicationsBatch');
 $router->post('/admin/exercises/{id}/publications/batch-reopen', 'AdminController@reopenExercisePublicationsBatch');
@@ -50,6 +53,7 @@ $router->post('/admin/exercises/{id}/close', 'AdminController@closeExercise');
 $router->post('/admin/exercises/{id}/reopen', 'AdminController@reopenExercise');
 $router->post('/admin/exercises/{id}/publications/{turmaId}/close', 'AdminController@closeExercisePublication');
 $router->post('/admin/exercises/{id}/publications/{turmaId}/reopen', 'AdminController@reopenExercisePublication');
+$router->post('/admin/questions/{id}/moderate', 'AdminController@moderateQuestion');
 $router->get('/admin/audit/export', 'AdminController@exportAudit');
 $router->get('/admin/audit/export.json', 'AdminController@exportAuditJson');
 $router->get('/admin/audit',     'AdminController@audit');

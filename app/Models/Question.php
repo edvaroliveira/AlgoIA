@@ -48,6 +48,16 @@ class Question extends Model
     return (float) ($row['total'] ?? 0);
   }
 
+  public function updateAdminReview(int $id, string $status, ?string $note, ?int $reviewedBy): void
+  {
+    $this->db->execute(
+      "UPDATE questions
+             SET admin_review_status = ?, admin_review_note = ?, admin_reviewed_at = NOW(), admin_reviewed_by = ?
+             WHERE id = ?",
+      [$status, $note, $reviewedBy, $id]
+    );
+  }
+
   public function belongsToTeacher(int $questionId, int $teacherId): bool
   {
     $row = $this->db->fetchOne(
