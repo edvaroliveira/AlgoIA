@@ -257,6 +257,8 @@ $recentAdminEvents = $recentAdminEvents ?? [];
       <div class="td-actions">
         <a href="<?= \Core\app_url('/admin/users') ?>" class="btn btn--sm">Abrir módulo</a>
         <a href="<?= \Core\app_url('/admin/users/export') ?>" class="btn btn--sm btn--ghost">Exportar CSV</a>
+        <a href="<?= \Core\app_url('/admin/users/export.json') ?>" class="btn btn--sm btn--ghost">Exportar JSON</a>
+        <a href="<?= \Core\app_url('/admin/users?status=pending') ?>" class="btn btn--sm btn--ghost">Pendentes</a>
       </div>
     </div>
     <div class="content-note">
@@ -265,6 +267,8 @@ $recentAdminEvents = $recentAdminEvents ?? [];
       <div class="td-actions">
         <a href="<?= \Core\app_url('/admin/turmas') ?>" class="btn btn--sm">Abrir módulo</a>
         <a href="<?= \Core\app_url('/admin/turmas/export') ?>" class="btn btn--sm btn--ghost">Exportar CSV</a>
+        <a href="<?= \Core\app_url('/admin/turmas/export.json') ?>" class="btn btn--sm btn--ghost">Exportar JSON</a>
+        <a href="<?= \Core\app_url('/admin/turmas?attention=pending') ?>" class="btn btn--sm btn--ghost">Com pendências</a>
       </div>
     </div>
     <div class="content-note">
@@ -273,6 +277,8 @@ $recentAdminEvents = $recentAdminEvents ?? [];
       <div class="td-actions">
         <a href="<?= \Core\app_url('/admin/exercises') ?>" class="btn btn--sm">Abrir módulo</a>
         <a href="<?= \Core\app_url('/admin/exercises/export') ?>" class="btn btn--sm btn--ghost">Exportar CSV</a>
+        <a href="<?= \Core\app_url('/admin/exercises/export.json') ?>" class="btn btn--sm btn--ghost">Exportar JSON</a>
+        <a href="<?= \Core\app_url('/admin/exercises?timing=closing_soon') ?>" class="btn btn--sm btn--ghost">Fechando em breve</a>
       </div>
     </div>
     <div class="content-note">
@@ -281,6 +287,8 @@ $recentAdminEvents = $recentAdminEvents ?? [];
       <div class="td-actions">
         <a href="<?= \Core\app_url('/admin/audit') ?>" class="btn btn--sm">Abrir módulo</a>
         <a href="<?= \Core\app_url('/admin/audit/export') ?>" class="btn btn--sm btn--ghost">Exportar CSV</a>
+        <a href="<?= \Core\app_url('/admin/audit/export.json') ?>" class="btn btn--sm btn--ghost">Exportar JSON</a>
+        <a href="<?= \Core\app_url('/admin/audit?action=admin.') ?>" class="btn btn--sm btn--ghost">Atividade admin</a>
       </div>
     </div>
   </div>

@@ -1,7 +1,7 @@
 <?php
 $pageTitle = 'Turmas — Administração';
 $turmas = $turmas ?? [];
-$filters = $filters ?? ['search' => '', 'status' => ''];
+$filters = $filters ?? ['search' => '', 'status' => '', 'attention' => ''];
 $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($turmas), 'path' => '/admin/turmas', 'query' => $filters];
 $exportQuery = http_build_query(array_filter($filters, static fn($value): bool => (string) $value !== ''));
 $activeTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['active_count'] ?? 0), $turmas));
@@ -30,6 +30,13 @@ $exerciseTotal = array_sum(array_map(static fn(array $turma): int => (int) ($tur
             <option value="">Todas</option>
             <option value="active" <?= ($filters['status'] ?? '') === 'active' ? 'selected' : '' ?>>Ativas</option>
             <option value="inactive" <?= ($filters['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inativas</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="turma-attention">Atenção</label>
+          <select id="turma-attention" name="attention" class="form-input">
+            <option value="">Todas</option>
+            <option value="pending" <?= ($filters['attention'] ?? '') === 'pending' ? 'selected' : '' ?>>Com pendências</option>
           </select>
         </div>
       </div>

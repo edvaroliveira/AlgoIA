@@ -1,7 +1,7 @@
 <?php
 $pageTitle = 'Exercícios — Administração';
 $exercises = $exercises ?? [];
-$filters = $filters ?? ['search' => '', 'status' => ''];
+$filters = $filters ?? ['search' => '', 'status' => '', 'timing' => ''];
 $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($exercises), 'path' => '/admin/exercises', 'query' => $filters];
 $exportQuery = http_build_query(array_filter($filters, static fn($value): bool => (string) $value !== ''));
 $now = time();
@@ -33,6 +33,13 @@ $attemptTotal = array_sum(array_map(static fn(array $exercise): int => (int) ($e
             <option value="draft" <?= ($filters['status'] ?? '') === 'draft' ? 'selected' : '' ?>>Rascunho</option>
             <option value="ready" <?= ($filters['status'] ?? '') === 'ready' ? 'selected' : '' ?>>Pronto</option>
             <option value="active" <?= ($filters['status'] ?? '') === 'active' ? 'selected' : '' ?>>Publicado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="exercise-timing">Prazo</label>
+          <select id="exercise-timing" name="timing" class="form-input">
+            <option value="">Todos</option>
+            <option value="closing_soon" <?= ($filters['timing'] ?? '') === 'closing_soon' ? 'selected' : '' ?>>Fechando em breve</option>
           </select>
         </div>
       </div>

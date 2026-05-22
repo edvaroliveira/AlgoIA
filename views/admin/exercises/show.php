@@ -137,6 +137,43 @@ global $session;
             <p class="hint">
               Situação: <?= $publicationIsClosed ? 'Encerrada' : ($publicationIsOpen ? 'Aberta' : 'Agendada') ?>
             </p>
+            <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/' . ($publication['turma_id'] ?? 0)) ?>" class="form">
+              <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="publication-opens-<?= (int) ($publication['turma_id'] ?? 0) ?>">Abre em</label>
+                  <input
+                    id="publication-opens-<?= (int) ($publication['turma_id'] ?? 0) ?>"
+                    type="datetime-local"
+                    name="opens_at"
+                    class="form-input"
+                    value="<?= !empty($publication['opens_at']) ? date('Y-m-d\TH:i', strtotime((string) $publication['opens_at'])) : '' ?>">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="publication-closes-<?= (int) ($publication['turma_id'] ?? 0) ?>">Fecha em</label>
+                  <input
+                    id="publication-closes-<?= (int) ($publication['turma_id'] ?? 0) ?>"
+                    type="datetime-local"
+                    name="closes_at"
+                    class="form-input"
+                    value="<?= !empty($publication['closes_at']) ? date('Y-m-d\TH:i', strtotime((string) $publication['closes_at'])) : '' ?>">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="publication-attempts-<?= (int) ($publication['turma_id'] ?? 0) ?>">Tentativas</label>
+                  <input
+                    id="publication-attempts-<?= (int) ($publication['turma_id'] ?? 0) ?>"
+                    type="number"
+                    min="0"
+                    name="max_attempts"
+                    class="form-input"
+                    value="<?= (int) ($publication['max_attempts'] ?? 1) ?>">
+                </div>
+                <div class="form-group" style="justify-content: flex-end;">
+                  <label class="form-label">Janela da publicação</label>
+                  <button type="submit" class="btn btn--sm">Salvar janela</button>
+                </div>
+              </div>
+            </form>
             <div class="td-actions">
               <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/' . ($publication['turma_id'] ?? 0) . '/close') ?>" onsubmit="return confirm('Encerrar administrativamente apenas esta publicação?');">
                 <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
