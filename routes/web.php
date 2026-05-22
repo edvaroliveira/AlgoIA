@@ -18,6 +18,8 @@ $router->get('/teacher/dashboard', 'DashboardController@teacher');
 // ── Admin ───────────────────────────────────────────────────────────────────
 $router->get('/admin/dashboard', 'AdminController@dashboard');
 $router->get('/admin/users',     'AdminController@users');
+$router->get('/admin/turmas',    'AdminController@turmas');
+$router->get('/admin/exercises', 'AdminController@exercises');
 
 // Turmas
 $router->get('/teacher/turmas',                                   'TurmaController@index');
