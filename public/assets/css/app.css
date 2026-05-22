@@ -706,6 +706,56 @@ a:hover { color: var(--brand-dark); }
   background: rgba(12, 79, 121, 0.03);
 }
 
+.table-subtext {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.surface-block--closing-soon .surface-block__body {
+  overflow-x: auto;
+}
+
+.table--closing-soon {
+  table-layout: fixed;
+  min-width: 0;
+}
+
+.table--closing-soon .col-exercise { width: 28%; }
+.table--closing-soon .col-teacher { width: 18%; }
+.table--closing-soon .col-turma { width: 22%; }
+.table--closing-soon .col-deadline { width: 20%; }
+.table--closing-soon .col-action { width: 12%; }
+
+.table--closing-soon th,
+.table--closing-soon td {
+  padding-left: 0.85rem;
+  padding-right: 0.85rem;
+}
+
+.table--closing-soon td {
+  overflow-wrap: anywhere;
+}
+
+.deadline-badge {
+  display: inline-grid;
+  gap: 0.1rem;
+  justify-items: center;
+  border-radius: 999px;
+  padding: 0.34rem 0.68rem;
+  background: #f8e5e3;
+  color: #8b2f21;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.deadline-badge small {
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
 .table tr.table-row--compatible td {
   background: rgba(35, 119, 74, 0.08);
 }
