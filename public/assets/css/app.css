@@ -76,24 +76,29 @@ a:hover { color: var(--brand-dark); }
 .sidebar__brand {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 0.95rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
   margin-bottom: 2rem;
   padding: 0.4rem 0 1.65rem 0.35rem;
   border-bottom: 1px solid rgba(191, 219, 198, 0.16);
 }
 
 .brand-logo {
-  width: 3.4rem;
-  height: 3.4rem;
+  width: 100%;
+  height: auto;
+  max-width: 12rem;
   object-fit: contain;
   flex: 0 0 auto;
   filter: drop-shadow(0 12px 24px rgba(6, 23, 16, 0.18));
 }
 
-.brand-logo--guest {
-  width: 3.6rem;
-  height: 3.6rem;
+.brand-logo--sidebar {
+  max-width: 10.75rem;
+}
+
+.brand-logo--guest-card {
+  max-width: 13rem;
 }
 
 .brand-mark {
@@ -312,18 +317,18 @@ a:hover { color: var(--brand-dark); }
 }
 
 .guest-hero__logo {
-  width: clamp(7rem, 18vw, 11rem);
+  width: clamp(13rem, 28vw, 20rem);
   height: auto;
   object-fit: contain;
 }
 
 .guest-hero__title {
-  margin: 7rem 0 0.8rem;
-  font-size: clamp(3.5rem, 7vw, 6rem);
-  line-height: 0.92;
+  margin: 1.75rem 0 0.8rem;
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  line-height: 1;
   font-weight: 800;
   letter-spacing: -0.04em;
-  max-width: 6ch;
+  max-width: 11ch;
 }
 
 .guest-hero__copy {
@@ -368,8 +373,9 @@ a:hover { color: var(--brand-dark); }
 
 .guest-brand {
   display: flex;
-  align-items: center;
-  gap: 0.9rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
   padding: 0.1rem 0 1.35rem;
   margin-bottom: 1rem;
   border-bottom: 1px solid var(--border);
@@ -1296,9 +1302,16 @@ a:hover { color: var(--brand-dark); }
   .guest-card { padding: 1.1rem; }
   .guest-shell { padding-top: 1rem !important; padding-bottom: 1rem !important; }
   .guest-brand {
-    gap: 0.75rem;
+    gap: 0.6rem;
     padding-bottom: 0.9rem;
     margin-bottom: 0.9rem;
+  }
+  .brand-logo--sidebar {
+    max-width: 9.5rem;
+  }
+  .brand-logo--guest-card,
+  .guest-hero__logo {
+    max-width: min(100%, 14rem);
   }
   .auth-title {
     font-size: clamp(1.55rem, 7vw, 1.9rem);

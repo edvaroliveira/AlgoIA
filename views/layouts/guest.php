@@ -21,7 +21,7 @@
         <div class="guest-hero__badge">
           <img src="<?= \Core\app_url('/assets/img/AlgoIA_logo.png') ?>" alt="Logo AlgoIA" class="guest-hero__logo">
         </div>
-        <h1 class="guest-hero__title">Algo IA</h1>
+        <h1 class="guest-hero__title">Aprendizagem, algoritmos e Amazônia.</h1>
         <p class="guest-hero__copy">Aprendizagem, algoritmos e Amazônia em uma interface institucional mais sóbria, com respiro, contraste limpo e presença visual inspirada no manual de identidade 2025.</p>
 
         <div class="guest-feature-list">
@@ -42,9 +42,8 @@
 
       <section class="guest-card">
         <div class="guest-brand">
-          <img src="<?= \Core\app_url('/assets/img/AlgoIA_logo.png') ?>" alt="Logo AlgoIA" class="brand-logo brand-logo--guest">
+          <img src="<?= \Core\app_url('/assets/img/AlgoIA_logo.png') ?>" alt="Logo AlgoIA" class="brand-logo brand-logo--guest-card">
           <div>
-            <h2 class="brand-name">AlgoIA</h2>
             <p class="brand-sub">Acesso ao ambiente institucional</p>
           </div>
         </div>
