@@ -49,6 +49,8 @@ Este backlog cobre as acoes 1 a 5 identificadas na revisao do sistema AlgoIA.
 
 ## P1 - Fixar regras de tentativa por turma/publicacao
 
+**Status:** implementado.
+
 **Problema:** quando o aluno pertence a mais de uma turma com o mesmo exercicio, o sistema agrega regras com `MAX`, podendo aplicar prazo ou limite de tentativas incorreto.
 
 **Objetivo:** aplicar regras da publicacao correta para cada tentativa.

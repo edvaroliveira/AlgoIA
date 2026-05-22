@@ -58,8 +58,17 @@ class DashboardController
 
     // Attach best score to each exercise
     foreach ($all as &$ex) {
-      $ex['best_score']     = $attModel->getBestScore($studentId, (int) $ex['id']);
-      $ex['attempt_count']  = $attModel->countSubmitted($studentId, (int) $ex['id']);
+      $publication = $exModel->findCurrentPublicationForStudent((int) $ex['id'], $studentId);
+      $ex = $exModel->applyPublicationContext($ex, $publication);
+      $turmaId = !empty($ex['turma_id']) ? (int) $ex['turma_id'] : null;
+      $ex['best_score']     = $attModel->getBestScore($studentId, (int) $ex['id'], $turmaId);
+      $ex['attempt_count']  = $attModel->countSubmitted($studentId, (int) $ex['id'], $turmaId);
+    }
+    unset($ex);
+
+    foreach ($available as &$ex) {
+      $publication = $exModel->findOpenPublicationForStudent((int) $ex['id'], $studentId);
+      $ex = $exModel->applyPublicationContext($ex, $publication);
     }
     unset($ex);
 

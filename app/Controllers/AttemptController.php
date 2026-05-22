@@ -37,15 +37,19 @@ class AttemptController
 
     $studentId = Auth::id();
     $exercise  = $this->getStudentExercise((int) $id, $studentId);
+    $publication = $this->exercises->findOpenPublicationForStudent((int) $id, $studentId);
 
-    if (!$this->exercises->isOpen($exercise)) {
+    if (!$publication) {
       global $session;
       $session->flash('error', 'Este exercício não está aberto para respostas.');
       View::redirect("/student/exercises/{$id}");
     }
 
+    $exercise = $this->exercises->applyPublicationContext($exercise, $publication);
+    $turmaId = (int) $publication['turma_id'];
+
     // Check attempt limit
-    $submitted   = $this->attempts->countSubmitted($studentId, (int) $id);
+    $submitted   = $this->attempts->countSubmitted($studentId, (int) $id, $turmaId);
     $maxAttempts = (int) $exercise['max_attempts'];
 
     if ($maxAttempts > 0 && $submitted >= $maxAttempts) {
@@ -55,8 +59,8 @@ class AttemptController
     }
 
     // Reuse in-progress attempt or create new
-    $inProgress = $this->attempts->getInProgress($studentId, (int) $id);
-    $attemptId  = $inProgress ? (int) $inProgress['id'] : $this->attempts->start($studentId, (int) $id);
+    $inProgress = $this->attempts->getInProgress($studentId, (int) $id, $turmaId);
+    $attemptId  = $inProgress ? (int) $inProgress['id'] : $this->attempts->start($studentId, (int) $id, $turmaId);
 
     View::redirect("/student/exercises/{$id}?attempt={$attemptId}");
   }
@@ -183,8 +187,9 @@ class AttemptController
     $answers    = $this->answers->findByAttempt((int) $id);
     $isClosed   = !empty($attempt['closes_at']) && strtotime($attempt['closes_at']) < time();
     $maxScore   = array_sum(array_column($answers, 'max_score'));
-    $bestScore  = $this->attempts->getBestScore($studentId, (int) $attempt['exercise_id']);
-    $usedTries  = $this->attempts->countSubmitted($studentId, (int) $attempt['exercise_id']);
+    $attemptTurmaId = !empty($attempt['turma_id']) ? (int) $attempt['turma_id'] : null;
+    $bestScore  = $this->attempts->getBestScore($studentId, (int) $attempt['exercise_id'], $attemptTurmaId);
+    $usedTries  = $this->attempts->countSubmitted($studentId, (int) $attempt['exercise_id'], $attemptTurmaId);
     $maxTries   = (int) ($attempt['max_attempts'] ?? 0);
     $showReferenceAnswer = $isClosed || ($maxTries > 0 && $usedTries >= $maxTries);
 
@@ -212,6 +217,11 @@ class AttemptController
   {
     $exerciseId = (int) ($attempt['exercise_id'] ?? 0);
     $exercise = $this->getStudentExercise($exerciseId, $studentId);
+    $publication = !empty($attempt['turma_id'])
+      ? $this->exercises->findPublicationForStudentTurma($exerciseId, $studentId, (int) $attempt['turma_id'])
+      : $this->exercises->findOpenPublicationForStudent($exerciseId, $studentId);
+
+    $exercise = $this->exercises->applyPublicationContext($exercise, $publication);
 
     if ($this->exercises->isOpen($exercise)) {
       return $exercise;
