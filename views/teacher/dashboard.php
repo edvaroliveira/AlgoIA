@@ -7,6 +7,8 @@ $pendingTotal = $pendingTotal ?? 0;
 $activeTotal = $activeTotal ?? 0;
 $exercises = $exercises ?? [];
 $recentStudents = $recentStudents ?? [];
+$pendingGradingCount = $pendingGradingCount ?? 0;
+$pendingGradingAttempts = $pendingGradingAttempts ?? [];
 ?>
 
 <section class="hero-panel hero-panel--teacher">
@@ -47,6 +49,10 @@ $recentStudents = $recentStudents ?? [];
     <div class="stat-value"><?= $activeTotal ?></div>
     <div class="stat-label">Alunos ativos</div>
   </div>
+  <div class="stat-card stat-card--warning">
+    <div class="stat-value"><?= $pendingGradingCount ?></div>
+    <div class="stat-label">Correções pendentes</div>
+  </div>
 </div>
 
 <?php if ($pendingTotal > 0): ?>
@@ -57,6 +63,49 @@ $recentStudents = $recentStudents ?? [];
 <?php endif; ?>
 
 <?php global $session; ?>
+
+<?php if (!empty($pendingGradingAttempts)): ?>
+  <div class="section">
+    <section class="surface-block">
+      <div class="surface-block__header">
+        <div>
+          <h2 class="surface-title">Correções pendentes</h2>
+          <p class="surface-copy">Tentativas enviadas que aguardam reprocessamento da avaliação automática.</p>
+        </div>
+      </div>
+      <div class="surface-block__body">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Aluno</th>
+              <th>Exercício</th>
+              <th>Turma</th>
+              <th>Enviada em</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($pendingGradingAttempts as $attempt): ?>
+              <tr>
+                <td><?= \Core\View::e($attempt['student_name'] ?? '—') ?></td>
+                <td><?= \Core\View::e($attempt['exercise_title'] ?? '—') ?></td>
+                <td><?= \Core\View::e($attempt['turma_name'] ?? '—') ?></td>
+                <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : '—' ?></td>
+                <td class="td-actions">
+                  <form method="POST" action="<?= \Core\app_url('/teacher/attempts/' . (int) ($attempt['id'] ?? 0) . '/regrade') ?>">
+                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                    <input type="hidden" name="return_to" value="<?= \Core\View::e(\Core\app_request_path()) ?>">
+                    <button type="submit" class="btn btn--sm btn--primary">Reprocessar</button>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+<?php endif; ?>
 
 <div class="section">
   <section class="surface-block">

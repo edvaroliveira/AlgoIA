@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Attempt;
 use App\Models\Exercise;
 use App\Models\Question;
 use App\Models\Turma;
@@ -23,6 +24,7 @@ class AdminController
   private Exercise $exercises;
   private AuditLog $auditLogs;
   private Question $questions;
+  private Attempt $attempts;
 
   public function __construct()
   {
@@ -31,6 +33,7 @@ class AdminController
     $this->exercises = new Exercise();
     $this->auditLogs = new AuditLog();
     $this->questions = new Question();
+    $this->attempts = new Attempt();
   }
 
   public function dashboard(): void
@@ -42,6 +45,7 @@ class AdminController
     $closingExercises = $this->exercises->getClosingSoonForAdmin();
     $pendingUsers = $this->users->getRecentPendingForAdmin();
     $recentAdminEvents = $this->auditLogs->getRecentAdminEvents();
+    $pendingGradingAttempts = $this->attempts->getPendingGradingForAdmin(6);
 
     View::render('admin/dashboard', [
       'totalUsers' => count($users),
@@ -54,10 +58,12 @@ class AdminController
       'pendingUserCount' => $this->users->countPendingForAdmin(),
       'pendingEnrollmentCount' => $this->turmas->countPendingEnrollmentsForAdmin(),
       'closingSoonCount' => $this->exercises->countClosingSoonForAdmin(),
+      'pendingGradingCount' => $this->attempts->countPendingGradingForAdmin(),
       'pendingTurmas' => $pendingTurmas,
       'closingExercises' => $closingExercises,
       'pendingUsers' => $pendingUsers,
-      'pendingActions' => $this->buildDashboardPendingActions($pendingUsers, $pendingTurmas, $closingExercises),
+      'pendingGradingAttempts' => $pendingGradingAttempts,
+      'pendingActions' => $this->buildDashboardPendingActions($pendingUsers, $pendingTurmas, $closingExercises, $pendingGradingAttempts),
       'recentAdminEvents' => $recentAdminEvents,
     ]);
   }
@@ -1739,9 +1745,21 @@ class AdminController
     return substr($normalized, 0, 40);
   }
 
-  private function buildDashboardPendingActions(array $pendingUsers, array $pendingTurmas, array $closingExercises): array
+  private function buildDashboardPendingActions(array $pendingUsers, array $pendingTurmas, array $closingExercises, array $pendingGradingAttempts = []): array
   {
     $actions = [];
+
+    foreach (array_slice($pendingGradingAttempts, 0, 3) as $attempt) {
+      $actions[] = [
+        'priority' => 5,
+        'variant' => 'error',
+        'label' => 'correção pendente',
+        'title' => (string) ($attempt['exercise_title'] ?? 'Tentativa'),
+        'description' => 'Aluno: ' . (string) ($attempt['student_name'] ?? '—'),
+        'path' => '/admin/dashboard',
+        'action_label' => 'Reprocessar',
+      ];
+    }
 
     foreach (array_slice($closingExercises, 0, 3) as $exercise) {
       $actions[] = [

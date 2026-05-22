@@ -21,6 +21,7 @@ class DashboardController
     $exercises = new Exercise();
     $turmas    = new Turma();
     $users     = new User();
+    $attempts  = new Attempt();
 
     $myTurmas    = $turmas->findByTeacher($teacherId);
     $myExercises = $exercises->findByTeacher($teacherId);
@@ -31,6 +32,7 @@ class DashboardController
     $openExs  = array_filter($myExercises, fn($e) => $exercises->isOpen($e));
     $recentExs = array_slice($myExercises, 0, 5);
     $recentStudents = $users->getRecentStudentsByTeacher((int) $teacherId, 6);
+    $pendingGradingAttempts = $attempts->getPendingGradingForTeacher((int) $teacherId, 6);
 
     View::render('teacher/dashboard', [
       'turmas'        => $myTurmas,
@@ -40,6 +42,8 @@ class DashboardController
       'activeTotal'   => $activeTotal,
       'openCount'     => count($openExs),
       'totalExs'      => count($myExercises),
+      'pendingGradingCount' => $attempts->countPendingGradingForTeacher((int) $teacherId),
+      'pendingGradingAttempts' => $pendingGradingAttempts,
     ]);
   }
 

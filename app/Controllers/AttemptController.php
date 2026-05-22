@@ -8,9 +8,9 @@ use App\Models\Exercise;
 use App\Models\Question;
 use App\Models\Attempt;
 use App\Models\Answer;
-use App\Services\OpenAIService;
+use App\Services\AttemptGradingService;
+use App\Services\AuditService;
 use Core\Auth;
-use Core\Database;
 use Core\Request;
 use Core\View;
 
@@ -126,54 +126,9 @@ class AttemptController
 
     $this->attempts->markSubmitted((int) $id);
 
-    // Evaluate with OpenAI outside the database transaction.
-    $ai         = new OpenAIService();
-    $totalScore = 0.0;
-    $evaluations = [];
-    $db         = Database::getInstance();
-
     try {
-      foreach ($questions as $q) {
-        $ans = $this->answers->findByAttemptAndQuestion((int) $id, (int) $q['id']);
-
-        if (!$ans || trim($ans['student_answer']) === '') {
-          continue;
-        }
-
-        $result = $ai->evaluateAnswer(
-          $q['text'],
-          $q['expected_answer_hint'],
-          $ans['student_answer'],
-          (float) $q['max_score'],
-          (int) $ans['id'],
-          $studentId
-        );
-
-        $evaluations[] = [
-          'answer_id' => (int) $ans['id'],
-          'score' => (float) $result['score'],
-          'feedback' => (string) $result['feedback'],
-        ];
-        $totalScore += $result['score'];
-      }
-
-      $db->beginTransaction();
-
-      foreach ($evaluations as $evaluation) {
-        $this->answers->updateAiResult(
-          $evaluation['answer_id'],
-          $evaluation['score'],
-          $evaluation['feedback']
-        );
-      }
-
-      $this->attempts->markGraded((int) $id, $totalScore);
-      $db->commit();
+      (new AttemptGradingService())->gradeSubmittedAttempt((int) $id);
     } catch (\Throwable $e) {
-      if (method_exists($db, 'rollback') && $db->inTransaction()) {
-        $db->rollback();
-      }
-
       error_log("Attempt evaluation failed for attempt {$id}: " . $e->getMessage());
 
       global $session;
@@ -182,6 +137,23 @@ class AttemptController
     }
 
     View::redirect("/student/attempts/{$id}/result");
+  }
+
+  public function regradeAdmin(string $id): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $this->regrade((int) $id, 'admin.attempt.regrade', '/admin/dashboard');
+  }
+
+  public function regradeTeacher(string $id): void
+  {
+    Auth::requireTeacher();
+    Request::validateCsrf();
+
+    Auth::ensure($this->attempts->belongsToTeacher((int) $id, (int) Auth::id()));
+    $this->regrade((int) $id, 'teacher.attempt.regrade', '/teacher/dashboard');
   }
 
   /** GET /student/attempts/{id}/result */
@@ -248,5 +220,47 @@ class AttemptController
     global $session;
     $session->flash('error', $message);
     View::redirect("/student/exercises/{$exerciseId}");
+  }
+
+  private function regrade(int $attemptId, string $auditAction, string $fallbackPath): void
+  {
+    $attempt = $this->attempts->find($attemptId);
+    global $session;
+
+    if (!$attempt || (string) ($attempt['status'] ?? '') !== 'submitted') {
+      $session->flash('error', 'Tentativa pendente de correção não encontrada.');
+      View::redirect($this->safeReturnPath($fallbackPath));
+    }
+
+    try {
+      $score = (new AttemptGradingService())->gradeSubmittedAttempt($attemptId);
+      AuditService::record($auditAction, 'attempt', $attemptId, [
+        'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
+        'student_id' => (int) ($attempt['student_id'] ?? 0),
+        'score' => $score,
+      ]);
+      $session->flash('success', 'Tentativa reprocessada com sucesso.');
+    } catch (\Throwable $e) {
+      error_log("Attempt regrade failed for attempt {$attemptId}: " . $e->getMessage());
+      AuditService::record($auditAction . '.failed', 'attempt', $attemptId, [
+        'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
+        'student_id' => (int) ($attempt['student_id'] ?? 0),
+        'error' => $e->getMessage(),
+      ]);
+      $session->flash('error', 'Não foi possível reprocessar a tentativa. Ela permanece pendente.');
+    }
+
+    View::redirect($this->safeReturnPath($fallbackPath));
+  }
+
+  private function safeReturnPath(string $fallbackPath): string
+  {
+    $returnTo = trim((string) Request::post('return_to', ''));
+
+    if ($returnTo !== '' && str_starts_with($returnTo, '/') && strpos($returnTo, '://') === false) {
+      return $returnTo;
+    }
+
+    return $fallbackPath;
   }
 }
