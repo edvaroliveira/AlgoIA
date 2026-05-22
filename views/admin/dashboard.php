@@ -11,6 +11,8 @@ $pendingUserCount = $pendingUserCount ?? 0;
 $pendingEnrollmentCount = $pendingEnrollmentCount ?? 0;
 $closingSoonCount = $closingSoonCount ?? 0;
 $pendingGradingCount = $pendingGradingCount ?? 0;
+$pendingTeacherRequestCount = $pendingTeacherRequestCount ?? 0;
+$teacherRegistrationEnabled = $teacherRegistrationEnabled ?? false;
 $pendingUsers = $pendingUsers ?? [];
 $pendingTurmas = $pendingTurmas ?? [];
 $closingExercises = $closingExercises ?? [];
@@ -114,6 +116,16 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
     <strong class="overview-card__value"><?= $pendingGradingCount ?></strong>
     <span class="overview-card__signal"><span class="badge badge--<?= $pendingGradingCount > 0 ? 'error' : 'success' ?>"><?= $pendingGradingCount > 0 ? 'reprocessar' : 'sem fila' ?></span></span>
     <p class="overview-card__copy">Tentativas enviadas que ainda aguardam nota automática.</p>
+  </article>
+  <article class="overview-card">
+    <span class="overview-card__label">Solicitações de docentes</span>
+    <strong class="overview-card__value"><?= $pendingTeacherRequestCount ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= $pendingTeacherRequestCount > 0 ? 'warning' : 'neutral' ?>"><?= $pendingTeacherRequestCount > 0 ? 'aguardando análise' : 'sem fila' ?></span></span>
+    <p class="overview-card__copy">
+      Cadastros de docentes aguardando aprovação. Cadastro público:
+      <span class="badge badge--<?= $teacherRegistrationEnabled ? 'success' : 'neutral' ?>"><?= $teacherRegistrationEnabled ? 'aberto' : 'fechado' ?></span>
+      <a href="<?= \Core\app_url('/admin/teacher-requests') ?>" class="text-link">Gerenciar</a>
+    </p>
   </article>
 </div>
 

@@ -21,11 +21,12 @@ class User extends Model
     string $email,
     string $password,
     string $role   = 'student',
-    string $status = 'pending'
+    string $status = 'pending',
+    ?string $registrationNote = null
   ): int {
     return $this->db->insert(
-      "INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?)",
-      [$name, $email, password_hash($password, PASSWORD_BCRYPT), $role, $status]
+      "INSERT INTO users (name, email, password_hash, role, status, registration_note) VALUES (?, ?, ?, ?, ?, ?)",
+      [$name, $email, password_hash($password, PASSWORD_BCRYPT), $role, $status, $registrationNote]
     );
   }
 
@@ -370,6 +371,71 @@ class User extends Model
     return $row !== false;
   }
 
+  public function countPendingTeacherRequests(): int
+  {
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(*) AS total FROM users WHERE role = 'teacher' AND status = 'pending'"
+    );
+
+    return (int) ($row['total'] ?? 0);
+  }
+
+  public function getPendingTeacherRequests(int $limit = 20, int $offset = 0): array
+  {
+    $safeLimit = max(1, $limit);
+    $safeOffset = max(0, $offset);
+
+    return $this->db->fetchAll(
+      "SELECT id, name, email, registration_note, created_at
+             FROM users
+             WHERE role = 'teacher' AND status = 'pending'
+             ORDER BY created_at ASC
+             LIMIT {$safeLimit} OFFSET {$safeOffset}"
+    );
+  }
+
+  public function countTeacherRequestHistory(): int
+  {
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(*) AS total FROM users WHERE role = 'teacher' AND status IN ('active','rejected')"
+    );
+
+    return (int) ($row['total'] ?? 0);
+  }
+
+  public function getTeacherRequestHistory(int $limit = 20, int $offset = 0): array
+  {
+    $safeLimit = max(1, $limit);
+    $safeOffset = max(0, $offset);
+
+    return $this->db->fetchAll(
+      "SELECT u.id, u.name, u.email, u.status, u.registration_note, u.created_at,
+                    u.approved_at, u.rejected_at,
+                    approver.name AS approver_name
+             FROM users u
+             LEFT JOIN users approver ON approver.id = u.approved_by
+             WHERE u.role = 'teacher' AND u.status IN ('active','rejected')
+             ORDER BY COALESCE(u.approved_at, u.rejected_at) DESC
+             LIMIT {$safeLimit} OFFSET {$safeOffset}"
+    );
+  }
+
+  public function approveTeacher(int $id, int $approvedBy): void
+  {
+    $this->db->execute(
+      "UPDATE users SET status = 'active', approved_by = ?, approved_at = NOW(), rejected_at = NULL WHERE id = ? AND role = 'teacher'",
+      [$approvedBy, $id]
+    );
+  }
+
+  public function rejectTeacher(int $id, int $approvedBy): void
+  {
+    $this->db->execute(
+      "UPDATE users SET status = 'rejected', approved_by = ?, rejected_at = NOW(), approved_at = NULL WHERE id = ? AND role = 'teacher'",
+      [$approvedBy, $id]
+    );
+  }
+
   private function buildAdminFilters(array $filters): array
   {
     $conditions = [];
@@ -382,7 +448,7 @@ class User extends Model
     }
 
     $status = (string) ($filters['status'] ?? '');
-    if (in_array($status, ['active', 'pending', 'inactive'], true)) {
+    if (in_array($status, ['active', 'pending', 'inactive', 'rejected'], true)) {
       $conditions[] = 'u.status = ?';
       $params[] = $status;
     }
