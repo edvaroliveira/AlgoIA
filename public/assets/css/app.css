@@ -91,6 +91,7 @@ a:hover { color: var(--brand-dark); }
   object-fit: contain;
   flex: 0 0 auto;
   filter: drop-shadow(0 12px 24px rgba(6, 23, 16, 0.18));
+  align-items: center;
 }
 
 .brand-logo--sidebar {
