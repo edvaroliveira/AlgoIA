@@ -38,6 +38,22 @@ class AuditLog extends Model
     return (int) ($row['total'] ?? 0);
   }
 
+  public function getRecentForUserContext(int $userId, int $limit = 20): array
+  {
+    $safeLimit = max(1, $limit);
+
+    return $this->db->fetchAll(
+      "SELECT al.*, actor.name AS actor_name, actor.email AS actor_email
+             FROM audit_logs al
+             LEFT JOIN users actor ON actor.id = al.actor_user_id
+             WHERE al.actor_user_id = ?
+                OR (al.entity_type = 'user' AND al.entity_id = ?)
+             ORDER BY al.created_at DESC
+             LIMIT {$safeLimit}",
+      [$userId, $userId]
+    );
+  }
+
   public function create(
     ?int   $actorUserId,
     string $actorRole,
@@ -69,6 +85,24 @@ class AuditLog extends Model
     $conditions = [];
     $params = [];
 
+    $fromDate = trim((string) ($filters['from_date'] ?? ''));
+    if ($fromDate !== '') {
+      $fromDateTime = $this->normalizeAdminDateBoundary($fromDate, false);
+      if ($fromDateTime !== null) {
+        $conditions[] = 'al.created_at >= ?';
+        $params[] = $fromDateTime;
+      }
+    }
+
+    $toDate = trim((string) ($filters['to_date'] ?? ''));
+    if ($toDate !== '') {
+      $toDateTime = $this->normalizeAdminDateBoundary($toDate, true);
+      if ($toDateTime !== null) {
+        $conditions[] = 'al.created_at <= ?';
+        $params[] = $toDateTime;
+      }
+    }
+
     $action = trim((string) ($filters['action'] ?? ''));
     if ($action !== '') {
       $conditions[] = 'al.action LIKE ?';
@@ -94,5 +128,19 @@ class AuditLog extends Model
       'where' => $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '',
       'params' => $params,
     ];
+  }
+
+  private function normalizeAdminDateBoundary(string $value, bool $endOfDay): ?string
+  {
+    $trimmedValue = trim($value);
+    if ($trimmedValue === '') {
+      return null;
+    }
+
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $trimmedValue)) {
+      return null;
+    }
+
+    return $trimmedValue . ($endOfDay ? ' 23:59:59' : ' 00:00:00');
   }
 }

@@ -99,6 +99,29 @@ class User extends Model
     );
   }
 
+  public function findForAdmin(int $id): array|false
+  {
+    return $this->db->fetchOne(
+      "SELECT u.*,
+                    COUNT(DISTINCT CASE WHEN u.role = 'student' THEN st.turma_id END) AS turma_count,
+                    GROUP_CONCAT(DISTINCT CASE WHEN u.role = 'student' THEN t.name END ORDER BY t.name SEPARATOR ', ') AS turma_names,
+                    COUNT(DISTINCT CASE WHEN u.role = 'teacher' THEN tt.id END) AS owned_turma_count,
+                    COUNT(DISTINCT CASE WHEN u.role = 'teacher' THEN e.id END) AS exercise_count,
+                    COUNT(DISTINCT CASE WHEN u.role = 'student' THEN a.id END) AS attempt_count,
+                    MAX(CASE WHEN u.role = 'student' THEN a.submitted_at END) AS last_attempt_at
+             FROM users u
+             LEFT JOIN student_turma st ON st.student_id = u.id
+             LEFT JOIN turmas t ON t.id = st.turma_id
+             LEFT JOIN turmas tt ON tt.teacher_id = u.id
+             LEFT JOIN exercises e ON e.teacher_id = u.id
+             LEFT JOIN attempts a ON a.student_id = u.id
+             WHERE u.id = ?
+             GROUP BY u.id
+             LIMIT 1",
+      [$id]
+    );
+  }
+
   public function countForAdmin(array $filters = []): int
   {
     ['where' => $where, 'params' => $params] = $this->buildAdminFilters($filters);
@@ -138,6 +161,65 @@ class User extends Model
              GROUP BY u.id
              ORDER BY u.name",
       [$teacherId]
+    );
+  }
+
+  public function getTeacherTurmasForAdmin(int $teacherId): array
+  {
+    return $this->db->fetchAll(
+      "SELECT t.*,
+                    (SELECT COUNT(*) FROM student_turma st WHERE st.turma_id = t.id AND st.status = 'active') AS active_count,
+                    (SELECT COUNT(*) FROM student_turma st WHERE st.turma_id = t.id AND st.status = 'pending') AS pending_count
+             FROM turmas t
+             WHERE t.teacher_id = ?
+             ORDER BY t.name",
+      [$teacherId]
+    );
+  }
+
+  public function getTeacherExercisesForAdmin(int $teacherId): array
+  {
+    return $this->db->fetchAll(
+      "SELECT e.*,
+                    COALESCE(NULLIF(GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', '), ''), 'Pendente de finalização') AS turma_label,
+                    COUNT(DISTINCT et.turma_id) AS turma_count,
+                    COUNT(DISTINCT a.id) AS attempt_count,
+                    MIN(et.opens_at) AS opens_at,
+                    MAX(et.closes_at) AS closes_at
+             FROM exercises e
+             LEFT JOIN exercise_turmas et ON et.exercise_id = e.id
+             LEFT JOIN turmas t ON t.id = et.turma_id
+             LEFT JOIN attempts a ON a.exercise_id = e.id
+             WHERE e.teacher_id = ?
+             GROUP BY e.id
+             ORDER BY e.created_at DESC",
+      [$teacherId]
+    );
+  }
+
+  public function getStudentTurmasForAdmin(int $studentId): array
+  {
+    return $this->db->fetchAll(
+      "SELECT t.*, teacher.name AS teacher_name, st.status AS enrollment_status, st.joined_at
+             FROM student_turma st
+             JOIN turmas t ON t.id = st.turma_id
+             JOIN users teacher ON teacher.id = t.teacher_id
+             WHERE st.student_id = ?
+             ORDER BY t.name",
+      [$studentId]
+    );
+  }
+
+  public function getStudentAttemptsForAdmin(int $studentId): array
+  {
+    return $this->db->fetchAll(
+      "SELECT a.*, e.title AS exercise_title, teacher.name AS teacher_name
+             FROM attempts a
+             JOIN exercises e ON e.id = a.exercise_id
+             JOIN users teacher ON teacher.id = e.teacher_id
+             WHERE a.student_id = ?
+             ORDER BY COALESCE(a.submitted_at, a.started_at) DESC",
+      [$studentId]
     );
   }
 

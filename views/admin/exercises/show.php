@@ -78,6 +78,28 @@ global $session;
         <p><?= nl2br(\Core\View::e($exercise['description'])) ?></p>
       </div>
     <?php endif; ?>
+
+    <?php if (($exercise['status'] ?? '') === 'active' && !empty($exercise['publication_settings'])): ?>
+      <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/reopen') ?>" class="form">
+        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="reopen-until">Reabrir até</label>
+            <input
+              id="reopen-until"
+              type="datetime-local"
+              name="reopen_until"
+              class="form-input"
+              value="<?= date('Y-m-d\TH:i', strtotime('+7 days')) ?>"
+              min="<?= date('Y-m-d\TH:i', strtotime('+1 hour')) ?>">
+          </div>
+          <div class="form-group" style="justify-content: flex-end;">
+            <label class="form-label">Ação administrativa</label>
+            <button type="submit" class="btn btn--primary">Reabrir publicações</button>
+          </div>
+        </div>
+      </form>
+    <?php endif; ?>
   </div>
 </section>
 

@@ -1,7 +1,7 @@
 <?php
 $pageTitle = 'Auditoria — Administração';
 $logs = $logs ?? [];
-$filters = $filters ?? ['search' => '', 'action' => '', 'entity_type' => ''];
+$filters = $filters ?? ['search' => '', 'action' => '', 'entity_type' => '', 'from_date' => '', 'to_date' => ''];
 $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($logs), 'path' => '/admin/audit', 'query' => $filters];
 ?>
 
@@ -36,6 +36,16 @@ $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems
             <option value="student" <?= ($filters['entity_type'] ?? '') === 'student' ? 'selected' : '' ?>>Aluno</option>
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label" for="audit-from-date">De</label>
+          <input id="audit-from-date" type="date" name="from_date" class="form-input" value="<?= \Core\View::e($filters['from_date'] ?? '') ?>">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="audit-to-date">Até</label>
+          <input id="audit-to-date" type="date" name="to_date" class="form-input" value="<?= \Core\View::e($filters['to_date'] ?? '') ?>">
+        </div>
+      </div>
+      <div class="form-row">
         <div class="form-group" style="justify-content: flex-end;">
           <label class="form-label">Ações</label>
           <div class="td-actions">
@@ -52,7 +62,7 @@ $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems
   <article class="overview-card">
     <span class="overview-card__label">Eventos listados</span>
     <strong class="overview-card__value"><?= count($logs) ?></strong>
-    <p class="overview-card__copy">A listagem é limitada aos 200 eventos mais recentes no filtro atual.</p>
+    <p class="overview-card__copy">A listagem respeita os filtros aplicados e a paginação administrativa.</p>
   </article>
 </div>
 
