@@ -91,7 +91,7 @@ a:hover { color: var(--brand-dark); }
   object-fit: contain;
   flex: 0 0 auto;
   filter: drop-shadow(0 12px 24px rgba(6, 23, 16, 0.18));
-  align-items: center;
+
 }
 
 .brand-logo--sidebar {
@@ -295,14 +295,10 @@ a:hover { color: var(--brand-dark); }
   background: linear-gradient(180deg, rgba(23, 63, 49, 0.995), rgba(23, 63, 49, 0.995) 100%);
   color: #fff;
   box-shadow: 0 28px 70px rgba(23, 63, 49, 0.22);
-}
-
-.guest-hero::before {
-  content: "";
-  position: absolute;
-  inset: 82px 0 auto 0;
-  height: 1px;
-  background: rgba(195, 222, 202, 0.16);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .guest-hero__badge {
@@ -337,12 +333,16 @@ a:hover { color: var(--brand-dark); }
   font-size: 1rem;
   line-height: 1.75;
   color: rgba(255,255,255,.74);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .guest-feature-list {
   display: grid;
   gap: 0.65rem;
   margin-top: 2.2rem;
+  width: 100%;
+  text-align: left;
 }
 
 .guest-feature {
