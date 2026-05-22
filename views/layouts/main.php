@@ -22,7 +22,7 @@ $content = $content ?? '';
   <div class="app-shell">
     <aside class="sidebar">
       <div class="sidebar__brand">
-        <img src="<?= \Core\app_url('/assets/img/AlgoIA_logo.png') ?>" alt="Logo AlgoIA" class="brand-logo brand-logo--sidebar">
+        <img src="<?= \Core\app_url('/assets/img/AlgoIA_logo_branco.png') ?>" alt="Logo AlgoIA" class="brand-logo brand-logo--sidebar">
         <small class="brand-subtitle">Aprendizagem • Algoritmos • Amazônia</small>
       </div>
 
