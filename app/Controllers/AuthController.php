@@ -25,6 +25,9 @@ class AuthController
   public function showLogin(): void
   {
     if (Auth::check()) {
+      if (Auth::mustChangePassword()) {
+        View::redirect('/password/change');
+      }
       $this->redirectByRole();
     }
     View::render('auth/login', [], 'layouts/guest');
@@ -84,12 +87,72 @@ class AuthController
 
     $this->clearLoginThrottle();
     Auth::login($user);
+    if (Auth::mustChangePassword()) {
+      View::redirect('/password/change');
+    }
+    $this->redirectByRole();
+  }
+
+  public function showChangePassword(): void
+  {
+    Auth::requireAuth();
+
+    if (!Auth::mustChangePassword()) {
+      $this->redirectByRole();
+    }
+
+    View::render('auth/change_password', [], 'layouts/guest');
+  }
+
+  public function changePassword(): void
+  {
+    Auth::requireAuth();
+    Request::validateCsrf();
+
+    if (!Auth::mustChangePassword()) {
+      $this->redirectByRole();
+    }
+
+    $currentPassword = (string) ($_POST['current_password'] ?? '');
+    $password = (string) ($_POST['password'] ?? '');
+    $passwordConf = (string) ($_POST['password_confirm'] ?? '');
+    $user = $this->users->find((int) Auth::id());
+    $errors = [];
+
+    if (!$user || !$this->users->verifyPassword($currentPassword, $user['password_hash'])) {
+      $errors[] = 'Senha temporária incorreta.';
+    }
+    if (!$this->isStrongPassword($password)) {
+      $errors[] = 'Nova senha deve ter ao menos 10 caracteres, com letra maiúscula, minúscula e número.';
+    }
+    if ($password !== $passwordConf) {
+      $errors[] = 'As senhas não coincidem.';
+    }
+    if ($currentPassword !== '' && $password !== '' && hash_equals($currentPassword, $password)) {
+      $errors[] = 'A nova senha deve ser diferente da senha temporária.';
+    }
+
+    if ($errors) {
+      View::render('auth/change_password', ['errors' => $errors], 'layouts/guest');
+      return;
+    }
+
+    $this->users->updatePassword((int) Auth::id(), $password);
+    Auth::clearMustChangePassword();
+
+    \App\Services\AuditService::record('auth.password_change_required_completed', 'user', (int) Auth::id());
+
+    global $session;
+    $session->flash('success', 'Senha atualizada com sucesso.');
     $this->redirectByRole();
   }
 
   public function showRegister(): void
   {
     if (Auth::check()) {
+      if (Auth::mustChangePassword()) {
+        View::redirect('/password/change');
+      }
       $this->redirectByRole();
     }
     View::render('auth/register', [], 'layouts/guest');

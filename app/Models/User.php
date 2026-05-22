@@ -54,8 +54,18 @@ class User extends Model
   public function updatePassword(int $id, string $newPassword): void
   {
     $this->db->execute(
-      "UPDATE users SET password_hash = ? WHERE id = ?",
+      "UPDATE users SET password_hash = ?, must_change_password = 0, password_reset_at = NULL WHERE id = ?",
       [password_hash($newPassword, PASSWORD_BCRYPT), $id]
+    );
+  }
+
+  public function resetPassword(int $id, string $temporaryPassword): void
+  {
+    $this->db->execute(
+      "UPDATE users
+             SET password_hash = ?, must_change_password = 1, password_reset_at = NOW()
+             WHERE id = ?",
+      [password_hash($temporaryPassword, PASSWORD_BCRYPT), $id]
     );
   }
 
