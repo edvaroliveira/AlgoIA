@@ -29,11 +29,13 @@ class Answer extends Model
     );
   }
 
-  public function updateAiResult(int $answerId, float $score, string $feedback): void
+  public function updateAiResult(int $answerId, float $score, string $feedback, array $deductionReasons = []): void
   {
+    $reasonsJson = json_encode(array_values($deductionReasons), JSON_UNESCAPED_UNICODE);
+
     $this->db->execute(
-      "UPDATE answers SET ai_score = ?, ai_feedback = ?, evaluated_at = NOW() WHERE id = ?",
-      [$score, $feedback, $answerId]
+      "UPDATE answers SET ai_score = ?, ai_feedback = ?, deduction_reasons_json = ?, evaluated_at = NOW() WHERE id = ?",
+      [$score, $feedback, $reasonsJson ?: '[]', $answerId]
     );
   }
 

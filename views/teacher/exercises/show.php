@@ -349,6 +349,7 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
               <th>E-mail</th>
               <th>Melhor nota</th>
               <th>Tentativas</th>
+              <th>Alertas</th>
             </tr>
           </thead>
           <tbody>
@@ -358,6 +359,13 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
                 <td><?= \Core\View::e($r['email']) ?></td>
                 <td><?= number_format((float) $r['best_score'], 1) ?> / <?= number_format((float) $maxScore, 1) ?></td>
                 <td><?= $r['attempt_count'] ?></td>
+                <td>
+                  <?php if ((int) ($r['injection_flag_count'] ?? 0) > 0): ?>
+                    <span class="badge badge--warning">Prompt suspeito</span>
+                  <?php else: ?>
+                    <span class="text-muted">—</span>
+                  <?php endif; ?>
+                </td>
               </tr>
             <?php endforeach; ?>
           </tbody>

@@ -378,6 +378,7 @@ global $session;
             <th>E-mail</th>
             <th>Melhor nota</th>
             <th>Tentativas</th>
+            <th>Alertas</th>
           </tr>
         </thead>
         <tbody>
@@ -387,6 +388,13 @@ global $session;
               <td><?= \Core\View::e($result['email']) ?></td>
               <td><?= number_format((float) $result['best_score'], 1) ?> / <?= number_format((float) $maxScore, 1) ?></td>
               <td><?= (int) $result['attempt_count'] ?></td>
+              <td>
+                <?php if ((int) ($result['injection_flag_count'] ?? 0) > 0): ?>
+                  <span class="badge badge--warning">Prompt suspeito</span>
+                <?php else: ?>
+                  <span class="text-muted">—</span>
+                <?php endif; ?>
+              </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
