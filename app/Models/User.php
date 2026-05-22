@@ -67,6 +67,24 @@ class User extends Model
     );
   }
 
+  public function getAllForAdmin(): array
+  {
+    return $this->db->fetchAll(
+      "SELECT u.*,
+                    COUNT(DISTINCT CASE WHEN u.role = 'student' THEN st.turma_id END) AS turma_count,
+                    GROUP_CONCAT(DISTINCT CASE WHEN u.role = 'student' THEN t.name END ORDER BY t.name SEPARATOR ', ') AS turma_names,
+                    COUNT(DISTINCT CASE WHEN u.role = 'teacher' THEN tt.id END) AS owned_turma_count,
+                    COUNT(DISTINCT CASE WHEN u.role = 'teacher' THEN e.id END) AS exercise_count
+             FROM users u
+             LEFT JOIN student_turma st ON st.student_id = u.id
+             LEFT JOIN turmas t ON t.id = st.turma_id
+             LEFT JOIN turmas tt ON tt.teacher_id = u.id
+             LEFT JOIN exercises e ON e.teacher_id = u.id
+             GROUP BY u.id
+             ORDER BY FIELD(u.role, 'admin', 'teacher', 'student'), u.name"
+    );
+  }
+
   public function getStudentsByTeacher(int $teacherId): array
   {
     return $this->db->fetchAll(
