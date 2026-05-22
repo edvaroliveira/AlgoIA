@@ -35,6 +35,7 @@ $router->get('/admin/exercises', 'AdminController@exercises');
 $router->get('/admin/exercises/export', 'AdminController@exportExercises');
 $router->get('/admin/exercises/export.json', 'AdminController@exportExercisesJson');
 $router->get('/admin/exercises/{id}', 'AdminController@showExercise');
+$router->post('/admin/exercises/{id}/publications/{turmaId}', 'AdminController@updateExercisePublication');
 $router->post('/admin/exercises/{id}/close', 'AdminController@closeExercise');
 $router->post('/admin/exercises/{id}/reopen', 'AdminController@reopenExercise');
 $router->post('/admin/exercises/{id}/publications/{turmaId}/close', 'AdminController@closeExercisePublication');

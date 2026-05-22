@@ -249,6 +249,16 @@ class Exercise extends Model
     );
   }
 
+  public function updatePublication(int $exerciseId, int $turmaId, string $opensAt, string $closesAt, int $maxAttempts): void
+  {
+    $this->db->execute(
+      "UPDATE exercise_turmas
+             SET opens_at = ?, closes_at = ?, max_attempts = ?
+             WHERE exercise_id = ? AND turma_id = ?",
+      [$opensAt, $closesAt, $maxAttempts, $exerciseId, $turmaId]
+    );
+  }
+
   private function buildAdminFilters(array $filters): array
   {
     $conditions = [];
@@ -258,6 +268,11 @@ class Exercise extends Model
     if (in_array($status, [self::STATUS_DRAFT, self::STATUS_READY, self::STATUS_ACTIVE], true)) {
       $conditions[] = 'e.status = ?';
       $params[] = $status;
+    }
+
+    $timing = (string) ($filters['timing'] ?? '');
+    if ($timing === 'closing_soon') {
+      $conditions[] = "e.status = 'active' AND et.closes_at >= NOW() AND et.closes_at <= DATE_ADD(NOW(), INTERVAL 72 HOUR)";
     }
 
     $search = trim((string) ($filters['search'] ?? ''));

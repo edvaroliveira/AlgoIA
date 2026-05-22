@@ -255,6 +255,15 @@ class Turma extends Model
       $conditions[] = 't.active = 0';
     }
 
+    $attention = (string) ($filters['attention'] ?? '');
+    if ($attention === 'pending') {
+      $conditions[] = "EXISTS (
+        SELECT 1
+        FROM student_turma st_pending
+        WHERE st_pending.turma_id = t.id AND st_pending.status = 'pending'
+      )";
+    }
+
     $search = trim((string) ($filters['search'] ?? ''));
     if ($search !== '') {
       $conditions[] = '(t.name LIKE ? OR teacher.name LIKE ? OR t.access_key LIKE ?)';

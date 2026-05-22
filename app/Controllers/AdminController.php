@@ -240,6 +240,65 @@ class AdminController
     );
   }
 
+  public function updateExercisePublication(string $id, string $turmaId): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $exerciseId = (int) $id;
+    $targetTurmaId = (int) $turmaId;
+    $exercise = $this->exercises->findForAdmin($exerciseId);
+    global $session;
+
+    if (!$exercise) {
+      $session->flash('error', 'Exercício não encontrado.');
+      View::redirect('/admin/exercises');
+    }
+
+    $publication = $this->findExercisePublicationByTurmaId($exercise, $targetTurmaId);
+    if (($exercise['status'] ?? '') !== Exercise::STATUS_ACTIVE || $publication === null) {
+      $session->flash('error', 'Publicação da turma não encontrada para edição administrativa.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $opensAt = trim((string) Request::post('opens_at', ''));
+    $closesAt = trim((string) Request::post('closes_at', ''));
+    $maxAttempts = max(0, (int) Request::post('max_attempts', 1));
+
+    if (!strtotime($opensAt)) {
+      $session->flash('error', 'Data de abertura inválida para a publicação selecionada.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    if (!strtotime($closesAt)) {
+      $session->flash('error', 'Data de fechamento inválida para a publicação selecionada.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    if (strtotime($opensAt) >= strtotime($closesAt)) {
+      $session->flash('error', 'A data de fechamento deve ser posterior à data de abertura para a publicação selecionada.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $formattedOpensAt = date('Y-m-d H:i:s', strtotime($opensAt));
+    $formattedClosesAt = date('Y-m-d H:i:s', strtotime($closesAt));
+    $this->exercises->updatePublication($exerciseId, $targetTurmaId, $formattedOpensAt, $formattedClosesAt, $maxAttempts);
+
+    AuditService::record('admin.exercise.update_publication', 'exercise', $exerciseId, [
+      'exercise_title' => $exercise['title'] ?? null,
+      'teacher_name' => $exercise['teacher_name'] ?? null,
+      'turma_id' => $targetTurmaId,
+      'turma_name' => $publication['turma_name'] ?? null,
+      'access_key' => $publication['access_key'] ?? null,
+      'opens_at' => $formattedOpensAt,
+      'closes_at' => $formattedClosesAt,
+      'max_attempts' => $maxAttempts,
+    ]);
+
+    $session->flash('success', 'Janela da publicação atualizada com sucesso.');
+    View::redirect('/admin/exercises/' . $exerciseId);
+  }
+
   public function exportExercisesJson(): void
   {
     Auth::requireAdmin();
@@ -852,6 +911,7 @@ class AdminController
     return [
       'search' => trim((string) Request::get('search', '')),
       'status' => trim((string) Request::get('status', '')),
+      'attention' => trim((string) Request::get('attention', '')),
     ];
   }
 
@@ -860,6 +920,7 @@ class AdminController
     return [
       'search' => trim((string) Request::get('search', '')),
       'status' => trim((string) Request::get('status', '')),
+      'timing' => trim((string) Request::get('timing', '')),
     ];
   }
 
