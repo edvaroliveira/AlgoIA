@@ -4,6 +4,8 @@ Este backlog cobre as acoes 1 a 5 identificadas na revisao do sistema AlgoIA.
 
 ## P0 - Bloquear submissao fora da janela do exercicio
 
+**Status:** implementado.
+
 **Problema:** o sistema valida se o exercicio esta aberto ao iniciar a tentativa, mas nao revalida no envio final nem no autosave.
 
 **Objetivo:** impedir que respostas sejam salvas ou submetidas depois do fechamento, salvo se houver uma regra explicita de tolerancia.
@@ -23,6 +25,8 @@ Este backlog cobre as acoes 1 a 5 identificadas na revisao do sistema AlgoIA.
 **Risco:** alto, pois afeta integridade de avaliacao.
 
 ## P0 - Trocar exclusao global de aluno por desvinculacao segura
+
+**Status:** implementado.
 
 **Problema:** um professor pode remover um aluno do sistema inteiro, apagando vinculos, tentativas e dados que podem pertencer a outras turmas/docentes.
 

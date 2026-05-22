@@ -165,9 +165,9 @@ $recentStudents = $recentStudents ?? [];
                   }; ?>
                 </td>
                 <td class="td-actions">
-                  <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $student['id'] . '/delete') ?>" onsubmit="return confirm('Excluir este aluno e todos os registros dele?');">
+                  <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $student['id'] . '/detach') ?>" onsubmit="return confirm('Desvincular este aluno das suas turmas? O cadastro e o histórico serão preservados.');">
                     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                    <button type="submit" class="btn btn--danger btn--sm">Excluir</button>
+                    <button type="submit" class="btn btn--danger btn--sm">Desvincular</button>
                   </form>
                 </td>
               </tr>

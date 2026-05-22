@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Core\Database;
-
 class User extends Model
 {
   protected string $table = 'users';
@@ -276,25 +274,41 @@ class User extends Model
     return $row !== false;
   }
 
-  public function deleteStudentWithRelations(int $studentId, int $teacherId): bool
+  public function detachStudentFromTeacherTurmas(int $studentId, int $teacherId): array
   {
     if (!$this->belongsToTeacher($studentId, $teacherId)) {
-      return false;
+      return [
+        'removed_count' => 0,
+        'turmas' => [],
+      ];
     }
 
-    $db = Database::getInstance();
+    $turmas = $this->db->fetchAll(
+      "SELECT t.id, t.name
+             FROM student_turma st
+             JOIN turmas t ON t.id = st.turma_id
+             WHERE st.student_id = ? AND t.teacher_id = ?
+             ORDER BY t.name",
+      [$studentId, $teacherId]
+    );
 
     try {
-      $db->beginTransaction();
-      $db->execute('DELETE FROM injection_logs WHERE student_id = ?', [$studentId]);
-      $db->execute('DELETE FROM attempts WHERE student_id = ?', [$studentId]);
-      $db->execute('DELETE FROM student_turma WHERE student_id = ?', [$studentId]);
-      $deleted = $db->execute("DELETE FROM users WHERE id = ? AND role = 'student'", [$studentId]);
-      $db->commit();
+      $this->db->beginTransaction();
+      $removed = $this->db->execute(
+        "DELETE st
+             FROM student_turma st
+             JOIN turmas t ON t.id = st.turma_id
+             WHERE st.student_id = ? AND t.teacher_id = ?",
+        [$studentId, $teacherId]
+      );
+      $this->db->commit();
 
-      return $deleted > 0;
+      return [
+        'removed_count' => $removed,
+        'turmas' => $turmas,
+      ];
     } catch (\Throwable $e) {
-      $db->rollback();
+      $this->db->rollback();
       throw $e;
     }
   }

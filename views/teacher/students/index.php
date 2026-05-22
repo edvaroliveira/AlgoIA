@@ -42,7 +42,7 @@ $pendingStudents = count(array_filter($students, fn($student) => ($student['stat
     <div class="surface-block__header">
       <div>
         <h2 class="surface-title">Lista detalhada</h2>
-        <p class="surface-copy">Exclusões seguem com remoção de respostas e registros relacionados.</p>
+        <p class="surface-copy">A remoção desvincula o aluno das suas turmas e preserva cadastro, respostas e histórico.</p>
       </div>
     </div>
     <div class="surface-block__body">
@@ -73,9 +73,9 @@ $pendingStudents = count(array_filter($students, fn($student) => ($student['stat
               </td>
               <td><?= date('d/m/Y', strtotime($s['created_at'])) ?></td>
               <td class="td-actions">
-                <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $s['id'] . '/delete') ?>" onsubmit="return confirm('Excluir este aluno e todos os registros dele?');">
+                <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $s['id'] . '/detach') ?>" onsubmit="return confirm('Desvincular este aluno das suas turmas? O cadastro e o histórico serão preservados.');">
                   <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                  <button type="submit" class="btn btn--danger btn--sm">Excluir</button>
+                  <button type="submit" class="btn btn--danger btn--sm">Desvincular</button>
                 </form>
               </td>
             </tr>
