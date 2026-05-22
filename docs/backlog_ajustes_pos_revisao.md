@@ -51,6 +51,8 @@ Este backlog cobre os ajustes identificados apos a segunda revisao do sistema, j
 
 ## P1 - Melhorar reset de senha com token e expiracao
 
+**Status:** implementado.
+
 **Problema:** o reset administrativo ainda exibe senha temporaria em flash, mesmo exigindo troca obrigatoria no proximo login.
 
 **Objetivo:** reduzir exposicao da senha temporaria e deixar o reset mais auditavel.

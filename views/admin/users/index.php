@@ -223,7 +223,7 @@ global $session;
                 </form>
                 <form method="POST" action="<?= \Core\app_url('/admin/users/' . $user['id'] . '/reset-password') ?>">
                   <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                  <button type="submit" class="btn btn--sm btn--ghost" onclick="return confirm('Gerar senha temporária e exigir troca no próximo acesso?');">Resetar senha</button>
+                  <button type="submit" class="btn btn--sm btn--ghost" onclick="return confirm('Gerar link de redefinição válido por 60 minutos?');">Resetar senha</button>
                 </form>
               </td>
             </tr>

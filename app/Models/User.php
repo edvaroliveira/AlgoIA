@@ -54,7 +54,13 @@ class User extends Model
   public function updatePassword(int $id, string $newPassword): void
   {
     $this->db->execute(
-      "UPDATE users SET password_hash = ?, must_change_password = 0, password_reset_at = NULL WHERE id = ?",
+      "UPDATE users
+             SET password_hash = ?,
+                 must_change_password = 0,
+                 password_reset_at = NULL,
+                 password_reset_token_hash = NULL,
+                 password_reset_expires_at = NULL
+             WHERE id = ?",
       [password_hash($newPassword, PASSWORD_BCRYPT), $id]
     );
   }
@@ -66,6 +72,38 @@ class User extends Model
              SET password_hash = ?, must_change_password = 1, password_reset_at = NOW()
              WHERE id = ?",
       [password_hash($temporaryPassword, PASSWORD_BCRYPT), $id]
+    );
+  }
+
+  public function createPasswordResetToken(int $id, string $token, int $expiresInMinutes = 60): void
+  {
+    $safeMinutes = max(5, $expiresInMinutes);
+
+    $this->db->execute(
+      "UPDATE users
+             SET must_change_password = 1,
+                 password_reset_at = NOW(),
+                 password_reset_token_hash = ?,
+                 password_reset_expires_at = DATE_ADD(NOW(), INTERVAL {$safeMinutes} MINUTE)
+             WHERE id = ?",
+      [hash('sha256', $token), $id]
+    );
+  }
+
+  public function findByValidPasswordResetToken(string $token): array|false
+  {
+    if ($token === '') {
+      return false;
+    }
+
+    return $this->db->fetchOne(
+      "SELECT *
+             FROM users
+             WHERE password_reset_token_hash = ?
+               AND password_reset_expires_at IS NOT NULL
+               AND password_reset_expires_at >= NOW()
+             LIMIT 1",
+      [hash('sha256', $token)]
     );
   }
 

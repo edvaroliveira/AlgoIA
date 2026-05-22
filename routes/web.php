@@ -12,6 +12,8 @@ $router->get('/register',  'AuthController@showRegister');
 $router->post('/register', 'AuthController@register');
 $router->get('/password/change', 'AuthController@showChangePassword');
 $router->post('/password/change', 'AuthController@changePassword');
+$router->get('/password/reset', 'AuthController@showResetPassword');
+$router->post('/password/reset', 'AuthController@resetPassword');
 $router->post('/logout',   'AuthController@logout');
 
 // ── Teacher ──────────────────────────────────────────────────────────────────
