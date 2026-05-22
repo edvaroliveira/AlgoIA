@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Models\User;
 use App\Models\Turma;
+use App\Models\SystemSetting;
 use Core\Auth;
 use Core\Request;
 use Core\View;
@@ -14,6 +15,8 @@ class AuthController
 {
   private const LOGIN_MAX_ATTEMPTS = 5;
   private const LOGIN_LOCK_SECONDS = 300;
+  private const TEACHER_REG_MAX_ATTEMPTS = 5;
+  private const TEACHER_REG_LOCK_SECONDS = 600;
 
   private User $users;
 
@@ -70,8 +73,19 @@ class AuthController
     }
 
     if ($user['status'] === 'pending') {
+      $pendingMessage = ($user['role'] ?? '') === 'teacher'
+        ? 'Seu cadastro aguarda aprovação do administrador.'
+        : 'Seu cadastro aguarda aprovação do docente.';
       View::render('auth/login', [
-        'error' => 'Seu cadastro aguarda aprovação do docente.',
+        'error' => $pendingMessage,
+        'old'   => ['email' => $email],
+      ], 'layouts/guest');
+      return;
+    }
+
+    if ($user['status'] === 'rejected') {
+      View::render('auth/login', [
+        'error' => 'Sua solicitação de acesso não foi aprovada. Entre em contato com a administração.',
         'old'   => ['email' => $email],
       ], 'layouts/guest');
       return;
@@ -269,6 +283,99 @@ class AuthController
     ], 'layouts/guest');
   }
 
+  public function showRegisterTeacher(): void
+  {
+    if (Auth::check()) {
+      if (Auth::mustChangePassword()) {
+        View::redirect('/password/change');
+      }
+      $this->redirectByRole();
+    }
+
+    $settings = new SystemSetting();
+    if (!$settings->getBool('teacher_registration_enabled')) {
+      View::render('auth/register_teacher', ['disabled' => true], 'layouts/guest');
+      return;
+    }
+
+    View::render('auth/register_teacher', [], 'layouts/guest');
+  }
+
+  public function registerTeacher(): void
+  {
+    Request::validateCsrf();
+
+    $settings = new SystemSetting();
+    if (!$settings->getBool('teacher_registration_enabled')) {
+      View::render('auth/register_teacher', ['disabled' => true], 'layouts/guest');
+      return;
+    }
+
+    global $session;
+
+    if ($this->isTeacherRegLocked()) {
+      View::render('auth/register_teacher', [
+        'error' => 'Muitas tentativas de cadastro. Aguarde alguns minutos antes de tentar novamente.',
+        'old'   => ['name' => Request::str('name'), 'email' => Request::email('email'), 'institution' => Request::str('institution')],
+      ], 'layouts/guest');
+      return;
+    }
+
+    $name        = Request::str('name');
+    $email       = Request::email('email');
+    $password    = (string) ($_POST['password'] ?? '');
+    $passwordConf = (string) ($_POST['password_confirm'] ?? '');
+    $institution = mb_substr(trim((string) ($_POST['institution'] ?? '')), 0, 500);
+
+    $errors = [];
+
+    if (mb_strlen($name) < 3) {
+      $errors[] = 'Nome deve ter pelo menos 3 caracteres.';
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      $errors[] = 'E-mail inválido.';
+    }
+    if (!$this->isStrongPassword($password)) {
+      $errors[] = 'Senha deve ter ao menos 10 caracteres, com letra maiúscula, minúscula e número.';
+    }
+    if ($password !== $passwordConf) {
+      $errors[] = 'As senhas não coincidem.';
+    }
+    if ($institution === '') {
+      $errors[] = 'Informe sua instituição ou justificativa para o acesso.';
+    }
+
+    if ($errors) {
+      $this->recordFailedTeacherReg();
+      View::render('auth/register_teacher', [
+        'errors' => $errors,
+        'old'    => compact('name', 'email', 'institution'),
+      ], 'layouts/guest');
+      return;
+    }
+
+    if ($this->users->findByEmail($email)) {
+      $this->recordFailedTeacherReg();
+      View::render('auth/register_teacher', [
+        'errors' => ['Este e-mail já está associado a uma conta.'],
+        'old'    => compact('name', 'email', 'institution'),
+      ], 'layouts/guest');
+      return;
+    }
+
+    $this->users->create($name, $email, $password, 'teacher', 'pending', $institution);
+    $this->clearTeacherRegThrottle();
+
+    \App\Services\AuditService::record('auth.teacher_registration_request', 'user', 0, [
+      'email' => $email,
+      'name' => $name,
+    ]);
+
+    View::render('auth/register_teacher', [
+      'success' => 'Solicitação enviada! Sua conta será analisada pela administração. Você será notificado sobre a decisão.',
+    ], 'layouts/guest');
+  }
+
   public function logout(): void
   {
     Request::validateCsrf();
@@ -329,5 +436,39 @@ class AuthController
     global $session;
     $session->remove('login_attempts');
     $session->remove('login_lock_until');
+  }
+
+  private function isTeacherRegLocked(): bool
+  {
+    global $session;
+    $lockUntil = (int) $session->get('teacher_reg_lock_until', 0);
+
+    if ($lockUntil <= time()) {
+      if ($lockUntil > 0) {
+        $this->clearTeacherRegThrottle();
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  private function recordFailedTeacherReg(): void
+  {
+    global $session;
+
+    $attempts = (int) $session->get('teacher_reg_attempts', 0) + 1;
+    $session->set('teacher_reg_attempts', $attempts);
+
+    if ($attempts >= self::TEACHER_REG_MAX_ATTEMPTS) {
+      $session->set('teacher_reg_lock_until', time() + self::TEACHER_REG_LOCK_SECONDS);
+    }
+  }
+
+  private function clearTeacherRegThrottle(): void
+  {
+    global $session;
+    $session->remove('teacher_reg_attempts');
+    $session->remove('teacher_reg_lock_until');
   }
 }

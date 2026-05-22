@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Attempt;
 use App\Models\Exercise;
 use App\Models\Question;
+use App\Models\SystemSetting;
 use App\Models\Turma;
 use App\Models\User;
 use App\Services\AuditService;
@@ -46,6 +47,8 @@ class AdminController
     $pendingUsers = $this->users->getRecentPendingForAdmin();
     $recentAdminEvents = $this->auditLogs->getRecentAdminEvents();
     $pendingGradingAttempts = $this->attempts->getPendingGradingForAdmin(6);
+    $pendingTeacherRequestCount = $this->users->countPendingTeacherRequests();
+    $settings = new SystemSetting();
 
     View::render('admin/dashboard', [
       'totalUsers' => count($users),
@@ -59,11 +62,13 @@ class AdminController
       'pendingEnrollmentCount' => $this->turmas->countPendingEnrollmentsForAdmin(),
       'closingSoonCount' => $this->exercises->countClosingSoonForAdmin(),
       'pendingGradingCount' => $this->attempts->countPendingGradingForAdmin(),
+      'pendingTeacherRequestCount' => $pendingTeacherRequestCount,
+      'teacherRegistrationEnabled' => $settings->getBool('teacher_registration_enabled'),
       'pendingTurmas' => $pendingTurmas,
       'closingExercises' => $closingExercises,
       'pendingUsers' => $pendingUsers,
       'pendingGradingAttempts' => $pendingGradingAttempts,
-      'pendingActions' => $this->buildDashboardPendingActions($pendingUsers, $pendingTurmas, $closingExercises, $pendingGradingAttempts),
+      'pendingActions' => $this->buildDashboardPendingActions($pendingUsers, $pendingTurmas, $closingExercises, $pendingGradingAttempts, $this->users->getPendingTeacherRequests(3)),
       'recentAdminEvents' => $recentAdminEvents,
     ]);
   }
@@ -1748,7 +1753,129 @@ class AdminController
     return substr($normalized, 0, 40);
   }
 
-  private function buildDashboardPendingActions(array $pendingUsers, array $pendingTurmas, array $closingExercises, array $pendingGradingAttempts = []): array
+  public function teacherRequests(): void
+  {
+    Auth::requireAdmin();
+
+    $perPage = self::ADMIN_PER_PAGE;
+    $page = max(1, (int) Request::get('page', 1));
+    $total = $this->users->countPendingTeacherRequests();
+    $totalPages = max(1, (int) ceil($total / $perPage));
+    $currentPage = min($page, $totalPages);
+    $offset = ($currentPage - 1) * $perPage;
+
+    $settings = new SystemSetting();
+
+    View::render('admin/teacher_requests/index', [
+      'requests' => $this->users->getPendingTeacherRequests($perPage, $offset),
+      'teacherRegistrationEnabled' => $settings->getBool('teacher_registration_enabled'),
+      'pagination' => [
+        'path' => '/admin/teacher-requests',
+        'query' => [],
+        'perPage' => $perPage,
+        'totalItems' => $total,
+        'totalPages' => $totalPages,
+        'currentPage' => $currentPage,
+        'offset' => $offset,
+      ],
+    ]);
+  }
+
+  public function approveTeacherRequest(string $id): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $userId = (int) $id;
+    $user = $this->users->find($userId);
+    global $session;
+
+    if (!$user || ($user['role'] ?? '') !== 'teacher' || !in_array($user['status'] ?? '', ['pending', 'rejected'], true)) {
+      $session->flash('error', 'Solicitação não encontrada ou já aprovada.');
+      View::redirect('/admin/teacher-requests');
+    }
+
+    $this->users->approveTeacher($userId, (int) Auth::id());
+    AuditService::record('admin.teacher_request.approve', 'user', $userId, [
+      'teacher_name' => $user['name'] ?? null,
+      'teacher_email' => $user['email'] ?? null,
+    ]);
+
+    $session->flash('success', 'Solicitação aprovada. O docente já pode acessar o sistema.');
+    View::redirect('/admin/teacher-requests');
+  }
+
+  public function rejectTeacherRequest(string $id): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $userId = (int) $id;
+    $user = $this->users->find($userId);
+    global $session;
+
+    if (!$user || ($user['role'] ?? '') !== 'teacher' || ($user['status'] ?? '') !== 'pending') {
+      $session->flash('error', 'Solicitação não encontrada ou já processada.');
+      View::redirect('/admin/teacher-requests');
+    }
+
+    $this->users->rejectTeacher($userId, (int) Auth::id());
+    AuditService::record('admin.teacher_request.reject', 'user', $userId, [
+      'teacher_name' => $user['name'] ?? null,
+      'teacher_email' => $user['email'] ?? null,
+    ]);
+
+    $session->flash('success', 'Solicitação rejeitada.');
+    View::redirect('/admin/teacher-requests');
+  }
+
+  public function teacherRequestHistory(): void
+  {
+    Auth::requireAdmin();
+
+    $perPage = self::ADMIN_PER_PAGE;
+    $page = max(1, (int) Request::get('page', 1));
+    $total = $this->users->countTeacherRequestHistory();
+    $totalPages = max(1, (int) ceil($total / $perPage));
+    $currentPage = min($page, $totalPages);
+    $offset = ($currentPage - 1) * $perPage;
+
+    View::render('admin/teacher_requests/history', [
+      'history' => $this->users->getTeacherRequestHistory($perPage, $offset),
+      'pagination' => [
+        'path' => '/admin/teacher-requests/history',
+        'query' => [],
+        'perPage' => $perPage,
+        'totalItems' => $total,
+        'totalPages' => $totalPages,
+        'currentPage' => $currentPage,
+        'offset' => $offset,
+      ],
+    ]);
+  }
+
+  public function toggleTeacherRegistration(): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $settings = new SystemSetting();
+    $current = $settings->getBool('teacher_registration_enabled');
+    $newValue = $current ? '0' : '1';
+    $settings->set('teacher_registration_enabled', $newValue, (int) Auth::id());
+
+    AuditService::record('admin.settings.teacher_registration_toggle', 'setting', 0, [
+      'previous' => $current ? 'enabled' : 'disabled',
+      'new' => $newValue === '1' ? 'enabled' : 'disabled',
+    ]);
+
+    global $session;
+    $label = $newValue === '1' ? 'habilitado' : 'desabilitado';
+    $session->flash('success', "Cadastro público de docentes {$label}.");
+    View::redirect('/admin/teacher-requests');
+  }
+
+  private function buildDashboardPendingActions(array $pendingUsers, array $pendingTurmas, array $closingExercises, array $pendingGradingAttempts = [], array $pendingTeacherRequests = []): array
   {
     $actions = [];
 
@@ -1797,6 +1924,18 @@ class AdminController
         'description' => (string) ($user['email'] ?? 'Sem e-mail'),
         'path' => '/admin/users/' . (int) ($user['id'] ?? 0),
         'action_label' => 'Abrir usuário',
+      ];
+    }
+
+    foreach (array_slice($pendingTeacherRequests, 0, 3) as $request) {
+      $actions[] = [
+        'priority' => 15,
+        'variant' => 'warning',
+        'label' => 'solicitação docente',
+        'title' => (string) ($request['name'] ?? 'Docente'),
+        'description' => (string) ($request['email'] ?? 'Sem e-mail'),
+        'path' => '/admin/teacher-requests',
+        'action_label' => 'Revisar solicitações',
       ];
     }
 
