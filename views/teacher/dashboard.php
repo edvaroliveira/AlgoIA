@@ -72,6 +72,7 @@ $pendingGradingAttempts = $pendingGradingAttempts ?? [];
           <h2 class="surface-title">Correções pendentes</h2>
           <p class="surface-copy">Tentativas enviadas que aguardam reprocessamento da avaliação automática.</p>
         </div>
+        <a href="<?= \Core\app_url('/teacher/attempts/pending') ?>" class="btn btn--ghost btn--sm">Abrir painel completo</a>
       </div>
       <div class="surface-block__body">
         <table class="table">

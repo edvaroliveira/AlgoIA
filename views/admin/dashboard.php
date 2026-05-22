@@ -124,6 +124,7 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
         <h2 class="surface-title">Correções pendentes</h2>
         <p class="surface-copy">Tentativas enviadas que ficaram aguardando reprocessamento da avaliação automática.</p>
       </div>
+      <a href="<?= \Core\app_url('/admin/attempts/pending') ?>" class="btn btn--ghost btn--sm">Abrir painel completo</a>
     </div>
     <div class="surface-block__body">
       <table class="table">
