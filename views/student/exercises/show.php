@@ -102,7 +102,13 @@ if ($flash):
                 <td><?= $i + 1 ?></td>
                 <td><?= date('d/m/Y H:i', strtotime($att['started_at'])) ?></td>
                 <td><?= $att['submitted_at'] ? date('d/m/Y H:i', strtotime($att['submitted_at'])) : '—' ?></td>
-                <td><?= $att['total_score'] !== null ? number_format((float) $att['total_score'], 1) . ' pts' : '—' ?></td>
+                <td>
+                  <?php if ($att['status'] === 'submitted'): ?>
+                    Em correção
+                  <?php else: ?>
+                    <?= $att['total_score'] !== null ? number_format((float) $att['total_score'], 1) . ' pts' : '—' ?>
+                  <?php endif; ?>
+                </td>
                 <td>
                   <?php if ($att['status'] === 'graded'): ?>
                     <a href="<?= \Core\app_url('/student/attempts/' . $att['id'] . '/result') ?>" class="btn btn--sm">Ver resultado</a>

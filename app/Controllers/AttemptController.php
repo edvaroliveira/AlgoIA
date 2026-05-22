@@ -124,14 +124,15 @@ class AttemptController
       }
     }
 
-    // Evaluate with OpenAI
+    $this->attempts->markSubmitted((int) $id);
+
+    // Evaluate with OpenAI outside the database transaction.
     $ai         = new OpenAIService();
     $totalScore = 0.0;
+    $evaluations = [];
     $db         = Database::getInstance();
 
     try {
-      $db->beginTransaction();
-
       foreach ($questions as $q) {
         $ans = $this->answers->findByAttemptAndQuestion((int) $id, (int) $q['id']);
 
@@ -148,27 +149,36 @@ class AttemptController
           $studentId
         );
 
-        $this->answers->updateAiResult(
-          (int) $ans['id'],
-          $result['score'],
-          $result['feedback']
-        );
-
+        $evaluations[] = [
+          'answer_id' => (int) $ans['id'],
+          'score' => (float) $result['score'],
+          'feedback' => (string) $result['feedback'],
+        ];
         $totalScore += $result['score'];
       }
 
-      $this->attempts->submit((int) $id, $totalScore);
+      $db->beginTransaction();
+
+      foreach ($evaluations as $evaluation) {
+        $this->answers->updateAiResult(
+          $evaluation['answer_id'],
+          $evaluation['score'],
+          $evaluation['feedback']
+        );
+      }
+
+      $this->attempts->markGraded((int) $id, $totalScore);
       $db->commit();
-    } catch (\RuntimeException $e) {
-      if (method_exists($db, 'rollback')) {
+    } catch (\Throwable $e) {
+      if (method_exists($db, 'rollback') && $db->inTransaction()) {
         $db->rollback();
       }
 
-      error_log("OpenAI evaluation failed for attempt {$id}: " . $e->getMessage());
+      error_log("Attempt evaluation failed for attempt {$id}: " . $e->getMessage());
 
       global $session;
-      $session->flash('error', 'A avaliação automática está temporariamente indisponível. Sua tentativa foi preservada para nova submissão.');
-      View::redirect("/student/exercises/{$attempt['exercise_id']}?attempt={$id}");
+      $session->flash('error', 'A avaliação automática está temporariamente indisponível. Sua tentativa foi enviada e ficou pendente de correção.');
+      View::redirect("/student/exercises/{$attempt['exercise_id']}");
     }
 
     View::redirect("/student/attempts/{$id}/result");

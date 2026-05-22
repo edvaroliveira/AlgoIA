@@ -72,6 +72,8 @@ Este backlog cobre as acoes 1 a 5 identificadas na revisao do sistema AlgoIA.
 
 ## P1 - Remover chamadas OpenAI de dentro da transacao
 
+**Status:** implementado.
+
 **Problema:** a transacao de banco fica aberta enquanto o sistema aguarda chamadas externas para avaliacao por IA.
 
 **Objetivo:** reduzir lock, falhas parciais e lentidao percebida no envio.
