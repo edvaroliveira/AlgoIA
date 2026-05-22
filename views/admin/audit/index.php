@@ -13,6 +13,14 @@ $exportQuery = http_build_query(array_filter($filters, static fn($value): bool =
   </div>
 </div>
 
+<div class="td-actions" style="margin-bottom: 1rem;">
+  <a href="<?= \Core\app_url('/admin/audit?action=admin.') ?>" class="btn btn--ghost btn--sm">Atividade admin</a>
+  <a href="<?= \Core\app_url('/admin/audit?entity_type=user') ?>" class="btn btn--ghost btn--sm">Usuários</a>
+  <a href="<?= \Core\app_url('/admin/audit?entity_type=turma') ?>" class="btn btn--ghost btn--sm">Turmas</a>
+  <a href="<?= \Core\app_url('/admin/audit?entity_type=exercise') ?>" class="btn btn--ghost btn--sm">Exercícios</a>
+  <a href="<?= \Core\app_url('/admin/audit?entity_type=student') ?>" class="btn btn--ghost btn--sm">Alunos</a>
+</div>
+
 <section class="card card--narrow">
   <div class="card-body">
     <form method="GET" action="<?= \Core\app_url('/admin/audit') ?>" class="form">

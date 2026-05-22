@@ -117,6 +117,48 @@ global $session;
       <?php if (empty($exercise['publication_settings'])): ?>
         <p class="empty-state">Este exercício ainda não possui publicação por turma.</p>
       <?php else: ?>
+        <div class="content-note">
+          <strong>Ações em lote</strong>
+          <p>Selecione múltiplas turmas para encerrar ou reabrir suas publicações de uma vez.</p>
+          <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-close') ?>" class="form" onsubmit="return confirm('Encerrar todas as publicações selecionadas?');">
+            <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="batch-close-publications">Turmas selecionadas</label>
+                <select id="batch-close-publications" name="turma_ids[]" class="form-input" multiple size="<?= min(6, max(3, count($exercise['publication_settings']))) ?>">
+                  <?php foreach ($exercise['publication_settings'] as $publication): ?>
+                    <option value="<?= (int) ($publication['turma_id'] ?? 0) ?>"><?= \Core\View::e(($publication['turma_name'] ?? 'Turma') . ' (' . ($publication['access_key'] ?? '—') . ')') ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div class="form-group" style="justify-content: flex-end;">
+                <label class="form-label">Encerrar em lote</label>
+                <button type="submit" class="btn btn--danger">Encerrar selecionadas</button>
+              </div>
+            </div>
+          </form>
+          <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-reopen') ?>" class="form">
+            <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="batch-reopen-publications">Turmas selecionadas</label>
+                <select id="batch-reopen-publications" name="turma_ids[]" class="form-input" multiple size="<?= min(6, max(3, count($exercise['publication_settings']))) ?>">
+                  <?php foreach ($exercise['publication_settings'] as $publication): ?>
+                    <option value="<?= (int) ($publication['turma_id'] ?? 0) ?>"><?= \Core\View::e(($publication['turma_name'] ?? 'Turma') . ' (' . ($publication['access_key'] ?? '—') . ')') ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="batch-reopen-until">Reabrir até</label>
+                <input id="batch-reopen-until" type="datetime-local" name="reopen_until" class="form-input" value="<?= $defaultReopenUntil ?>" min="<?= $defaultPublicationMin ?>">
+              </div>
+              <div class="form-group" style="justify-content: flex-end;">
+                <label class="form-label">Reabrir em lote</label>
+                <button type="submit" class="btn btn--primary">Reabrir selecionadas</button>
+              </div>
+            </div>
+          </form>
+        </div>
         <?php foreach ($exercise['publication_settings'] as $publication): ?>
           <?php
           $publicationClosesAt = !empty($publication['closes_at']) ? strtotime((string) $publication['closes_at']) : false;

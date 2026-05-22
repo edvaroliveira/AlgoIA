@@ -299,6 +299,122 @@ class AdminController
     View::redirect('/admin/exercises/' . $exerciseId);
   }
 
+  public function closeExercisePublicationsBatch(string $id): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $exerciseId = (int) $id;
+    $exercise = $this->exercises->findForAdmin($exerciseId);
+    global $session;
+
+    if (!$exercise) {
+      $session->flash('error', 'Exercício não encontrado.');
+      View::redirect('/admin/exercises');
+    }
+
+    if (($exercise['status'] ?? '') !== Exercise::STATUS_ACTIVE || empty($exercise['publication_settings'])) {
+      $session->flash('error', 'Este exercício não possui publicações para ação em lote.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $selectedTurmaIds = $this->extractPublicationTurmaIdsFromRequest();
+    if ($selectedTurmaIds === []) {
+      $session->flash('error', 'Selecione pelo menos uma turma para encerrar em lote.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $selectedPublications = $this->getSelectedExercisePublications($exercise, $selectedTurmaIds);
+    if ($selectedPublications === []) {
+      $session->flash('error', 'Nenhuma publicação válida foi selecionada.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    foreach ($selectedPublications as $publication) {
+      $this->exercises->closePublication($exerciseId, (int) ($publication['turma_id'] ?? 0));
+    }
+
+    AuditService::record('admin.exercise.close_publications_batch', 'exercise', $exerciseId, [
+      'exercise_title' => $exercise['title'] ?? null,
+      'teacher_name' => $exercise['teacher_name'] ?? null,
+      'turmas' => array_map(static function (array $publication): array {
+        return [
+          'turma_id' => (int) ($publication['turma_id'] ?? 0),
+          'turma_name' => $publication['turma_name'] ?? null,
+          'access_key' => $publication['access_key'] ?? null,
+        ];
+      }, $selectedPublications),
+    ]);
+
+    $session->flash('success', 'Publicações selecionadas encerradas com sucesso.');
+    View::redirect('/admin/exercises/' . $exerciseId);
+  }
+
+  public function reopenExercisePublicationsBatch(string $id): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $exerciseId = (int) $id;
+    $exercise = $this->exercises->findForAdmin($exerciseId);
+    global $session;
+
+    if (!$exercise) {
+      $session->flash('error', 'Exercício não encontrado.');
+      View::redirect('/admin/exercises');
+    }
+
+    if (($exercise['status'] ?? '') !== Exercise::STATUS_ACTIVE || empty($exercise['publication_settings'])) {
+      $session->flash('error', 'Este exercício não possui publicações para ação em lote.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $selectedTurmaIds = $this->extractPublicationTurmaIdsFromRequest();
+    if ($selectedTurmaIds === []) {
+      $session->flash('error', 'Selecione pelo menos uma turma para reabrir em lote.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $selectedPublications = $this->getSelectedExercisePublications($exercise, $selectedTurmaIds);
+    if ($selectedPublications === []) {
+      $session->flash('error', 'Nenhuma publicação válida foi selecionada.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $reopenUntil = trim((string) Request::post('reopen_until', ''));
+    if ($reopenUntil === '') {
+      $session->flash('error', 'Informe uma nova data de encerramento para as publicações selecionadas.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $reopenTimestamp = strtotime($reopenUntil);
+    if ($reopenTimestamp === false || $reopenTimestamp <= time()) {
+      $session->flash('error', 'A nova data de encerramento deve estar no futuro.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $formattedClosesAt = date('Y-m-d H:i:s', $reopenTimestamp);
+    foreach ($selectedPublications as $publication) {
+      $this->exercises->reopenPublication($exerciseId, (int) ($publication['turma_id'] ?? 0), $formattedClosesAt);
+    }
+
+    AuditService::record('admin.exercise.reopen_publications_batch', 'exercise', $exerciseId, [
+      'exercise_title' => $exercise['title'] ?? null,
+      'teacher_name' => $exercise['teacher_name'] ?? null,
+      'new_closes_at' => $formattedClosesAt,
+      'turmas' => array_map(static function (array $publication): array {
+        return [
+          'turma_id' => (int) ($publication['turma_id'] ?? 0),
+          'turma_name' => $publication['turma_name'] ?? null,
+          'access_key' => $publication['access_key'] ?? null,
+        ];
+      }, $selectedPublications),
+    ]);
+
+    $session->flash('success', 'Publicações selecionadas reabertas até ' . date('d/m/Y H:i', $reopenTimestamp) . '.');
+    View::redirect('/admin/exercises/' . $exerciseId);
+  }
+
   public function exportExercisesJson(): void
   {
     Auth::requireAdmin();
@@ -982,6 +1098,31 @@ class AdminController
     }
 
     return null;
+  }
+
+  private function extractPublicationTurmaIdsFromRequest(): array
+  {
+    $rawTurmaIds = Request::post('turma_ids', []);
+    if (!is_array($rawTurmaIds)) {
+      return [];
+    }
+
+    $turmaIds = array_values(array_unique(array_filter(array_map('intval', $rawTurmaIds), static fn(int $value): bool => $value > 0)));
+    sort($turmaIds);
+
+    return $turmaIds;
+  }
+
+  private function getSelectedExercisePublications(array $exercise, array $selectedTurmaIds): array
+  {
+    $publications = $exercise['publication_settings'] ?? [];
+    if (!is_array($publications)) {
+      return [];
+    }
+
+    return array_values(array_filter($publications, static function (array $publication) use ($selectedTurmaIds): bool {
+      return in_array((int) ($publication['turma_id'] ?? 0), $selectedTurmaIds, true);
+    }));
   }
 
   private function buildAdminUserContextText(array $user): string
