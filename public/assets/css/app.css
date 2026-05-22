@@ -706,37 +706,44 @@ a:hover { color: var(--brand-dark); }
   background: rgba(12, 79, 121, 0.03);
 }
 
-.table-subtext {
-  display: block;
-  margin-top: 0.35rem;
-  color: var(--text-muted);
-  font-size: 0.76rem;
-  font-weight: 700;
+.closing-list {
+  display: grid;
+  gap: 0.75rem;
 }
 
-.surface-block--closing-soon .surface-block__body {
-  overflow-x: auto;
+.closing-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(216, 227, 232, 0.86);
+  border-radius: 1rem;
+  background: rgba(252,251,246,.94);
 }
 
-.table--closing-soon {
-  table-layout: fixed;
+.closing-item__main,
+.closing-item__meta {
+  display: grid;
+  gap: 0.35rem;
   min-width: 0;
 }
 
-.table--closing-soon .col-exercise { width: 28%; }
-.table--closing-soon .col-teacher { width: 18%; }
-.table--closing-soon .col-turma { width: 22%; }
-.table--closing-soon .col-deadline { width: 20%; }
-.table--closing-soon .col-action { width: 12%; }
-
-.table--closing-soon th,
-.table--closing-soon td {
-  padding-left: 0.85rem;
-  padding-right: 0.85rem;
+.closing-item__main strong {
+  color: var(--brand-ink);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
-.table--closing-soon td {
-  overflow-wrap: anywhere;
+.closing-item__main span,
+.closing-item__meta span:first-child {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.closing-item .btn {
+  white-space: nowrap;
 }
 
 .deadline-badge {
@@ -754,6 +761,28 @@ a:hover { color: var(--brand-dark); }
 .deadline-badge small {
   font-size: 0.74rem;
   font-weight: 800;
+}
+
+@media (max-width: 1100px) {
+  .closing-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .closing-item__meta {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .closing-item .deadline-badge {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .closing-item .btn {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: end;
+  }
 }
 
 .table tr.table-row--compatible td {
