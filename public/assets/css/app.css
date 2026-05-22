@@ -83,6 +83,19 @@ a:hover { color: var(--brand-dark); }
   border-bottom: 1px solid rgba(191, 219, 198, 0.16);
 }
 
+.brand-logo {
+  width: 3.4rem;
+  height: 3.4rem;
+  object-fit: contain;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 12px 24px rgba(6, 23, 16, 0.18));
+}
+
+.brand-logo--guest {
+  width: 3.6rem;
+  height: 3.6rem;
+}
+
 .brand-mark {
   width: 3.25rem;
   height: 3.25rem;
@@ -288,6 +301,7 @@ a:hover { color: var(--brand-dark); }
 
 .guest-hero__badge {
   display: inline-flex;
+  align-items: center;
   padding: 0;
   border-radius: 0;
   background: transparent;
@@ -295,6 +309,12 @@ a:hover { color: var(--brand-dark); }
   font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: 0;
+}
+
+.guest-hero__logo {
+  width: clamp(7rem, 18vw, 11rem);
+  height: auto;
+  object-fit: contain;
 }
 
 .guest-hero__title {
