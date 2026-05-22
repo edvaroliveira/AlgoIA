@@ -7,6 +7,15 @@ $exportQuery = http_build_query(array_filter($filters, static fn($value): bool =
 $activeTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['active_count'] ?? 0), $turmas));
 $pendingTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['pending_count'] ?? 0), $turmas));
 $exerciseTotal = array_sum(array_map(static fn(array $turma): int => (int) ($turma['exercise_count'] ?? 0), $turmas));
+$turmaCount = count($turmas);
+$turmaCountBadgeVariant = $turmaCount > 0 ? 'neutral' : 'warning';
+$turmaCountBadgeText = $turmaCount > 0 ? 'base filtrada' : 'sem resultados';
+$activeTotalBadgeVariant = $activeTotal > 0 ? 'success' : 'neutral';
+$activeTotalBadgeText = $activeTotal > 0 ? 'atividade presente' : 'sem matrículas';
+$pendingTotalBadgeVariant = $pendingTotal > 0 ? 'warning' : 'neutral';
+$pendingTotalBadgeText = $pendingTotal > 0 ? 'exige atenção' : 'sem fila';
+$exerciseTotalBadgeVariant = $exerciseTotal > 0 ? 'info' : 'neutral';
+$exerciseTotalBadgeText = $exerciseTotal > 0 ? 'carga publicada' : 'sem publicações';
 global $session;
 ?>
 
@@ -54,22 +63,26 @@ global $session;
 <div class="overview-grid">
   <article class="overview-card">
     <span class="overview-card__label">Turmas</span>
-    <strong class="overview-card__value"><?= count($turmas) ?></strong>
+    <strong class="overview-card__value"><?= $turmaCount ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($turmaCountBadgeVariant) ?>"><?= \Core\View::e($turmaCountBadgeText) ?></span></span>
     <p class="overview-card__copy">Estruturas acadêmicas atualmente cadastradas na base.</p>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Alunos ativos</span>
     <strong class="overview-card__value"><?= $activeTotal ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($activeTotalBadgeVariant) ?>"><?= \Core\View::e($activeTotalBadgeText) ?></span></span>
     <p class="overview-card__copy">Matrículas aprovadas em todas as turmas monitoradas.</p>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Pendências</span>
     <strong class="overview-card__value"><?= $pendingTotal ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($pendingTotalBadgeVariant) ?>"><?= \Core\View::e($pendingTotalBadgeText) ?></span></span>
     <p class="overview-card__copy">Solicitações de entrada aguardando decisão docente.</p>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Exercícios publicados</span>
     <strong class="overview-card__value"><?= $exerciseTotal ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($exerciseTotalBadgeVariant) ?>"><?= \Core\View::e($exerciseTotalBadgeText) ?></span></span>
     <p class="overview-card__copy">Publicações vinculadas às turmas em toda a plataforma.</p>
   </article>
 </div>

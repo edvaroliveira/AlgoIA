@@ -8,6 +8,14 @@ $totalUsers = count($users);
 $adminCount = count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'admin'));
 $teacherCount = count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'teacher'));
 $studentCount = count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'student'));
+$totalUsersBadgeVariant = $totalUsers > 0 ? 'neutral' : 'warning';
+$totalUsersBadgeText = $totalUsers > 0 ? 'base filtrada' : 'sem resultados';
+$adminCountBadgeVariant = $adminCount > 0 ? 'neutral' : 'warning';
+$adminCountBadgeText = $adminCount > 0 ? 'governança ativa' : 'sem administradores';
+$teacherCountBadgeVariant = $teacherCount > 0 ? 'info' : 'neutral';
+$teacherCountBadgeText = $teacherCount > 0 ? 'operação docente' : 'sem docentes';
+$studentCountBadgeVariant = $studentCount > 0 ? 'success' : 'neutral';
+$studentCountBadgeText = $studentCount > 0 ? 'base estudantil' : 'sem alunos';
 global $session;
 ?>
 
@@ -64,21 +72,25 @@ global $session;
   <article class="overview-card">
     <span class="overview-card__label">Total</span>
     <strong class="overview-card__value"><?= $totalUsers ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($totalUsersBadgeVariant) ?>"><?= \Core\View::e($totalUsersBadgeText) ?></span></span>
     <p class="overview-card__copy">Todos os usuários cadastrados na base.</p>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Administradores</span>
     <strong class="overview-card__value"><?= $adminCount ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($adminCountBadgeVariant) ?>"><?= \Core\View::e($adminCountBadgeText) ?></span></span>
     <p class="overview-card__copy">Perfis com acesso administrativo global.</p>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Docentes</span>
     <strong class="overview-card__value"><?= $teacherCount ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($teacherCountBadgeVariant) ?>"><?= \Core\View::e($teacherCountBadgeText) ?></span></span>
     <p class="overview-card__copy">Usuários que gerenciam turmas e exercícios.</p>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Alunos</span>
     <strong class="overview-card__value"><?= $studentCount ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($studentCountBadgeVariant) ?>"><?= \Core\View::e($studentCountBadgeText) ?></span></span>
     <p class="overview-card__copy">Usuários vinculados às turmas da plataforma.</p>
   </article>
 </div>

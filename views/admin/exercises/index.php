@@ -9,6 +9,15 @@ $activeExercises = count(array_filter($exercises, static fn(array $exercise): bo
 $draftExercises = count(array_filter($exercises, static fn(array $exercise): bool => ($exercise['status'] ?? '') === 'draft'));
 $readyExercises = count(array_filter($exercises, static fn(array $exercise): bool => ($exercise['status'] ?? '') === 'ready'));
 $attemptTotal = array_sum(array_map(static fn(array $exercise): int => (int) ($exercise['attempt_count'] ?? 0), $exercises));
+$exerciseCount = count($exercises);
+$exerciseCountBadgeVariant = $exerciseCount > 0 ? 'neutral' : 'warning';
+$exerciseCountBadgeText = $exerciseCount > 0 ? 'base filtrada' : 'sem resultados';
+$activeExercisesBadgeVariant = $activeExercises > 0 ? 'success' : 'neutral';
+$activeExercisesBadgeText = $activeExercises > 0 ? 'em operação' : 'sem publicação';
+$readyExercisesBadgeVariant = $readyExercises > 0 ? 'info' : 'neutral';
+$readyExercisesBadgeText = $readyExercises > 0 ? 'fila pronta' : 'sem fila pronta';
+$attemptTotalBadgeVariant = $attemptTotal > 0 ? 'success' : 'neutral';
+$attemptTotalBadgeText = $attemptTotal > 0 ? 'atividade registrada' : 'sem submissões';
 global $session;
 ?>
 
@@ -57,22 +66,26 @@ global $session;
 <div class="overview-grid">
   <article class="overview-card">
     <span class="overview-card__label">Total cadastrados</span>
-    <strong class="overview-card__value"><?= count($exercises) ?></strong>
+    <strong class="overview-card__value"><?= $exerciseCount ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($exerciseCountBadgeVariant) ?>"><?= \Core\View::e($exerciseCountBadgeText) ?></span></span>
     <p class="overview-card__copy">Inclui rascunhos, exercícios prontos e publicações ativas.</p>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Publicados</span>
     <strong class="overview-card__value"><?= $activeExercises ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($activeExercisesBadgeVariant) ?>"><?= \Core\View::e($activeExercisesBadgeText) ?></span></span>
     <p class="overview-card__copy">Exercícios já ativos em pelo menos uma turma.</p>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Prontos</span>
     <strong class="overview-card__value"><?= $readyExercises ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($readyExercisesBadgeVariant) ?>"><?= \Core\View::e($readyExercisesBadgeText) ?></span></span>
     <p class="overview-card__copy">Itens finalizados, aguardando publicação operacional.</p>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Tentativas</span>
     <strong class="overview-card__value"><?= $attemptTotal ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($attemptTotalBadgeVariant) ?>"><?= \Core\View::e($attemptTotalBadgeText) ?></span></span>
     <p class="overview-card__copy">Submissões registradas em toda a plataforma.</p>
   </article>
 </div>
