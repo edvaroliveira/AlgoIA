@@ -57,8 +57,84 @@ class AdminController
       'pendingTurmas' => $pendingTurmas,
       'closingExercises' => $closingExercises,
       'pendingUsers' => $pendingUsers,
+      'pendingActions' => $this->buildDashboardPendingActions($pendingUsers, $pendingTurmas, $closingExercises),
       'recentAdminEvents' => $recentAdminEvents,
     ]);
+  }
+
+  public function saveFilterPreset(string $scope): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $config = $this->getFilterPresetConfig($scope);
+    global $session;
+
+    if ($config === null) {
+      $session->flash('error', 'Escopo de preset inválido.');
+      View::redirect('/admin/dashboard');
+    }
+
+    $name = trim(Request::str('preset_name'));
+    $filters = $this->getFilterPresetInput($scope);
+    $redirectPath = $this->buildBatchReturnPath($config['path']);
+    $filterQuery = $this->buildFilterQuery($filters);
+
+    if ($name === '') {
+      $session->flash('error', 'Informe um nome para o preset.');
+      View::redirect($redirectPath);
+    }
+
+    if ($filterQuery === '') {
+      $session->flash('error', 'Aplique pelo menos um filtro antes de salvar um preset.');
+      View::redirect($redirectPath);
+    }
+
+    $presetId = $this->slugifyPresetName($name);
+    $presets = $session->get('admin_filter_presets', []);
+    $scopePresets = is_array($presets[$scope] ?? null) ? $presets[$scope] : [];
+    $scopePresets[$presetId] = [
+      'id' => $presetId,
+      'name' => $name,
+      'query' => $filterQuery,
+      'filters' => $filters,
+      'updated_at' => date('c'),
+    ];
+
+    $presets[$scope] = $scopePresets;
+    $session->set('admin_filter_presets', $presets);
+    $session->flash('success', 'Preset salvo com sucesso.');
+    View::redirect($redirectPath);
+  }
+
+  public function deleteFilterPreset(string $scope): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $config = $this->getFilterPresetConfig($scope);
+    global $session;
+
+    if ($config === null) {
+      $session->flash('error', 'Escopo de preset inválido.');
+      View::redirect('/admin/dashboard');
+    }
+
+    $presetId = trim(Request::str('preset_id'));
+    $redirectPath = $this->buildBatchReturnPath($config['path']);
+    $presets = $session->get('admin_filter_presets', []);
+    $scopePresets = is_array($presets[$scope] ?? null) ? $presets[$scope] : [];
+
+    if ($presetId === '' || !isset($scopePresets[$presetId])) {
+      $session->flash('error', 'Preset não encontrado.');
+      View::redirect($redirectPath);
+    }
+
+    unset($scopePresets[$presetId]);
+    $presets[$scope] = $scopePresets;
+    $session->set('admin_filter_presets', $presets);
+    $session->flash('success', 'Preset removido com sucesso.');
+    View::redirect($redirectPath);
   }
 
   public function users(): void
@@ -73,6 +149,7 @@ class AdminController
     View::render('admin/users/index', [
       'users' => $users,
       'filters' => $filters,
+      'filterPresets' => $this->getFilterPresets('users'),
       'pagination' => $pagination,
     ]);
   }
@@ -143,6 +220,7 @@ class AdminController
     View::render('admin/turmas/index', [
       'turmas' => $turmas,
       'filters' => $filters,
+      'filterPresets' => $this->getFilterPresets('turmas'),
       'pagination' => $pagination,
     ]);
   }
@@ -212,6 +290,7 @@ class AdminController
     View::render('admin/exercises/index', [
       'exercises' => $exercises,
       'filters' => $filters,
+      'filterPresets' => $this->getFilterPresets('exercises'),
       'pagination' => $pagination,
     ]);
   }
@@ -456,6 +535,7 @@ class AdminController
     View::render('admin/audit/index', [
       'logs' => $logs,
       'filters' => $filters,
+      'filterPresets' => $this->getFilterPresets('audit'),
       'pagination' => $pagination,
     ]);
   }
@@ -840,6 +920,79 @@ class AdminController
       'maxScore' => $this->questions->getTotalMaxScore((int) $id),
       'returnPath' => $this->buildReturnPathFromRequest('/admin/exercises'),
     ]);
+  }
+
+  public function moderateExercise(string $id): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $exerciseId = (int) $id;
+    $exercise = $this->exercises->findForAdmin($exerciseId);
+    global $session;
+
+    if (!$exercise) {
+      $session->flash('error', 'Exercício não encontrado.');
+      View::redirect('/admin/exercises');
+    }
+
+    $status = $this->sanitizeReviewStatus(Request::str('admin_review_status'));
+    $note = $this->sanitizeReviewNote(Request::text('admin_review_note'));
+
+    $this->exercises->updateAdminReview($exerciseId, $status, $note, Auth::id());
+
+    if ($status === Exercise::REVIEW_BLOCKED && ($exercise['status'] ?? '') === Exercise::STATUS_ACTIVE) {
+      $this->exercises->closePublications($exerciseId);
+    }
+
+    AuditService::record('admin.exercise.review_update', 'exercise', $exerciseId, [
+      'exercise_title' => $exercise['title'] ?? null,
+      'teacher_name' => $exercise['teacher_name'] ?? null,
+      'previous_review_status' => $exercise['admin_review_status'] ?? Exercise::REVIEW_APPROVED,
+      'new_review_status' => $status,
+      'review_note' => $note,
+      'publications_closed' => $status === Exercise::REVIEW_BLOCKED && ($exercise['status'] ?? '') === Exercise::STATUS_ACTIVE,
+    ]);
+
+    $session->flash('success', 'Moderação do exercício atualizada com sucesso.');
+    View::redirect('/admin/exercises/' . $exerciseId);
+  }
+
+  public function moderateQuestion(string $id): void
+  {
+    Auth::requireAdmin();
+    Request::validateCsrf();
+
+    $questionId = (int) $id;
+    $question = $this->questions->find($questionId);
+    global $session;
+
+    if (!$question) {
+      $session->flash('error', 'Questão não encontrada.');
+      View::redirect('/admin/exercises');
+    }
+
+    $exerciseId = (int) ($question['exercise_id'] ?? 0);
+    $exercise = $this->exercises->findForAdmin($exerciseId);
+    if (!$exercise) {
+      $session->flash('error', 'Exercício da questão não encontrado.');
+      View::redirect('/admin/exercises');
+    }
+
+    $status = $this->sanitizeReviewStatus(Request::str('admin_review_status'));
+    $note = $this->sanitizeReviewNote(Request::text('admin_review_note'));
+
+    $this->questions->updateAdminReview($questionId, $status, $note, Auth::id());
+    AuditService::record('admin.question.review_update', 'exercise', $exerciseId, [
+      'question_id' => $questionId,
+      'exercise_title' => $exercise['title'] ?? null,
+      'previous_review_status' => $question['admin_review_status'] ?? Exercise::REVIEW_APPROVED,
+      'new_review_status' => $status,
+      'review_note' => $note,
+    ]);
+
+    $session->flash('success', 'Moderação da questão atualizada com sucesso.');
+    View::redirect('/admin/exercises/' . $exerciseId);
   }
 
   public function closeExercise(string $id): void
@@ -1452,12 +1605,30 @@ class AdminController
     ];
   }
 
+  private function getUserFiltersFromPost(): array
+  {
+    return [
+      'search' => trim((string) Request::post('search', '')),
+      'role' => trim((string) Request::post('role', '')),
+      'status' => trim((string) Request::post('status', '')),
+    ];
+  }
+
   private function getTurmaFiltersFromRequest(): array
   {
     return [
       'search' => trim((string) Request::get('search', '')),
       'status' => trim((string) Request::get('status', '')),
       'attention' => trim((string) Request::get('attention', '')),
+    ];
+  }
+
+  private function getTurmaFiltersFromPost(): array
+  {
+    return [
+      'search' => trim((string) Request::post('search', '')),
+      'status' => trim((string) Request::post('status', '')),
+      'attention' => trim((string) Request::post('attention', '')),
     ];
   }
 
@@ -1470,6 +1641,15 @@ class AdminController
     ];
   }
 
+  private function getExerciseFiltersFromPost(): array
+  {
+    return [
+      'search' => trim((string) Request::post('search', '')),
+      'status' => trim((string) Request::post('status', '')),
+      'timing' => trim((string) Request::post('timing', '')),
+    ];
+  }
+
   private function getAuditFiltersFromRequest(): array
   {
     return [
@@ -1479,6 +1659,128 @@ class AdminController
       'from_date' => trim((string) Request::get('from_date', '')),
       'to_date' => trim((string) Request::get('to_date', '')),
     ];
+  }
+
+  private function getAuditFiltersFromPost(): array
+  {
+    return [
+      'search' => trim((string) Request::post('search', '')),
+      'action' => trim((string) Request::post('action', '')),
+      'entity_type' => trim((string) Request::post('entity_type', '')),
+      'from_date' => trim((string) Request::post('from_date', '')),
+      'to_date' => trim((string) Request::post('to_date', '')),
+    ];
+  }
+
+  private function getFilterPresets(string $scope): array
+  {
+    global $session;
+
+    $presets = $session->get('admin_filter_presets', []);
+    $scopePresets = is_array($presets[$scope] ?? null) ? array_values($presets[$scope]) : [];
+
+    usort($scopePresets, static function (array $left, array $right): int {
+      return strcmp((string) ($right['updated_at'] ?? ''), (string) ($left['updated_at'] ?? ''));
+    });
+
+    return $scopePresets;
+  }
+
+  private function sanitizeReviewStatus(string $status): string
+  {
+    return in_array($status, [Exercise::REVIEW_APPROVED, Exercise::REVIEW_FLAGGED, Exercise::REVIEW_BLOCKED], true)
+      ? $status
+      : Exercise::REVIEW_APPROVED;
+  }
+
+  private function sanitizeReviewNote(?string $note): ?string
+  {
+    $value = trim((string) $note);
+    return $value === '' ? null : mb_substr($value, 0, 2000);
+  }
+
+  private function getFilterPresetConfig(string $scope): ?array
+  {
+    return match ($scope) {
+      'users' => ['path' => '/admin/users'],
+      'turmas' => ['path' => '/admin/turmas'],
+      'exercises' => ['path' => '/admin/exercises'],
+      'audit' => ['path' => '/admin/audit'],
+      default => null,
+    };
+  }
+
+  private function getFilterPresetInput(string $scope): array
+  {
+    return match ($scope) {
+      'users' => $this->getUserFiltersFromPost(),
+      'turmas' => $this->getTurmaFiltersFromPost(),
+      'exercises' => $this->getExerciseFiltersFromPost(),
+      'audit' => $this->getAuditFiltersFromPost(),
+      default => [],
+    };
+  }
+
+  private function buildFilterQuery(array $filters): string
+  {
+    return http_build_query(array_filter($filters, static fn($value): bool => (string) $value !== ''));
+  }
+
+  private function slugifyPresetName(string $name): string
+  {
+    $normalized = preg_replace('/[^a-z0-9]+/i', '-', strtolower($name)) ?? 'preset';
+    $normalized = trim($normalized, '-');
+
+    if ($normalized === '') {
+      $normalized = 'preset';
+    }
+
+    return substr($normalized, 0, 40);
+  }
+
+  private function buildDashboardPendingActions(array $pendingUsers, array $pendingTurmas, array $closingExercises): array
+  {
+    $actions = [];
+
+    foreach (array_slice($closingExercises, 0, 3) as $exercise) {
+      $actions[] = [
+        'priority' => 10,
+        'variant' => 'error',
+        'label' => 'janela crítica',
+        'title' => (string) ($exercise['title'] ?? 'Exercício'),
+        'description' => 'Fecha em ' . (!empty($exercise['closes_at']) ? date('d/m/Y H:i', strtotime((string) $exercise['closes_at'])) : 'breve'),
+        'path' => '/admin/exercises/' . (int) ($exercise['id'] ?? 0),
+        'action_label' => 'Revisar exercício',
+      ];
+    }
+
+    foreach (array_slice($pendingTurmas, 0, 3) as $turma) {
+      $actions[] = [
+        'priority' => 20,
+        'variant' => 'warning',
+        'label' => 'pendência de entrada',
+        'title' => (string) ($turma['name'] ?? 'Turma'),
+        'description' => (int) ($turma['pending_count'] ?? 0) . ' solicitação(ões) aguardando decisão',
+        'path' => '/admin/turmas/' . (int) ($turma['id'] ?? 0),
+        'action_label' => 'Abrir turma',
+      ];
+    }
+
+    foreach (array_slice($pendingUsers, 0, 3) as $user) {
+      $actions[] = [
+        'priority' => 30,
+        'variant' => 'info',
+        'label' => 'cadastro pendente',
+        'title' => (string) ($user['name'] ?? 'Usuário'),
+        'description' => (string) ($user['email'] ?? 'Sem e-mail'),
+        'path' => '/admin/users/' . (int) ($user['id'] ?? 0),
+        'action_label' => 'Abrir usuário',
+      ];
+    }
+
+    usort($actions, static fn(array $left, array $right): int => $left['priority'] <=> $right['priority']);
+
+    return array_slice($actions, 0, 8);
   }
 
   private function streamCsvDownload(string $filename, array $headers, array $rows, callable $mapper): void

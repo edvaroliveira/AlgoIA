@@ -18,6 +18,7 @@ $isClosed = ($exercise['status'] ?? '') === 'active'
 $defaultReopenUntil = date('Y-m-d\TH:i', strtotime('+7 days'));
 $defaultPublicationMin = date('Y-m-d\TH:i', strtotime('+1 hour'));
 $currentPath = '/admin/exercises/' . (int) ($exercise['id'] ?? 0) . '?return_to=' . urlencode($returnPath);
+$exerciseReviewStatus = (string) ($exercise['admin_review_status'] ?? 'approved');
 global $session;
 ?>
 
@@ -68,6 +69,43 @@ global $session;
     </div>
   </div>
   <div class="surface-block__body surface-block__body--stack">
+    <div class="content-note">
+      <strong>Moderação administrativa</strong>
+      <div class="badge-strip">
+        <?php if ($exerciseReviewStatus === 'blocked'): ?>
+          <span class="badge badge--error">bloqueado</span>
+        <?php elseif ($exerciseReviewStatus === 'flagged'): ?>
+          <span class="badge badge--warning">sinalizado</span>
+        <?php else: ?>
+          <span class="badge badge--success">aprovado</span>
+        <?php endif; ?>
+      </div>
+      <?php if (!empty($exercise['admin_review_note'])): ?>
+        <p><?= nl2br(\Core\View::e((string) $exercise['admin_review_note'])) ?></p>
+      <?php endif; ?>
+      <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/moderate') ?>" class="form">
+        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="exercise-admin-review-status">Status de revisão</label>
+            <select id="exercise-admin-review-status" name="admin_review_status" class="form-input">
+              <option value="approved" <?= $exerciseReviewStatus === 'approved' ? 'selected' : '' ?>>Aprovado</option>
+              <option value="flagged" <?= $exerciseReviewStatus === 'flagged' ? 'selected' : '' ?>>Sinalizado</option>
+              <option value="blocked" <?= $exerciseReviewStatus === 'blocked' ? 'selected' : '' ?>>Bloqueado</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="exercise-admin-review-note">Observação administrativa</label>
+            <textarea id="exercise-admin-review-note" name="admin_review_note" class="form-input form-textarea" rows="3" placeholder="Contexto interno da moderação"><?= \Core\View::e((string) ($exercise['admin_review_note'] ?? '')) ?></textarea>
+          </div>
+        </div>
+        <div class="td-actions">
+          <button type="submit" class="btn btn--ghost">Salvar moderação</button>
+        </div>
+      </form>
+    </div>
     <div class="meta-grid">
       <div><strong>Status</strong><?= $isDraft ? 'Rascunho' : ($isReady ? 'Pronto' : ($isClosed ? 'Encerrado' : ($isOpen ? 'Aberto' : 'Agendado'))) ?></div>
       <div><strong>Turmas</strong><?= \Core\View::e($exercise['turma_label'] ?? 'Pendente de finalização') ?></div>
@@ -280,7 +318,41 @@ global $session;
         <?php foreach ($questions as $index => $question): ?>
           <div class="content-note">
             <strong>Q<?= $index + 1 ?> · <?= number_format((float) $question['max_score'], 1) ?> pts</strong>
+            <div class="badge-strip">
+              <?php if (($question['admin_review_status'] ?? 'approved') === 'blocked'): ?>
+                <span class="badge badge--error">bloqueada</span>
+              <?php elseif (($question['admin_review_status'] ?? 'approved') === 'flagged'): ?>
+                <span class="badge badge--warning">sinalizada</span>
+              <?php else: ?>
+                <span class="badge badge--success">aprovada</span>
+              <?php endif; ?>
+            </div>
             <p><?= nl2br(\Core\View::e($question['text'])) ?></p>
+            <?php if (!empty($question['admin_review_note'])): ?>
+              <p class="hint">Observação: <?= nl2br(\Core\View::e((string) $question['admin_review_note'])) ?></p>
+            <?php endif; ?>
+            <form method="POST" action="<?= \Core\app_url('/admin/questions/' . ($question['id'] ?? 0) . '/moderate') ?>" class="form">
+              <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="question-review-status-<?= (int) ($question['id'] ?? 0) ?>">Status da questão</label>
+                  <select id="question-review-status-<?= (int) ($question['id'] ?? 0) ?>" name="admin_review_status" class="form-input">
+                    <option value="approved" <?= ($question['admin_review_status'] ?? 'approved') === 'approved' ? 'selected' : '' ?>>Aprovada</option>
+                    <option value="flagged" <?= ($question['admin_review_status'] ?? 'approved') === 'flagged' ? 'selected' : '' ?>>Sinalizada</option>
+                    <option value="blocked" <?= ($question['admin_review_status'] ?? 'approved') === 'blocked' ? 'selected' : '' ?>>Bloqueada</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="question-review-note-<?= (int) ($question['id'] ?? 0) ?>">Observação administrativa</label>
+                  <textarea id="question-review-note-<?= (int) ($question['id'] ?? 0) ?>" name="admin_review_note" class="form-input form-textarea" rows="2" placeholder="Contexto interno da moderação"><?= \Core\View::e((string) ($question['admin_review_note'] ?? '')) ?></textarea>
+                </div>
+              </div>
+              <div class="td-actions">
+                <button type="submit" class="btn btn--sm btn--ghost">Salvar revisão da questão</button>
+              </div>
+            </form>
           </div>
         <?php endforeach; ?>
       <?php endif; ?>

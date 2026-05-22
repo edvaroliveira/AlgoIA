@@ -14,6 +14,7 @@ $pendingUsers = $pendingUsers ?? [];
 $pendingTurmas = $pendingTurmas ?? [];
 $closingExercises = $closingExercises ?? [];
 $recentAdminEvents = $recentAdminEvents ?? [];
+$pendingActions = $pendingActions ?? [];
 $today = date('Y-m-d');
 $last7Days = date('Y-m-d', strtotime('-7 days'));
 $last30Days = date('Y-m-d', strtotime('-30 days'));
@@ -106,6 +107,39 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
     <p class="overview-card__copy">Exercícios ativos com encerramento previsto nas próximas 72 horas.</p>
   </article>
 </div>
+
+<?php if (!empty($pendingActions)): ?>
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Fila operacional priorizada</h2>
+        <p class="surface-copy">Pendências ordenadas por urgência para reduzir navegação dispersa no módulo administrativo.</p>
+      </div>
+    </div>
+    <div class="surface-block__body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Sinal</th>
+            <th>Item</th>
+            <th>Contexto</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($pendingActions as $pendingAction): ?>
+            <tr>
+              <td><span class="badge badge--<?= \Core\View::e($pendingAction['variant'] ?? 'neutral') ?>"><?= \Core\View::e($pendingAction['label'] ?? 'ação') ?></span></td>
+              <td><strong><?= \Core\View::e($pendingAction['title'] ?? 'Item') ?></strong></td>
+              <td><?= \Core\View::e($pendingAction['description'] ?? 'Sem contexto adicional') ?></td>
+              <td class="td-actions"><a href="<?= \Core\app_url((string) ($pendingAction['path'] ?? '/admin/dashboard')) ?>" class="btn btn--sm"><?= \Core\View::e($pendingAction['action_label'] ?? 'Abrir') ?></a></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </section>
+<?php endif; ?>
 
 <div class="cards-grid">
   <section class="surface-block">

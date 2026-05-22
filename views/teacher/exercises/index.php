@@ -71,6 +71,7 @@ $openExercises = count(array_filter($exercises, static function ($exercise) use 
           <?php foreach ($exercises as $ex):
             $isDraft = ($ex['status'] ?? 'active') === 'draft';
             $isReady = ($ex['status'] ?? 'active') === 'ready';
+            $reviewStatus = (string) ($ex['admin_review_status'] ?? 'approved');
             $open = !empty($ex['opens_at']) && !empty($ex['closes_at'])
               && strtotime($ex['opens_at']) <= $now && strtotime($ex['closes_at']) >= $now;
             $closed = !empty($ex['closes_at']) && strtotime($ex['closes_at']) < $now;
@@ -92,6 +93,11 @@ $openExercises = count(array_filter($exercises, static function ($exercise) use 
                   <span class="badge badge--success">Aberto</span>
                 <?php else: ?>
                   <span class="badge badge--info">Agendado</span>
+                <?php endif; ?>
+                <?php if ($reviewStatus === 'blocked'): ?>
+                  <span class="badge badge--error">Bloqueado pela administração</span>
+                <?php elseif ($reviewStatus === 'flagged'): ?>
+                  <span class="badge badge--warning">Em revisão</span>
                 <?php endif; ?>
               </td>
               <td class="td-actions">

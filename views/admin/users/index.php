@@ -16,6 +16,7 @@ $teacherCountBadgeVariant = $teacherCount > 0 ? 'info' : 'neutral';
 $teacherCountBadgeText = $teacherCount > 0 ? 'operação docente' : 'sem docentes';
 $studentCountBadgeVariant = $studentCount > 0 ? 'success' : 'neutral';
 $studentCountBadgeText = $studentCount > 0 ? 'base estudantil' : 'sem alunos';
+$filterPresets = $filterPresets ?? [];
 global $session;
 ?>
 
@@ -65,6 +66,46 @@ global $session;
         </div>
       </div>
     </form>
+  </div>
+</section>
+
+<section class="card card--narrow">
+  <div class="card-body">
+    <form method="POST" action="<?= \Core\app_url('/admin/presets/users/save') ?>" class="form">
+      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+      <input type="hidden" name="return_query" value="<?= \Core\View::e($exportQuery) ?>">
+      <input type="hidden" name="search" value="<?= \Core\View::e($filters['search'] ?? '') ?>">
+      <input type="hidden" name="role" value="<?= \Core\View::e($filters['role'] ?? '') ?>">
+      <input type="hidden" name="status" value="<?= \Core\View::e($filters['status'] ?? '') ?>">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="users-preset-name">Salvar preset atual</label>
+          <input id="users-preset-name" type="text" name="preset_name" class="form-input" placeholder="Ex.: pendentes docentes">
+        </div>
+        <div class="form-group" style="justify-content: flex-end;">
+          <label class="form-label">Preset</label>
+          <div class="td-actions">
+            <button type="submit" class="btn btn--ghost">Salvar preset</button>
+          </div>
+        </div>
+      </div>
+    </form>
+    <?php if (!empty($filterPresets)): ?>
+      <div class="content-note">
+        <strong>Presets salvos</strong>
+        <div class="td-actions">
+          <?php foreach ($filterPresets as $preset): ?>
+            <a href="<?= \Core\app_url('/admin/users' . (!empty($preset['query']) ? '?' . $preset['query'] : '')) ?>" class="btn btn--sm btn--ghost"><?= \Core\View::e($preset['name'] ?? 'Preset') ?></a>
+            <form method="POST" action="<?= \Core\app_url('/admin/presets/users/delete') ?>">
+              <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+              <input type="hidden" name="return_query" value="<?= \Core\View::e($exportQuery) ?>">
+              <input type="hidden" name="preset_id" value="<?= \Core\View::e($preset['id'] ?? '') ?>">
+              <button type="submit" class="btn btn--sm btn--ghost">Remover <?= \Core\View::e($preset['name'] ?? 'preset') ?></button>
+            </form>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    <?php endif; ?>
   </div>
 </section>
 
