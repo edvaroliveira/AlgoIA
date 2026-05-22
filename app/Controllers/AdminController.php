@@ -1544,13 +1544,14 @@ class AdminController
     }
 
     $temporaryPassword = $this->generateTemporaryPassword();
-    $this->users->updatePassword($userId, $temporaryPassword);
+    $this->users->resetPassword($userId, $temporaryPassword);
     AuditService::record('admin.user.password_reset', 'user', $userId, [
       'target_email' => $user['email'] ?? null,
       'target_role' => $user['role'] ?? null,
+      'must_change_password' => true,
     ]);
 
-    $session->flash('success', 'Senha temporária gerada para ' . ($user['email'] ?? 'usuário') . ': ' . $temporaryPassword);
+    $session->flash('success', 'Senha temporária gerada para ' . ($user['email'] ?? 'usuário') . ': ' . $temporaryPassword . '. O usuário deverá trocar a senha no próximo acesso.');
     View::redirect('/admin/users');
   }
 

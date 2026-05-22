@@ -10,6 +10,8 @@ $router->get('/login',     'AuthController@showLogin');
 $router->post('/login',    'AuthController@login');
 $router->get('/register',  'AuthController@showRegister');
 $router->post('/register', 'AuthController@register');
+$router->get('/password/change', 'AuthController@showChangePassword');
+$router->post('/password/change', 'AuthController@changePassword');
 $router->post('/logout',   'AuthController@logout');
 
 // ── Teacher ──────────────────────────────────────────────────────────────────

@@ -21,6 +21,7 @@ class Auth
       'name' => $user['name'],
       'email' => $user['email'],
       'role' => $user['role'],
+      'must_change_password' => !empty($user['must_change_password']),
     ]);
   }
 
@@ -63,10 +64,36 @@ class Auth
     return $u && $u['role'] === 'student';
   }
 
+  public static function mustChangePassword(): bool
+  {
+    $u = self::user();
+    return $u && !empty($u['must_change_password']);
+  }
+
+  public static function clearMustChangePassword(): void
+  {
+    $u = self::user();
+    if (!$u) {
+      return;
+    }
+
+    $u['must_change_password'] = false;
+    self::$session->set('user', $u);
+  }
+
   public static function requireAuth(): void
   {
     if (!self::check()) {
       View::redirect('/login');
+    }
+
+    $path = app_request_path();
+    if (
+      self::mustChangePassword()
+      && $path !== '/password/change'
+      && $path !== '/logout'
+    ) {
+      View::redirect('/password/change');
     }
   }
 

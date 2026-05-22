@@ -95,6 +95,8 @@ Este backlog cobre as acoes 1 a 5 identificadas na revisao do sistema AlgoIA.
 
 ## P1 - Criar fluxo seguro de reset e troca obrigatoria de senha
 
+**Status:** implementado.
+
 **Problema:** o admin gera senha temporaria e ela aparece em mensagem flash, sem troca obrigatoria no proximo login.
 
 **Objetivo:** tornar redefinicao de senha mais segura e auditavel.
