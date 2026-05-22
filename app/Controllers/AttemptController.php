@@ -132,6 +132,11 @@ class AttemptController
       (new AttemptGradingService())->gradeSubmittedAttempt((int) $id);
     } catch (\Throwable $e) {
       error_log("Attempt evaluation failed for attempt {$id}: " . $e->getMessage());
+      AuditService::record('student.attempt.grading_failed', 'attempt', (int) $id, [
+        'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
+        'student_id' => (int) ($attempt['student_id'] ?? 0),
+        'error' => $e->getMessage(),
+      ]);
 
       global $session;
       $session->flash('error', 'A avaliação automática está temporariamente indisponível. Sua tentativa foi enviada e ficou pendente de correção.');
@@ -173,6 +178,19 @@ class AttemptController
     $this->regrade((int) $id, 'teacher.attempt.regrade', '/teacher/dashboard');
   }
 
+  public function resultAdmin(string $id): void
+  {
+    Auth::requireAdmin();
+    $this->renderResult((int) $id, true, '/admin/exercises/');
+  }
+
+  public function resultTeacher(string $id): void
+  {
+    Auth::requireTeacher();
+    Auth::ensure($this->attempts->belongsToTeacher((int) $id, (int) Auth::id()));
+    $this->renderResult((int) $id, true, '/teacher/exercises/');
+  }
+
   public function pendingTeacher(): void
   {
     Auth::requireTeacher();
@@ -198,15 +216,36 @@ class AttemptController
 
     Auth::ensure($this->attempts->belongsToStudent((int) $id, $studentId));
 
-    $attempt    = $this->attempts->getWithExercise((int) $id);
-    $answers    = $this->answers->findByAttempt((int) $id);
+    $this->renderResult((int) $id, false);
+  }
+
+  private function renderResult(int $attemptId, bool $internalReview = false, string $internalBasePath = ''): void
+  {
+    $attempt    = $this->attempts->getWithExercise($attemptId);
+    if (!$attempt) {
+      Auth::deny('Tentativa não encontrada.', 404);
+    }
+
+    if ((string) ($attempt['status'] ?? '') !== 'graded') {
+      global $session;
+      $message = (string) ($attempt['status'] ?? '') === 'submitted'
+        ? 'A tentativa ainda está em correção. O resultado será exibido quando a avaliação for concluída.'
+        : 'A tentativa ainda não foi enviada.';
+      $session->flash('error', $message);
+      View::redirect($internalReview ? $internalBasePath . (int) $attempt['exercise_id'] : "/student/exercises/{$attempt['exercise_id']}");
+    }
+
+    $answers    = $this->answers->findByAttempt($attemptId);
     $isClosed   = !empty($attempt['closes_at']) && strtotime($attempt['closes_at']) < time();
     $maxScore   = array_sum(array_column($answers, 'max_score'));
     $attemptTurmaId = !empty($attempt['turma_id']) ? (int) $attempt['turma_id'] : null;
-    $bestScore  = $this->attempts->getBestScore($studentId, (int) $attempt['exercise_id'], $attemptTurmaId);
-    $usedTries  = $this->attempts->countUsedAttempts($studentId, (int) $attempt['exercise_id'], $attemptTurmaId);
+    $bestScore  = $this->attempts->getBestScore((int) $attempt['student_id'], (int) $attempt['exercise_id'], $attemptTurmaId);
+    $usedTries  = $this->attempts->countUsedAttempts((int) $attempt['student_id'], (int) $attempt['exercise_id'], $attemptTurmaId);
     $maxTries   = (int) ($attempt['max_attempts'] ?? 0);
     $showReferenceAnswer = $isClosed || ($maxTries > 0 && $usedTries >= $maxTries);
+    $showDeductionReasons = $internalReview;
+    $resultBackUrl = $internalReview ? $internalBasePath . (int) $attempt['exercise_id'] : "/student/exercises/{$attempt['exercise_id']}";
+    $resultAnswerLabel = $internalReview ? 'Resposta do aluno:' : 'Sua resposta:';
 
     View::render('student/results/show', compact(
       'attempt',
@@ -214,7 +253,10 @@ class AttemptController
       'isClosed',
       'maxScore',
       'bestScore',
-      'showReferenceAnswer'
+      'showReferenceAnswer',
+      'showDeductionReasons',
+      'resultBackUrl',
+      'resultAnswerLabel'
     ));
   }
 

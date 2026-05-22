@@ -350,6 +350,7 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
               <th>Melhor nota</th>
               <th>Tentativas</th>
               <th>Alertas</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -364,6 +365,11 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
                     <span class="badge badge--warning">Prompt suspeito</span>
                   <?php else: ?>
                     <span class="text-muted">—</span>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <?php if (!empty($r['best_attempt_id'])): ?>
+                    <a href="<?= \Core\app_url('/teacher/attempts/' . (int) $r['best_attempt_id'] . '/result') ?>" class="btn btn--sm">Detalhar</a>
                   <?php endif; ?>
                 </td>
               </tr>

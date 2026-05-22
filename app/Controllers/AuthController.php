@@ -275,7 +275,7 @@ class AuthController
       return;
     }
 
-    $userId = $this->users->create($name, $email, $password, 'student', 'pending');
+    $userId = $this->users->create($name, $email, $password, 'student', 'pending', null, 'student_public');
     $turmaModel->enrollStudent($userId, (int) $turma['id']);
 
     View::render('auth/register', [
@@ -363,7 +363,7 @@ class AuthController
       return;
     }
 
-    $newUserId = $this->users->create($name, $email, $password, 'teacher', 'pending', $institution);
+    $newUserId = $this->users->create($name, $email, $password, 'teacher', 'pending', $institution, 'teacher_public');
     $this->clearTeacherRegThrottle();
 
     \App\Services\AuditService::record('auth.teacher_registration_request', 'user', $newUserId, [

@@ -4,6 +4,17 @@ $bestScore = $bestScore ?? null;
 $maxScore = $maxScore ?? 0;
 $answers = $answers ?? [];
 $showReferenceAnswer = $showReferenceAnswer ?? false;
+$showDeductionReasons = $showDeductionReasons ?? false;
+$resultBackUrl = $resultBackUrl ?? '/student/exercises/' . ($attempt['exercise_id'] ?? 0);
+$resultAnswerLabel = $resultAnswerLabel ?? 'Sua resposta:';
+$deductionLabels = [
+  'logic_error' => 'Erro de lógica',
+  'missing_concept' => 'Conceito ausente',
+  'contradiction' => 'Contradição',
+  'inefficiency' => 'Ineficiência',
+  'approach_difference' => 'Diferença de abordagem',
+  'incomplete_explanation' => 'Explicação incompleta',
+];
 $pageTitle = 'Resultado — ' . ($attempt['exercise_title'] ?? 'Exercício');
 $isBest    = $bestScore !== null
   && isset($attempt['total_score'])
@@ -15,7 +26,7 @@ $isBest    = $bestScore !== null
     <h1>Resultado da tentativa</h1>
     <p class="subtitle">Leitura detalhada da correção, com feedback da IA e referência esperada quando liberada.</p>
   </div>
-  <a href="<?= \Core\app_url('/student/exercises/' . $attempt['exercise_id']) ?>" class="btn btn--ghost">← Exercício</a>
+  <a href="<?= \Core\app_url($resultBackUrl) ?>" class="btn btn--ghost">← Exercício</a>
 </div>
 
 <div class="result-summary <?= $isBest ? 'result-summary--best' : '' ?>">
@@ -71,7 +82,7 @@ $isBest    = $bestScore !== null
       <p class="question-text"><strong>Questão:</strong> <?= nl2br(\Core\View::e($ans['question_text'])) ?></p>
 
       <div class="answer-block">
-        <strong>Sua resposta:</strong>
+        <strong><?= \Core\View::e($resultAnswerLabel) ?></strong>
         <p><?= nl2br(\Core\View::e($ans['student_answer'])) ?></p>
       </div>
 
@@ -79,6 +90,24 @@ $isBest    = $bestScore !== null
         <div class="feedback-block <?= $correct ? 'feedback-block--ok' : 'feedback-block--err' ?>">
           <strong>Feedback da IA:</strong>
           <p><?= nl2br(\Core\View::e($ans['ai_feedback'])) ?></p>
+        </div>
+      <?php endif; ?>
+
+      <?php
+        $deductionReasons = [];
+        if ($showDeductionReasons && !empty($ans['deduction_reasons_json'])) {
+          $decodedReasons = json_decode((string) $ans['deduction_reasons_json'], true);
+          $deductionReasons = is_array($decodedReasons) ? array_values(array_filter($decodedReasons, 'is_string')) : [];
+        }
+      ?>
+      <?php if ($showDeductionReasons && !empty($deductionReasons)): ?>
+        <div class="feedback-block feedback-block--err">
+          <strong>Motivos de desconto:</strong>
+          <p>
+            <?php foreach ($deductionReasons as $reason): ?>
+              <span class="badge badge--warning"><?= \Core\View::e($deductionLabels[$reason] ?? $reason) ?></span>
+            <?php endforeach; ?>
+          </p>
         </div>
       <?php endif; ?>
 

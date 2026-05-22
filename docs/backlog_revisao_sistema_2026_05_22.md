@@ -4,6 +4,8 @@ Este backlog consolida os ajustes identificados apos nova revisao estatica do si
 
 ## P0 - Corrigir cadeia de migrations e schema base
 
+**Status:** implementado.
+
 **Problema:** a pasta `database/migrations` ainda tem dois arquivos `002`, e o `001_create_tables.sql` funciona como schema base, mas nao reflete todas as colunas esperadas pelo codigo atual. Alem disso, algumas migrations incrementais tentam adicionar estruturas que ja existem no schema base, como `exercises.status` e `exercise_turmas`.
 
 **Impacto:** uma instalacao limpa ou uma atualizacao em ambiente novo pode falhar antes mesmo do sistema subir.
@@ -32,6 +34,8 @@ Este backlog consolida os ajustes identificados apos nova revisao estatica do si
 
 ## P0 - Tornar migrations recentes seguras para bases com dados existentes
 
+**Status:** implementado.
+
 **Problema:** a migration `011_answers_deduction_reasons.sql` adiciona chave estrangeira entre `injection_logs.answer_id` e `answers.id`, mas bases antigas podem ter logs com `answer_id` apontando para respostas apagadas, pois antes nao havia FK.
 
 **Impacto:** a migration pode falhar em producao se existirem logs orfaos.
@@ -56,6 +60,8 @@ Este backlog consolida os ajustes identificados apos nova revisao estatica do si
 **Risco:** alto.
 
 ## P1 - Revalidar sessao do usuario contra o banco
+
+**Status:** implementado.
 
 **Problema:** `Core\Auth` usa os dados gravados na sessao no momento do login. Se um admin inativar, rejeitar, trocar role ou exigir nova senha de um usuario ja logado, a sessao pode continuar com permissoes antigas ate logout.
 
@@ -82,6 +88,8 @@ Este backlog consolida os ajustes identificados apos nova revisao estatica do si
 
 ## P1 - Bloquear acesso direto ao resultado de tentativa nao corrigida
 
+**Status:** implementado.
+
 **Problema:** a lista do aluno so mostra link de resultado para tentativas `graded`, mas a rota `/student/attempts/{id}/result` nao valida explicitamente o status. Se acessada diretamente com tentativa `submitted`, a view pode exibir nota nula como `0.0`.
 
 **Impacto:** aluno pode interpretar tentativa pendente como nota zero.
@@ -105,6 +113,8 @@ Este backlog consolida os ajustes identificados apos nova revisao estatica do si
 
 ## P1 - Registrar auditoria quando a correcao inicial por IA falhar
 
+**Status:** implementado.
+
 **Problema:** o reprocessamento registra auditoria em caso de falha, mas a falha inicial durante `submit()` atualmente fica apenas em `error_log`.
 
 **Impacto:** suporte e administracao nao conseguem rastrear facilmente falhas iniciais da IA pela tela de auditoria.
@@ -126,6 +136,8 @@ Este backlog consolida os ajustes identificados apos nova revisao estatica do si
 **Risco:** medio.
 
 ## P1 - Separar historico de solicitacoes docentes de docentes criados manualmente
+
+**Status:** implementado.
 
 **Problema:** o historico de solicitacoes docentes consulta todos os usuarios `teacher` com status `active` ou `rejected`. Isso pode misturar docentes criados manualmente pelo admin com docentes que realmente passaram pelo fluxo publico de solicitacao.
 
@@ -150,6 +162,8 @@ Este backlog consolida os ajustes identificados apos nova revisao estatica do si
 
 ## P2 - Exibir motivos de desconto da IA para professor/admin
 
+**Status:** implementado.
+
 **Problema:** `deduction_reasons` agora sao persistidos, mas ainda nao aparecem em uma tela operacional.
 
 **Impacto:** o dado existe no banco, mas ainda tem pouco valor pedagogico e de auditoria.
@@ -173,6 +187,8 @@ Este backlog consolida os ajustes identificados apos nova revisao estatica do si
 
 ## P2 - Remover metodos legados de reset por senha temporaria
 
+**Status:** implementado.
+
 **Problema:** apos o reset por token, ainda existem metodos legados sem uso para senha temporaria.
 
 **Impacto:** aumenta ambiguidade de manutencao e pode levar um futuro ajuste a reintroduzir fluxo menos seguro.
@@ -194,6 +210,8 @@ Este backlog consolida os ajustes identificados apos nova revisao estatica do si
 **Risco:** baixo.
 
 ## P2 - Melhorar documentacao operacional de configuracoes
+
+**Status:** implementado em `docs/deploy_operacional.md`.
 
 **Problema:** novas chaves como `OPENAI_MODEL` e `teacher_registration_enabled` existem, mas ainda falta uma documentacao operacional unica para deploy, ambiente e administracao.
 

@@ -379,6 +379,7 @@ global $session;
             <th>Melhor nota</th>
             <th>Tentativas</th>
             <th>Alertas</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -393,6 +394,11 @@ global $session;
                   <span class="badge badge--warning">Prompt suspeito</span>
                 <?php else: ?>
                   <span class="text-muted">—</span>
+                <?php endif; ?>
+              </td>
+              <td>
+                <?php if (!empty($result['best_attempt_id'])): ?>
+                  <a href="<?= \Core\app_url('/admin/attempts/' . (int) $result['best_attempt_id'] . '/result') ?>" class="btn btn--sm">Detalhar</a>
                 <?php endif; ?>
               </td>
             </tr>

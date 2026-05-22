@@ -87,6 +87,8 @@ class Auth
       View::redirect('/login');
     }
 
+    self::refreshSessionUser();
+
     $path = app_request_path();
     if (
       self::mustChangePassword()
@@ -95,6 +97,35 @@ class Auth
     ) {
       View::redirect('/password/change');
     }
+  }
+
+  private static function refreshSessionUser(): void
+  {
+    $sessionUser = self::user();
+    if (!$sessionUser || empty($sessionUser['id'])) {
+      self::logout();
+      View::redirect('/login');
+    }
+
+    try {
+      $user = (new \App\Models\User())->find((int) $sessionUser['id']);
+    } catch (\Throwable $e) {
+      error_log('Auth session refresh failed: ' . $e->getMessage());
+      return;
+    }
+
+    if (!$user || ($user['status'] ?? '') !== 'active') {
+      self::logout();
+      View::redirect('/login');
+    }
+
+    self::$session->set('user', [
+      'id' => (int) $user['id'],
+      'name' => $user['name'],
+      'email' => $user['email'],
+      'role' => $user['role'],
+      'must_change_password' => !empty($user['must_change_password']),
+    ]);
   }
 
   public static function requireTeacher(): void
