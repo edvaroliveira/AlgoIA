@@ -77,6 +77,8 @@ class AttemptController
       exit(json_encode(['ok' => false, 'error' => 'Tentativa inválida.']));
     }
 
+    $this->ensureAttemptIsOpen($attempt, $studentId, true);
+
     $questionId    = Request::int('question_id');
     $studentAnswer = trim((string) ($_POST['answer'] ?? ''));
 
@@ -107,7 +109,7 @@ class AttemptController
 
     Auth::ensure($attempt && (int) $attempt['student_id'] === $studentId && $attempt['status'] === 'in_progress', 'Tentativa inválida.');
 
-    $exercise  = $this->getStudentExercise((int) $attempt['exercise_id'], $studentId);
+    $exercise  = $this->ensureAttemptIsOpen($attempt, $studentId);
     $questions = $this->questions->findByExercise((int) $attempt['exercise_id']);
 
     // Save all answers from POST
@@ -204,5 +206,27 @@ class AttemptController
     }
     Auth::ensure($this->exercises->studentHasAccess($id, $studentId), 'Você não tem acesso a este exercício.');
     return $ex;
+  }
+
+  private function ensureAttemptIsOpen(array $attempt, int $studentId, bool $json = false): array
+  {
+    $exerciseId = (int) ($attempt['exercise_id'] ?? 0);
+    $exercise = $this->getStudentExercise($exerciseId, $studentId);
+
+    if ($this->exercises->isOpen($exercise)) {
+      return $exercise;
+    }
+
+    $message = 'O prazo deste exercício encerrou. Não é mais possível enviar respostas.';
+
+    if ($json) {
+      http_response_code(403);
+      header('Content-Type: application/json');
+      exit(json_encode(['ok' => false, 'error' => $message], JSON_UNESCAPED_UNICODE));
+    }
+
+    global $session;
+    $session->flash('error', $message);
+    View::redirect("/student/exercises/{$exerciseId}");
   }
 }
