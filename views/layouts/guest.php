@@ -19,7 +19,7 @@
     <div class="guest-grid">
       <section class="guest-hero">
         <div class="guest-hero__badge">
-          <img src="<?= \Core\app_url('/assets/img/AlgoIA_logo.png') ?>" alt="Logo AlgoIA" class="guest-hero__logo">
+          <img src="<?= \Core\app_url('/assets/img/AlgoIA_logo_branco.png') ?>" alt="Logo AlgoIA" class="guest-hero__logo">
         </div>
         <h1 class="guest-hero__title">Aprendizagem, algoritmos e Amazônia.</h1>
         <p class="guest-hero__copy">Aprendizagem, algoritmos e Amazônia em uma interface institucional mais sóbria, com respiro, contraste limpo e presença visual inspirada no manual de identidade 2025.</p>
