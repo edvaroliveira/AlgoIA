@@ -7,6 +7,9 @@ $exportQuery = http_build_query(array_filter($filters, static fn($value): bool =
 $today = date('Y-m-d');
 $last7Days = date('Y-m-d', strtotime('-7 days'));
 $last30Days = date('Y-m-d', strtotime('-30 days'));
+$logCount = count($logs);
+$logCountBadgeVariant = $logCount > 0 ? 'neutral' : 'warning';
+$logCountBadgeText = $logCount > 0 ? 'lista filtrada' : 'sem eventos';
 $entityBadgeMap = [
   'user' => 'info',
   'turma' => 'warning',
@@ -116,7 +119,8 @@ $entityBadgeMap = [
 <div class="overview-grid">
   <article class="overview-card">
     <span class="overview-card__label">Eventos listados</span>
-    <strong class="overview-card__value"><?= count($logs) ?></strong>
+    <strong class="overview-card__value"><?= $logCount ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= \Core\View::e($logCountBadgeVariant) ?>"><?= \Core\View::e($logCountBadgeText) ?></span></span>
     <p class="overview-card__copy">A listagem respeita os filtros aplicados e a paginação administrativa.</p>
   </article>
 </div>
