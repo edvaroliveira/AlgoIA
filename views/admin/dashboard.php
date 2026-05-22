@@ -289,6 +289,9 @@ $recentAdminEvents = $recentAdminEvents ?? [];
         <a href="<?= \Core\app_url('/admin/audit/export') ?>" class="btn btn--sm btn--ghost">Exportar CSV</a>
         <a href="<?= \Core\app_url('/admin/audit/export.json') ?>" class="btn btn--sm btn--ghost">Exportar JSON</a>
         <a href="<?= \Core\app_url('/admin/audit?action=admin.') ?>" class="btn btn--sm btn--ghost">Atividade admin</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=user') ?>" class="btn btn--sm btn--ghost">Usuários</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=turma') ?>" class="btn btn--sm btn--ghost">Turmas</a>
+        <a href="<?= \Core\app_url('/admin/audit?entity_type=exercise') ?>" class="btn btn--sm btn--ghost">Exercícios</a>
       </div>
     </div>
   </div>

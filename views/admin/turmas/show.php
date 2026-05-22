@@ -4,6 +4,7 @@ $pending = $pending ?? [];
 $students = $students ?? [];
 $publications = $publications ?? [];
 $pageTitle = 'Turma — Administração';
+$defaultPublicationMin = date('Y-m-d\TH:i', strtotime('+1 hour'));
 global $session;
 ?>
 
@@ -76,6 +77,11 @@ global $session;
         </thead>
         <tbody>
           <?php foreach ($publications as $publication): ?>
+            <?php
+            $publicationTurmaId = (int) ($turma['id'] ?? 0);
+            $publicationOpensAt = !empty($publication['opens_at']) ? date('Y-m-d\TH:i', strtotime((string) $publication['opens_at'])) : '';
+            $publicationClosesAt = !empty($publication['closes_at']) ? date('Y-m-d\TH:i', strtotime((string) $publication['closes_at'])) : '';
+            ?>
             <tr>
               <td><strong><?= \Core\View::e($publication['title']) ?></strong></td>
               <td><?= \Core\View::e($publication['teacher_name'] ?? '—') ?></td>
@@ -83,7 +89,30 @@ global $session;
               <td><?= !empty($publication['closes_at']) ? date('d/m/Y H:i', strtotime((string) $publication['closes_at'])) : '—' ?></td>
               <td><?= ((string) ($publication['max_attempts'] ?? '')) === '0' ? 'Ilimitadas' : (int) ($publication['max_attempts'] ?? 0) ?></td>
               <td><?= (int) ($publication['attempt_count'] ?? 0) ?></td>
-              <td class="td-actions"><a href="<?= \Core\app_url('/admin/exercises/' . $publication['id']) ?>" class="btn btn--sm">Ver exercício</a></td>
+              <td class="td-actions">
+                <a href="<?= \Core\app_url('/admin/exercises/' . $publication['id']) ?>" class="btn btn--sm">Ver exercício</a>
+                <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . $publication['id'] . '/publications/' . $publicationTurmaId) ?>" class="form">
+                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label" for="turma-publication-opens-<?= (int) ($publication['id'] ?? 0) ?>">Abre em</label>
+                      <input id="turma-publication-opens-<?= (int) ($publication['id'] ?? 0) ?>" type="datetime-local" name="opens_at" class="form-input" value="<?= $publicationOpensAt ?>">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="turma-publication-closes-<?= (int) ($publication['id'] ?? 0) ?>">Fecha em</label>
+                      <input id="turma-publication-closes-<?= (int) ($publication['id'] ?? 0) ?>" type="datetime-local" name="closes_at" class="form-input" value="<?= $publicationClosesAt ?>" min="<?= $defaultPublicationMin ?>">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="turma-publication-attempts-<?= (int) ($publication['id'] ?? 0) ?>">Tentativas</label>
+                      <input id="turma-publication-attempts-<?= (int) ($publication['id'] ?? 0) ?>" type="number" min="0" name="max_attempts" class="form-input" value="<?= (int) ($publication['max_attempts'] ?? 1) ?>">
+                    </div>
+                    <div class="form-group" style="justify-content: flex-end;">
+                      <label class="form-label">Publicação</label>
+                      <button type="submit" class="btn btn--sm">Salvar</button>
+                    </div>
+                  </div>
+                </form>
+              </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
