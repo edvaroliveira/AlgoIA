@@ -17,6 +17,12 @@ $recentAdminEvents = $recentAdminEvents ?? [];
 $today = date('Y-m-d');
 $last7Days = date('Y-m-d', strtotime('-7 days'));
 $last30Days = date('Y-m-d', strtotime('-30 days'));
+$entityBadgeMap = [
+  'user' => 'info',
+  'turma' => 'warning',
+  'exercise' => 'success',
+  'student' => 'neutral',
+];
 ?>
 
 <section class="hero-panel hero-panel--teacher">
@@ -229,14 +235,21 @@ $last30Days = date('Y-m-d', strtotime('-30 days'));
           </thead>
           <tbody>
             <?php foreach ($recentAdminEvents as $event): ?>
+              <?php
+              $eventAction = (string) ($event['action'] ?? '—');
+              $eventEntityType = (string) ($event['entity_type'] ?? '—');
+              $eventEntityLabel = $eventEntityType . (($event['entity_id'] ?? null) ? ' #' . $event['entity_id'] : '');
+              $eventActionVariant = str_starts_with($eventAction, 'admin.') ? 'neutral' : 'info';
+              $eventEntityVariant = $entityBadgeMap[$eventEntityType] ?? 'neutral';
+              ?>
               <tr>
                 <td><?= !empty($event['created_at']) ? date('d/m/Y H:i', strtotime((string) $event['created_at'])) : '—' ?></td>
                 <td>
                   <strong><?= \Core\View::e($event['actor_name'] ?? 'Sistema') ?></strong><br>
                   <span class="text-muted"><?= \Core\View::e($event['actor_email'] ?? ($event['actor_role'] ?? 'admin')) ?></span>
                 </td>
-                <td><?= \Core\View::e($event['action'] ?? '—') ?></td>
-                <td><?= \Core\View::e(($event['entity_type'] ?? '—') . (($event['entity_id'] ?? null) ? ' #' . $event['entity_id'] : '')) ?></td>
+                <td><span class="badge badge--<?= \Core\View::e($eventActionVariant) ?> badge--code"><?= \Core\View::e($eventAction) ?></span></td>
+                <td><span class="badge badge--<?= \Core\View::e($eventEntityVariant) ?> badge--code"><?= \Core\View::e($eventEntityLabel) ?></span></td>
               </tr>
             <?php endforeach; ?>
           </tbody>

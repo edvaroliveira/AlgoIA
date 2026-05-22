@@ -7,6 +7,12 @@ $exportQuery = http_build_query(array_filter($filters, static fn($value): bool =
 $today = date('Y-m-d');
 $last7Days = date('Y-m-d', strtotime('-7 days'));
 $last30Days = date('Y-m-d', strtotime('-30 days'));
+$entityBadgeMap = [
+  'user' => 'info',
+  'turma' => 'warning',
+  'exercise' => 'success',
+  'student' => 'neutral',
+];
 ?>
 
 <div class="page-header">
@@ -140,6 +146,11 @@ $last30Days = date('Y-m-d', strtotime('-30 days'));
           <?php foreach ($logs as $log): ?>
             <?php
             $metadata = json_decode((string) ($log['metadata_json'] ?? ''), true);
+            $action = (string) ($log['action'] ?? '—');
+            $entityType = (string) ($log['entity_type'] ?? '—');
+            $entityLabel = $entityType . (($log['entity_id'] ?? null) ? ' #' . $log['entity_id'] : '');
+            $actionVariant = str_starts_with($action, 'admin.') ? 'neutral' : 'info';
+            $entityVariant = $entityBadgeMap[$entityType] ?? 'neutral';
             $contextParts = [];
             if (is_array($metadata)) {
               foreach ($metadata as $key => $value) {
@@ -186,8 +197,8 @@ $last30Days = date('Y-m-d', strtotime('-30 days'));
                 <strong><?= \Core\View::e($log['actor_name'] ?? 'Sistema') ?></strong><br>
                 <span class="text-muted"><?= \Core\View::e($log['actor_email'] ?? ($log['actor_role'] ?? 'guest')) ?></span>
               </td>
-              <td><?= \Core\View::e($log['action']) ?></td>
-              <td><?= \Core\View::e(($log['entity_type'] ?? '—') . (($log['entity_id'] ?? null) ? ' #' . $log['entity_id'] : '')) ?></td>
+              <td><span class="badge badge--<?= \Core\View::e($actionVariant) ?> badge--code"><?= \Core\View::e($action) ?></span></td>
+              <td><span class="badge badge--<?= \Core\View::e($entityVariant) ?> badge--code"><?= \Core\View::e($entityLabel) ?></span></td>
               <td><?= \Core\View::e($contextText) ?></td>
             </tr>
           <?php endforeach; ?>

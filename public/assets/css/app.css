@@ -756,6 +756,11 @@ a:hover { color: var(--brand-dark); }
   margin-top: 0.75rem;
 }
 
+.badge--code {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0.01em;
+}
+
 .pagination-bar {
   display: flex;
   align-items: center;
