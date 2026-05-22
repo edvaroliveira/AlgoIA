@@ -15,6 +15,9 @@ $router->post('/logout',   'AuthController@logout');
 // ── Teacher ──────────────────────────────────────────────────────────────────
 $router->get('/teacher/dashboard', 'DashboardController@teacher');
 
+// ── Admin ───────────────────────────────────────────────────────────────────
+$router->get('/admin/dashboard', 'AdminController@dashboard');
+
 // Turmas
 $router->get('/teacher/turmas',                                   'TurmaController@index');
 $router->get('/teacher/turmas/create',                            'TurmaController@create');

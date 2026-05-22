@@ -28,7 +28,9 @@ $content = $content ?? '';
 
       <div class="sidebar__section-label">Navegação</div>
       <nav class="sidebar__nav">
-        <?php if (\Core\Auth::isTeacher()): ?>
+        <?php if (\Core\Auth::isAdmin()): ?>
+          <a href="<?= \Core\app_url('/admin/dashboard') ?>" class="nav-link <?= str_contains($currentPath, 'admin') ? 'active' : '' ?>">Painel administrativo</a>
+        <?php elseif (\Core\Auth::isTeacher()): ?>
           <a href="<?= \Core\app_url('/teacher/dashboard') ?>" class="nav-link <?= str_contains($currentPath, 'dashboard') ? 'active' : '' ?>">Painel docente</a>
           <a href="<?= \Core\app_url('/teacher/turmas') ?>" class="nav-link <?= str_contains($currentPath, 'turmas') ? 'active' : '' ?>">Turmas</a>
           <a href="<?= \Core\app_url('/teacher/exercises') ?>" class="nav-link <?= str_contains($currentPath, 'exercises') ? 'active' : '' ?>">Exercícios</a>
@@ -42,7 +44,7 @@ $content = $content ?? '';
       <div class="sidebar__footer">
         <div class="sidebar-user-label">Usuário autenticado</div>
         <div class="user-name"><?= \Core\View::e(\Core\Auth::user()['name'] ?? '') ?></div>
-        <div class="user-role"><?= \Core\Auth::isTeacher() ? 'Docente' : 'Aluno' ?></div>
+        <div class="user-role"><?= \Core\Auth::isAdmin() ? 'Administrador' : (\Core\Auth::isTeacher() ? 'Docente' : 'Aluno') ?></div>
         <form method="POST" action="<?= \Core\app_url('/logout') ?>">
           <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
           <button type="submit" class="btn btn--ghost btn--full">Encerrar sessão</button>
