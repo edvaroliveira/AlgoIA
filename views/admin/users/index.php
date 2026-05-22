@@ -5,6 +5,7 @@ $totalUsers = count($users);
 $adminCount = count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'admin'));
 $teacherCount = count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'teacher'));
 $studentCount = count(array_filter($users, static fn(array $user): bool => ($user['role'] ?? '') === 'student'));
+global $session;
 ?>
 
 <div class="page-header">
@@ -57,6 +58,7 @@ $studentCount = count(array_filter($users, static fn(array $user): bool => ($use
             <th>Status</th>
             <th>Contexto</th>
             <th>Criado em</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -99,6 +101,19 @@ $studentCount = count(array_filter($users, static fn(array $user): bool => ($use
               </td>
               <td><?= $context ?></td>
               <td><?= date('d/m/Y', strtotime($user['created_at'])) ?></td>
+              <td class="td-actions">
+                <form method="POST" action="<?= \Core\app_url('/admin/users/' . $user['id'] . '/status') ?>">
+                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                  <input type="hidden" name="status" value="<?= $status === 'active' ? 'inactive' : 'active' ?>">
+                  <button type="submit" class="btn btn--sm <?= $status === 'active' ? 'btn--ghost' : '' ?>">
+                    <?= $status === 'active' ? 'Inativar' : 'Ativar' ?>
+                  </button>
+                </form>
+                <form method="POST" action="<?= \Core\app_url('/admin/users/' . $user['id'] . '/reset-password') ?>">
+                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                  <button type="submit" class="btn btn--sm btn--ghost">Resetar senha</button>
+                </form>
+              </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
