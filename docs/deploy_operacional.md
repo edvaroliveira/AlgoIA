@@ -33,6 +33,15 @@ Para um ambiente que ja foi criado com schema antigo, nao reexecute `001_create_
 
 Observacao: existem dois arquivos iniciados por `002` por historico do projeto. A ordem acima e a referencia oficial.
 
+As migrations `010`, `011` e `012` usam verificacoes em `INFORMATION_SCHEMA` para evitar erro quando uma coluna, indice ou chave estrangeira ja existir. Ainda assim, migrations historicas anteriores devem ser aplicadas uma unica vez e na ordem indicada.
+
+Antes de atualizar uma base de producao:
+
+1. Fazer backup do banco.
+2. Confirmar quais migrations ja foram aplicadas.
+3. Aplicar somente as migrations pendentes.
+4. Se a base recebeu ajustes manuais, validar colunas existentes antes de executar arquivos antigos com `ADD COLUMN`.
+
 ## Variaveis de Ambiente
 
 Configurar no `.env`:
