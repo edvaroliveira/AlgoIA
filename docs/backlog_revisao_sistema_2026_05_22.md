@@ -6,6 +6,8 @@ Este backlog consolida os ajustes identificados apos nova revisao estatica do si
 
 **Status:** implementado.
 
+**Nota de implementacao:** o schema consolidado foi atualizado para instalacao limpa e as migrations recentes `010`, `011` e `012` usam verificacoes em `INFORMATION_SCHEMA` para reduzir falhas em bases parcialmente atualizadas. Migrations historicas anteriores continuam exigindo aplicacao unica na ordem documentada em `docs/deploy_operacional.md`.
+
 **Problema:** a pasta `database/migrations` ainda tem dois arquivos `002`, e o `001_create_tables.sql` funciona como schema base, mas nao reflete todas as colunas esperadas pelo codigo atual. Alem disso, algumas migrations incrementais tentam adicionar estruturas que ja existem no schema base, como `exercises.status` e `exercise_turmas`.
 
 **Impacto:** uma instalacao limpa ou uma atualizacao em ambiente novo pode falhar antes mesmo do sistema subir.
