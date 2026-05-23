@@ -35,6 +35,14 @@ class AttemptGradingService
 
     foreach ($answers as $answer) {
       if (trim((string) ($answer['student_answer'] ?? '')) === '') {
+        if (!empty($answer['id'])) {
+          $evaluations[] = [
+            'answer_id' => (int) $answer['id'],
+            'score' => 0.0,
+            'feedback' => 'Questão não respondida.',
+            'deduction_reasons' => ['missing_concept', 'incomplete_explanation'],
+          ];
+        }
         continue;
       }
 

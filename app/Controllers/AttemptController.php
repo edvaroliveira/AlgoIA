@@ -121,9 +121,7 @@ class AttemptController
     // Save all answers from POST
     foreach ($questions as $q) {
       $text = trim((string) ($_POST["answer_{$q['id']}"] ?? ''));
-      if ($text !== '') {
-        $this->answers->saveOrUpdate((int) $id, (int) $q['id'], $text);
-      }
+      $this->answers->saveOrUpdate((int) $id, (int) $q['id'], $text);
     }
 
     $this->attempts->markSubmitted((int) $id);
@@ -237,12 +235,12 @@ class AttemptController
 
     $answers    = $this->answers->findByAttempt($attemptId);
     $isClosed   = !empty($attempt['closes_at']) && strtotime($attempt['closes_at']) < time();
-    $maxScore   = array_sum(array_column($answers, 'max_score'));
+    $maxScore   = $this->questions->getTotalMaxScore((int) $attempt['exercise_id']);
     $attemptTurmaId = !empty($attempt['turma_id']) ? (int) $attempt['turma_id'] : null;
     $bestScore  = $this->attempts->getBestScore((int) $attempt['student_id'], (int) $attempt['exercise_id'], $attemptTurmaId);
     $usedTries  = $this->attempts->countUsedAttempts((int) $attempt['student_id'], (int) $attempt['exercise_id'], $attemptTurmaId);
     $maxTries   = (int) ($attempt['max_attempts'] ?? 0);
-    $showReferenceAnswer = $isClosed || ($maxTries > 0 && $usedTries >= $maxTries);
+    $showReferenceAnswer = $internalReview || $isClosed || ($maxTries > 0 && $usedTries >= $maxTries);
     $showDeductionReasons = $internalReview;
     $resultBackUrl = $internalReview ? $internalBasePath . (int) $attempt['exercise_id'] : "/student/exercises/{$attempt['exercise_id']}";
     $resultAnswerLabel = $internalReview ? 'Resposta do aluno:' : 'Sua resposta:';
