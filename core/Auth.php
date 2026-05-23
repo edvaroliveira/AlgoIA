@@ -111,7 +111,8 @@ class Auth
       $user = (new \App\Models\User())->find((int) $sessionUser['id']);
     } catch (\Throwable $e) {
       error_log('Auth session refresh failed: ' . $e->getMessage());
-      return;
+      self::logout();
+      View::redirect('/login');
     }
 
     if (!$user || ($user['status'] ?? '') !== 'active') {

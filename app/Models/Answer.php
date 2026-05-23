@@ -42,12 +42,24 @@ class Answer extends Model
   public function findByAttempt(int $attemptId): array
   {
     return $this->db->fetchAll(
-      "SELECT ans.*, q.text AS question_text, q.max_score, q.expected_answer_hint, q.order_index
-             FROM answers ans
-             JOIN questions q ON q.id = ans.question_id
-             WHERE ans.attempt_id = ?
+      "SELECT ans.id,
+                    ? AS attempt_id,
+                    q.id AS question_id,
+                    COALESCE(ans.student_answer, '') AS student_answer,
+                    ans.ai_score,
+                    ans.ai_feedback,
+                    ans.deduction_reasons_json,
+                    ans.evaluated_at,
+                    q.text AS question_text,
+                    q.max_score,
+                    q.expected_answer_hint,
+                    q.order_index
+             FROM attempts att
+             JOIN questions q ON q.exercise_id = att.exercise_id
+             LEFT JOIN answers ans ON ans.attempt_id = att.id AND ans.question_id = q.id
+             WHERE att.id = ?
              ORDER BY q.order_index, q.id",
-      [$attemptId]
+      [$attemptId, $attemptId]
     );
   }
 
