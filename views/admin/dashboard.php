@@ -345,36 +345,33 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
       <?php if (empty($recentAdminEvents)): ?>
         <p class="empty-state">Nenhuma ação administrativa registrada ainda.</p>
       <?php else: ?>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Quando</th>
-              <th>Ator</th>
-              <th>Ação</th>
-              <th>Entidade</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($recentAdminEvents as $event): ?>
-              <?php
-              $eventAction = (string) ($event['action'] ?? '—');
-              $eventEntityType = (string) ($event['entity_type'] ?? '—');
-              $eventEntityLabel = $eventEntityType . (($event['entity_id'] ?? null) ? ' #' . $event['entity_id'] : '');
-              $eventActionVariant = str_starts_with($eventAction, 'admin.') ? 'neutral' : 'info';
-              $eventEntityVariant = $entityBadgeMap[$eventEntityType] ?? 'neutral';
-              ?>
-              <tr>
-                <td><?= !empty($event['created_at']) ? date('d/m/Y H:i', strtotime((string) $event['created_at'])) : '—' ?></td>
-                <td>
-                  <strong><?= \Core\View::e($event['actor_name'] ?? 'Sistema') ?></strong><br>
-                  <span class="text-muted"><?= \Core\View::e($event['actor_email'] ?? ($event['actor_role'] ?? 'admin')) ?></span>
-                </td>
-                <td><span class="badge badge--<?= \Core\View::e($eventActionVariant) ?> badge--code"><?= \Core\View::e($eventAction) ?></span></td>
-                <td><span class="badge badge--<?= \Core\View::e($eventEntityVariant) ?> badge--code"><?= \Core\View::e($eventEntityLabel) ?></span></td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+        <div class="activity-list">
+          <?php foreach ($recentAdminEvents as $event): ?>
+            <?php
+            $eventAction = (string) ($event['action'] ?? '—');
+            $eventEntityType = (string) ($event['entity_type'] ?? '—');
+            $eventEntityLabel = $eventEntityType . (($event['entity_id'] ?? null) ? ' #' . $event['entity_id'] : '');
+            $eventActionVariant = str_starts_with($eventAction, 'admin.') ? 'neutral' : 'info';
+            $eventEntityVariant = $entityBadgeMap[$eventEntityType] ?? 'neutral';
+            $eventDate = !empty($event['created_at']) ? date('d/m/Y', strtotime((string) $event['created_at'])) : '—';
+            $eventTime = !empty($event['created_at']) ? date('H:i', strtotime((string) $event['created_at'])) : '';
+            ?>
+            <article class="activity-item">
+              <span class="activity-item__time">
+                <strong><?= \Core\View::e($eventDate) ?></strong>
+                <?php if ($eventTime !== ''): ?><small><?= \Core\View::e($eventTime) ?></small><?php endif; ?>
+              </span>
+              <div class="activity-item__actor">
+                <strong><?= \Core\View::e($event['actor_name'] ?? 'Sistema') ?></strong>
+                <span><?= \Core\View::e($event['actor_email'] ?? ($event['actor_role'] ?? 'admin')) ?></span>
+              </div>
+              <div class="activity-item__badges">
+                <span class="badge badge--<?= \Core\View::e($eventActionVariant) ?> badge--code"><?= \Core\View::e($eventAction) ?></span>
+                <span class="badge badge--<?= \Core\View::e($eventEntityVariant) ?> badge--code"><?= \Core\View::e($eventEntityLabel) ?></span>
+              </div>
+            </article>
+          <?php endforeach; ?>
+        </div>
       <?php endif; ?>
     </div>
   </section>
