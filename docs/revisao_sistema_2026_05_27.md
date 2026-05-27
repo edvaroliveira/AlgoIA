@@ -81,6 +81,7 @@ O sistema esta organizado em MVC artesanal em PHP, com bootstrap enxuto, roteame
 - exporta dados em CSV e JSON
 - modera conteudo e solicitacoes docentes
 - teacher/admin reprocessam tentativas submitted quando a IA falha
+- dashboards exibem resumo operacional da fila de IA, incluindo falhas e jobs atrasados
 
 ## Pontos fortes do estado atual
 
@@ -100,7 +101,7 @@ O sistema esta organizado em MVC artesanal em PHP, com bootstrap enxuto, roteame
 
 ### P1
 
-- monitoramento de fila ainda precisa evoluir para alertar latencia, falhas e backlog acumulado
+- monitoramento de fila ainda precisa evoluir para alertas externos de latencia, falhas e backlog acumulado
 - o produto ainda depende fortemente de views server-rendered e operacoes administrativas centralizadas, o que aumenta custo de manutencao de UX
 - regras de negocio estao razoavelmente espalhadas entre controller e model; isso ainda funciona, mas dificulta evolucao modular
 - ha historico de complexidade em migrations, apesar de a documentacao recente ter reduzido o risco operacional

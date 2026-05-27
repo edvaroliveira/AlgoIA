@@ -148,6 +148,7 @@ IAProg e uma aplicacao web de apoio academico para:
 
 - falhas de avaliacao devem registrar auditoria e error_log
 - dashboards administrativos devem destacar pendencias operacionais
+- dashboards devem exibir resumo da fila de IA: jobs em fila, em processamento, falhas, atrasos e concluidos recentes
 
 ### RNF-04 Compatibilidade operacional
 

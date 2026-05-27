@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Models\Exercise;
+use App\Models\GradingJob;
 use App\Models\Turma;
 use App\Models\Attempt;
 use App\Models\User;
@@ -22,6 +23,7 @@ class DashboardController
     $turmas    = new Turma();
     $users     = new User();
     $attempts  = new Attempt();
+    $gradingJobs = new GradingJob();
 
     $myTurmas    = $turmas->findByTeacher($teacherId);
     $myExercises = $exercises->findByTeacher($teacherId);
@@ -33,6 +35,7 @@ class DashboardController
     $recentExs = array_slice($myExercises, 0, 5);
     $recentStudents = $users->getRecentStudentsByTeacher((int) $teacherId, 6);
     $pendingGradingAttempts = $attempts->getPendingGradingForTeacher((int) $teacherId, 6);
+    $pendingGradingAttempts = $this->attachGradingJobStatuses($pendingGradingAttempts, $gradingJobs);
 
     View::render('teacher/dashboard', [
       'turmas'        => $myTurmas,
@@ -44,6 +47,8 @@ class DashboardController
       'totalExs'      => count($myExercises),
       'pendingGradingCount' => $attempts->countPendingGradingForTeacher((int) $teacherId),
       'pendingGradingAttempts' => $pendingGradingAttempts,
+      'gradingJobSummary' => $gradingJobs->operationalSummary((int) $teacherId),
+      'gradingJobFailures' => $gradingJobs->recentFailures((int) $teacherId, 5),
     ]);
   }
 
@@ -81,5 +86,19 @@ class DashboardController
       'all'       => $all,
       'turmas'    => $myTurmas,
     ]);
+  }
+
+  private function attachGradingJobStatuses(array $attempts, GradingJob $gradingJobs): array
+  {
+    $statuses = $gradingJobs->statusesForAttempts(array_column($attempts, 'id'));
+
+    foreach ($attempts as &$attempt) {
+      $job = $statuses[(int) ($attempt['id'] ?? 0)] ?? null;
+      $attempt['grading_job_status'] = $job['status'] ?? null;
+      $attempt['grading_job_attempts'] = $job['attempts'] ?? null;
+    }
+    unset($attempt);
+
+    return $attempts;
   }
 }

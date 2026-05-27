@@ -17,6 +17,8 @@ $pendingUsers = $pendingUsers ?? [];
 $pendingTurmas = $pendingTurmas ?? [];
 $closingExercises = $closingExercises ?? [];
 $pendingGradingAttempts = $pendingGradingAttempts ?? [];
+$gradingJobSummary = $gradingJobSummary ?? ['queued' => 0, 'processing' => 0, 'failed' => 0, 'completed_24h' => 0, 'stale' => 0];
+$gradingJobFailures = $gradingJobFailures ?? [];
 $recentAdminEvents = $recentAdminEvents ?? [];
 $pendingActions = $pendingActions ?? [];
 global $session;
@@ -118,6 +120,12 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
     <p class="overview-card__copy">Tentativas enviadas que ainda aguardam nota automática.</p>
   </article>
   <article class="overview-card">
+    <span class="overview-card__label">Fila de IA</span>
+    <strong class="overview-card__value"><?= (int) (($gradingJobSummary['queued'] ?? 0) + ($gradingJobSummary['processing'] ?? 0)) ?></strong>
+    <span class="overview-card__signal"><span class="badge badge--<?= ((int) ($gradingJobSummary['stale'] ?? 0) > 0 || (int) ($gradingJobSummary['failed'] ?? 0) > 0) ? 'error' : 'success' ?>"><?= (int) ($gradingJobSummary['stale'] ?? 0) > 0 ? 'atrasada' : 'operando' ?></span></span>
+    <p class="overview-card__copy"><?= (int) ($gradingJobSummary['failed'] ?? 0) ?> falha(s), <?= (int) ($gradingJobSummary['completed_24h'] ?? 0) ?> concluída(s) em 24h.</p>
+  </article>
+  <article class="overview-card">
     <span class="overview-card__label">Solicitações de docentes</span>
     <strong class="overview-card__value"><?= $pendingTeacherRequestCount ?></strong>
     <span class="overview-card__signal"><span class="badge badge--<?= $pendingTeacherRequestCount > 0 ? 'warning' : 'neutral' ?>"><?= $pendingTeacherRequestCount > 0 ? 'aguardando análise' : 'sem fila' ?></span></span>
@@ -127,6 +135,42 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
     </div>
   </article>
 </div>
+
+<?php if (!empty($gradingJobFailures)): ?>
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Falhas recentes da fila de IA</h2>
+        <p class="surface-copy">Jobs que falharam e aguardam nova tentativa automática ou reprocessamento manual.</p>
+      </div>
+      <a href="<?= \Core\app_url('/admin/attempts/pending') ?>" class="btn btn--ghost btn--sm">Ver pendências</a>
+    </div>
+    <div class="surface-block__body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Aluno</th>
+            <th>Exercício</th>
+            <th>Docente</th>
+            <th>Tentativas</th>
+            <th>Erro</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($gradingJobFailures as $job): ?>
+            <tr>
+              <td><?= \Core\View::e($job['student_name'] ?? '—') ?></td>
+              <td><?= \Core\View::e($job['exercise_title'] ?? '—') ?></td>
+              <td><?= \Core\View::e($job['teacher_name'] ?? '—') ?></td>
+              <td><span class="badge badge--warning"><?= (int) ($job['attempts'] ?? 0) ?></span></td>
+              <td><?= \Core\View::e(mb_substr((string) ($job['last_error'] ?? 'Sem detalhe'), 0, 160)) ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </section>
+<?php endif; ?>
 
 <?php if (!empty($pendingGradingAttempts)): ?>
   <section class="surface-block">
@@ -146,6 +190,7 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
             <th>Docente</th>
             <th>Turma</th>
             <th>Enviada em</th>
+            <th>Status</th>
             <th></th>
           </tr>
         </thead>
@@ -157,6 +202,19 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
               <td><?= \Core\View::e($attempt['teacher_name'] ?? '—') ?></td>
               <td><?= \Core\View::e($attempt['turma_name'] ?? '—') ?></td>
               <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : '—' ?></td>
+              <td>
+                <?php
+                $jobStatus = (string) ($attempt['grading_job_status'] ?? 'manual');
+                $jobLabel = [
+                  'queued' => 'Na fila',
+                  'processing' => 'Processando',
+                  'failed' => 'Falha técnica',
+                  'completed' => 'Concluída',
+                  'manual' => 'Sem job',
+                ][$jobStatus] ?? $jobStatus;
+                ?>
+                <span class="badge badge--info"><?= \Core\View::e($jobLabel) ?></span>
+              </td>
               <td class="td-actions">
                 <form method="POST" action="<?= \Core\app_url('/admin/attempts/' . (int) ($attempt['id'] ?? 0) . '/regrade') ?>">
                   <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">

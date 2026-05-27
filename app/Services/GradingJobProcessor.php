@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Attempt;
 use App\Models\GradingJob;
 
 class GradingJobProcessor
@@ -21,6 +22,13 @@ class GradingJobProcessor
     $attemptId = (int) $job['attempt_id'];
 
     try {
+      $attempt = (new Attempt())->find($attemptId);
+      if ($attempt && (string) ($attempt['status'] ?? '') === 'graded') {
+        $jobs->markCompleted($jobId);
+        error_log("Grading job {$jobId} skipped because attempt {$attemptId} is already graded.");
+        return true;
+      }
+
       $score = (new AttemptGradingService())->gradeSubmittedAttempt($attemptId);
       $jobs->markCompleted($jobId);
       error_log("Grading job {$jobId} completed for attempt {$attemptId} with score {$score}.");

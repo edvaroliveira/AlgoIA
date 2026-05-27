@@ -171,6 +171,7 @@ class AttemptController
     $filters = $this->pendingFiltersFromRequest();
     $pagination = $this->pendingPagination('/admin/attempts/pending', $filters, $this->attempts->countPendingGradingFiltered($filters));
     $attempts = $this->attempts->getPendingGradingForAdminFiltered($filters, $pagination['perPage'], $pagination['offset']);
+    $attempts = $this->attachGradingJobStatuses($attempts);
 
     View::render('admin/attempts/pending', [
       'attempts' => $attempts,
@@ -209,6 +210,7 @@ class AttemptController
     $filters = $this->pendingFiltersFromRequest();
     $pagination = $this->pendingPagination('/teacher/attempts/pending', $filters, $this->attempts->countPendingGradingFiltered($filters, $teacherId));
     $attempts = $this->attempts->getPendingGradingForTeacherFiltered($teacherId, $filters, $pagination['perPage'], $pagination['offset']);
+    $attempts = $this->attachGradingJobStatuses($attempts);
 
     View::render('teacher/attempts/pending', [
       'attempts' => $attempts,
@@ -347,6 +349,21 @@ class AttemptController
     }
 
     return $fallbackPath;
+  }
+
+  private function attachGradingJobStatuses(array $attempts): array
+  {
+    $statuses = (new GradingJob())->statusesForAttempts(array_column($attempts, 'id'));
+
+    foreach ($attempts as &$attempt) {
+      $job = $statuses[(int) ($attempt['id'] ?? 0)] ?? null;
+      $attempt['grading_job_status'] = $job['status'] ?? null;
+      $attempt['grading_job_attempts'] = $job['attempts'] ?? null;
+      $attempt['grading_job_last_error'] = $job['last_error'] ?? null;
+    }
+    unset($attempt);
+
+    return $attempts;
   }
 
   private function pendingFiltersFromRequest(): array
