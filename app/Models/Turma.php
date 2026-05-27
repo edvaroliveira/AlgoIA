@@ -168,17 +168,45 @@ class Turma extends Model
     );
   }
 
-  public function approveStudent(int $studentId, int $turmaId): void
+  public function approveStudent(int $studentId, int $turmaId): bool
   {
-    $this->db->execute(
-      "UPDATE student_turma SET status = 'active' WHERE student_id = ? AND turma_id = ?",
-      [$studentId, $turmaId]
-    );
-    // Activate the user account if still pending
-    $this->db->execute(
-      "UPDATE users SET status = 'active' WHERE id = ? AND status = 'pending'",
-      [$studentId]
-    );
+    $this->db->beginTransaction();
+
+    try {
+      $updatedEnrollment = $this->db->execute(
+        "UPDATE student_turma st
+               JOIN users u ON u.id = st.student_id
+               SET st.status = 'active'
+               WHERE st.student_id = ?
+                 AND st.turma_id = ?
+                 AND st.status = 'pending'
+                 AND u.role = 'student'",
+        [$studentId, $turmaId]
+      );
+
+      if ($updatedEnrollment < 1) {
+        $this->db->rollback();
+        return false;
+      }
+
+      $this->db->execute(
+        "UPDATE users
+               SET status = 'active'
+               WHERE id = ?
+                 AND role = 'student'
+                 AND status = 'pending'",
+        [$studentId]
+      );
+
+      $this->db->commit();
+      return true;
+    } catch (\Throwable $e) {
+      if ($this->db->inTransaction()) {
+        $this->db->rollback();
+      }
+
+      throw $e;
+    }
   }
 
   public function rejectStudent(int $studentId, int $turmaId): void
@@ -195,7 +223,7 @@ class Turma extends Model
       "SELECT u.id, u.name, u.email, st.joined_at
              FROM users u
              JOIN student_turma st ON st.student_id = u.id
-             WHERE st.turma_id = ? AND st.status = 'pending'
+             WHERE st.turma_id = ? AND st.status = 'pending' AND u.role = 'student'
              ORDER BY st.joined_at",
       [$turmaId]
     );
@@ -207,7 +235,7 @@ class Turma extends Model
       "SELECT u.id, u.name, u.email, st.joined_at
              FROM users u
              JOIN student_turma st ON st.student_id = u.id
-             WHERE st.turma_id = ? AND st.status = 'active'
+             WHERE st.turma_id = ? AND st.status = 'active' AND u.role = 'student'
              ORDER BY u.name",
       [$turmaId]
     );

@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Models\User;
 use App\Models\Turma;
+use App\Models\LoginAttempt;
 use App\Models\SystemSetting;
 use Core\Auth;
 use Core\Request;
@@ -42,16 +43,16 @@ class AuthController
 
     global $session;
 
-    if ($this->isLoginLocked()) {
+    $email    = Request::email('email');
+    $password = (string) ($_POST['password'] ?? '');
+
+    if ($this->isLoginLocked($email)) {
       View::render('auth/login', [
         'error' => 'Muitas tentativas de login. Aguarde alguns minutos antes de tentar novamente.',
-        'old'   => ['email' => Request::email('email')],
+        'old'   => ['email' => $email],
       ], 'layouts/guest');
       return;
     }
-
-    $email    = Request::email('email');
-    $password = (string) ($_POST['password'] ?? '');
 
     if ($email === '' || $password === '') {
       View::render('auth/login', [
@@ -64,7 +65,7 @@ class AuthController
     $user = $this->users->findByEmail($email);
 
     if (!$user || !$this->users->verifyPassword($password, $user['password_hash'])) {
-      $this->recordFailedLogin();
+      $this->recordFailedLogin($email);
       View::render('auth/login', [
         'error' => 'E-mail ou senha incorretos.',
         'old'   => ['email' => $email],
@@ -99,7 +100,7 @@ class AuthController
       return;
     }
 
-    $this->clearLoginThrottle();
+    $this->clearLoginThrottle($email);
     Auth::login($user);
     if (Auth::mustChangePassword()) {
       View::redirect('/password/change');
@@ -404,9 +405,18 @@ class AuthController
       && preg_match('/\d/', $password) === 1;
   }
 
-  private function isLoginLocked(): bool
+  private function isLoginLocked(string $email = ''): bool
   {
     global $session;
+
+    if ($email !== '') {
+      try {
+        return (new LoginAttempt())->isLocked($email, $this->loginClientIp());
+      } catch (\Throwable $e) {
+        error_log('Persistent login throttle unavailable: ' . $e->getMessage());
+      }
+    }
+
     $lockUntil = (int) $session->get('login_lock_until', 0);
 
     if ($lockUntil <= time()) {
@@ -419,9 +429,19 @@ class AuthController
     return true;
   }
 
-  private function recordFailedLogin(): void
+  private function recordFailedLogin(string $email = ''): void
   {
     global $session;
+
+    if ($email !== '') {
+      try {
+        $attempts = new LoginAttempt();
+        $attempts->recordFailure($email, $this->loginClientIp(), $this->loginUserAgent());
+        $attempts->pruneOld();
+      } catch (\Throwable $e) {
+        error_log('Persistent login failure record unavailable: ' . $e->getMessage());
+      }
+    }
 
     $attempts = (int) $session->get('login_attempts', 0) + 1;
     $session->set('login_attempts', $attempts);
@@ -431,11 +451,30 @@ class AuthController
     }
   }
 
-  private function clearLoginThrottle(): void
+  private function clearLoginThrottle(string $email = ''): void
   {
     global $session;
+
+    if ($email !== '') {
+      try {
+        (new LoginAttempt())->recordSuccess($email, $this->loginClientIp(), $this->loginUserAgent());
+      } catch (\Throwable $e) {
+        error_log('Persistent login success record unavailable: ' . $e->getMessage());
+      }
+    }
+
     $session->remove('login_attempts');
     $session->remove('login_lock_until');
+  }
+
+  private function loginClientIp(): string
+  {
+    return mb_substr((string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'), 0, 45);
+  }
+
+  private function loginUserAgent(): string
+  {
+    return (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
   }
 
   private function isTeacherRegLocked(): bool

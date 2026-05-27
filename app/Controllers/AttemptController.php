@@ -8,6 +8,7 @@ use App\Models\Exercise;
 use App\Models\Question;
 use App\Models\Attempt;
 use App\Models\Answer;
+use App\Models\GradingJob;
 use App\Services\AttemptGradingService;
 use App\Services\AuditService;
 use Core\Auth;
@@ -125,23 +126,34 @@ class AttemptController
     }
 
     $this->attempts->markSubmitted((int) $id);
+    $gradingStatus = 'queued';
 
     try {
-      (new AttemptGradingService())->gradeSubmittedAttempt((int) $id);
+      (new GradingJob())->enqueueAttempt((int) $id);
     } catch (\Throwable $e) {
-      error_log("Attempt evaluation failed for attempt {$id}: " . $e->getMessage());
-      AuditService::record('student.attempt.grading_failed', 'attempt', (int) $id, [
+      $gradingStatus = 'queue_unavailable';
+      error_log("Attempt grading enqueue failed for attempt {$id}: " . $e->getMessage());
+      AuditService::record('student.attempt.grading_enqueue_failed', 'attempt', (int) $id, [
         'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
         'student_id' => (int) ($attempt['student_id'] ?? 0),
         'error' => $e->getMessage(),
       ]);
-
-      global $session;
-      $session->flash('error', 'A avaliação automática está temporariamente indisponível. Sua tentativa foi enviada e ficou pendente de correção.');
-      View::redirect("/student/exercises/{$attempt['exercise_id']}");
     }
 
-    View::redirect("/student/attempts/{$id}/result");
+    AuditService::record('student.attempt.submitted', 'attempt', (int) $id, [
+      'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
+      'student_id' => (int) ($attempt['student_id'] ?? 0),
+      'grading_status' => $gradingStatus,
+    ]);
+
+    global $session;
+    $session->flash(
+      $gradingStatus === 'queued' ? 'success' : 'error',
+      $gradingStatus === 'queued'
+        ? 'Tentativa enviada. A correção automática foi colocada na fila.'
+        : 'Tentativa enviada. A fila automática está indisponível e a correção ficou pendente para reprocessamento.'
+    );
+    View::redirect("/student/exercises/{$attempt['exercise_id']}");
   }
 
   public function regradeAdmin(string $id): void

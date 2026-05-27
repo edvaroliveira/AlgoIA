@@ -10,7 +10,7 @@ Para um ambiente novo, use o schema consolidado:
 
 1. Criar o banco vazio com charset `utf8mb4`.
 2. Executar `database/migrations/001_create_tables.sql`.
-3. Nao executar as migrations incrementais `002` a `012` em seguida, pois elas existem para atualizar bases antigas.
+3. Nao executar as migrations incrementais `002` a `014` em seguida, pois elas existem para atualizar bases antigas.
 
 O arquivo `001_create_tables.sql` contem o schema atual consolidado, incluindo auditoria, configuracoes, cadastro docente, contexto de turma em tentativas, reset por token e motivos de desconto da IA.
 
@@ -30,10 +30,12 @@ Para um ambiente que ja foi criado com schema antigo, nao reexecute `001_create_
 10. `010_teacher_registration.sql`
 11. `011_answers_deduction_reasons.sql`
 12. `012_user_registration_source.sql`
+13. `013_login_attempts.sql`
+14. `014_grading_jobs.sql`
 
 Observacao: existem dois arquivos iniciados por `002` por historico do projeto. A ordem acima e a referencia oficial.
 
-As migrations `010`, `011` e `012` usam verificacoes em `INFORMATION_SCHEMA` para evitar erro quando uma coluna, indice ou chave estrangeira ja existir. Ainda assim, migrations historicas anteriores devem ser aplicadas uma unica vez e na ordem indicada.
+As migrations `010`, `011`, `012`, `013` e `014` usam verificacoes ou criacao idempotente para evitar erro quando uma coluna, indice, chave estrangeira ou tabela ja existir. Ainda assim, migrations historicas anteriores devem ser aplicadas uma unica vez e na ordem indicada.
 
 Antes de atualizar uma base de producao:
 
@@ -80,6 +82,14 @@ Quando a avaliacao automatica falhar:
 - Admin e docente visualizam a pendencia nos paineis de correcoes pendentes.
 - O reprocessamento pode ser acionado pelo painel.
 - A falha inicial e as falhas de reprocessamento sao registradas em auditoria.
+
+O submit do aluno apenas enfileira a correcao em `grading_jobs`. Configure um cron ou tarefa agendada para executar:
+
+```bash
+php bin/process_grading_jobs.php 10
+```
+
+O argumento numerico define o maximo de jobs processados por execucao. Jobs com falha ficam recuperaveis para nova tentativa automatica ou reprocessamento manual.
 
 ## Prompt e Auditoria Pedagogica
 

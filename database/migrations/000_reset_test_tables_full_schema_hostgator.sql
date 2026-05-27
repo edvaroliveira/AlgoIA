@@ -18,9 +18,11 @@ SET time_zone = "+00:00";
 SET NAMES utf8mb4;
 
 DROP TABLE IF EXISTS `system_settings`;
+DROP TABLE IF EXISTS `login_attempts`;
 DROP TABLE IF EXISTS `audit_logs`;
 DROP TABLE IF EXISTS `injection_logs`;
 DROP TABLE IF EXISTS `answers`;
+DROP TABLE IF EXISTS `grading_jobs`;
 DROP TABLE IF EXISTS `attempts`;
 DROP TABLE IF EXISTS `questions`;
 DROP TABLE IF EXISTS `exercise_turmas`;
@@ -179,6 +181,24 @@ CREATE TABLE attempts (
       FOREIGN KEY (student_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Fila de correcao automatica
+CREATE TABLE grading_jobs (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    attempt_id INT UNSIGNED NOT NULL,
+    status ENUM('queued','processing','completed','failed') NOT NULL DEFAULT 'queued',
+    attempts INT UNSIGNED NOT NULL DEFAULT 0,
+    last_error TEXT NULL,
+    available_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    locked_at DATETIME NULL,
+    completed_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_grading_jobs_attempt (attempt_id),
+    KEY idx_grading_jobs_status_available (status, available_at),
+    CONSTRAINT fk_grading_jobs_attempt
+      FOREIGN KEY (attempt_id) REFERENCES attempts(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Respostas
 CREATE TABLE answers (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -235,6 +255,18 @@ CREATE TABLE audit_logs (
       FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Tentativas de login
+CREATE TABLE login_attempts (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(150) NOT NULL,
+    ip_address VARCHAR(45) NOT NULL,
+    user_agent VARCHAR(255) NULL,
+    succeeded TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_login_attempts_identity (email, ip_address, succeeded, created_at),
+    KEY idx_login_attempts_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Configuracoes do sistema
 CREATE TABLE system_settings (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -278,4 +310,3 @@ INSERT INTO users (
     NOW(),
     NOW()
 );
-
