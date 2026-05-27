@@ -86,8 +86,16 @@ class TurmaController
     Request::validateCsrf();
     $this->getOwnedTurma((int) $id);
 
-    $this->turmas->approveStudent((int) $studentId, (int) $id);
+    global $session;
+
+    if (!$this->turmas->approveStudent((int) $studentId, (int) $id)) {
+      AuditService::record('teacher.student.approve_denied', 'student', (int) $studentId, ['turma_id' => (int) $id]);
+      $session->flash('error', 'Aluno pendente não encontrado para esta turma.');
+      View::redirect("/teacher/turmas/{$id}");
+    }
+
     AuditService::record('teacher.student.approve', 'student', (int) $studentId, ['turma_id' => (int) $id]);
+    $session->flash('success', 'Aluno aprovado com sucesso.');
     View::redirect("/teacher/turmas/{$id}");
   }
 

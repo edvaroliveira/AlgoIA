@@ -44,6 +44,13 @@ if ($flash):
   <div class="alert alert--error"><?= \Core\View::e($flash) ?></div>
 <?php endif; ?>
 
+<?php
+$successFlash = $session->getFlash('success');
+if ($successFlash):
+?>
+  <div class="alert alert--success"><?= \Core\View::e($successFlash) ?></div>
+<?php endif; ?>
+
 <?php if (!$isOpen && !empty($exercise['has_future_publication'])): ?>
   <div class="alert alert--info">Este exercício ainda não está aberto.</div>
 

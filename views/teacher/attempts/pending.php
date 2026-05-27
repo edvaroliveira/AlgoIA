@@ -66,6 +66,7 @@ global $session;
             <th>Exercício</th>
             <th>Turma</th>
             <th>Enviada em</th>
+            <th>Status</th>
             <th>Tempo</th>
             <th></th>
           </tr>
@@ -80,6 +81,22 @@ global $session;
               <td><?= \Core\View::e($attempt['exercise_title'] ?? '—') ?></td>
               <td><?= \Core\View::e($attempt['turma_name'] ?? '—') ?></td>
               <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : '—' ?></td>
+              <td>
+                <?php
+                $jobStatus = (string) ($attempt['grading_job_status'] ?? 'manual');
+                $jobLabel = [
+                  'queued' => 'Na fila',
+                  'processing' => 'Processando',
+                  'failed' => 'Falha técnica',
+                  'completed' => 'Concluída',
+                  'manual' => 'Sem job',
+                ][$jobStatus] ?? $jobStatus;
+                ?>
+                <span class="badge badge--info"><?= \Core\View::e($jobLabel) ?></span>
+                <?php if (!empty($attempt['grading_job_attempts'])): ?>
+                  <span class="text-muted"><?= (int) $attempt['grading_job_attempts'] ?> tentativa(s)</span>
+                <?php endif; ?>
+              </td>
               <td><span class="badge badge--warning"><?= (int) ($attempt['pending_hours'] ?? 0) ?>h</span></td>
               <td class="td-actions">
                 <form method="POST" action="<?= \Core\app_url('/teacher/attempts/' . (int) ($attempt['id'] ?? 0) . '/regrade') ?>">

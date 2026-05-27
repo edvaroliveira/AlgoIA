@@ -150,12 +150,14 @@ class Attempt extends Model
     return $this->db->fetchAll(
       "SELECT a.*, e.title AS exercise_title, student.name AS student_name, student.email AS student_email,
                     teacher.name AS teacher_name, t.name AS turma_name,
+                    gj.status AS grading_job_status, gj.attempts AS grading_job_attempts, gj.last_error AS grading_job_last_error,
                     TIMESTAMPDIFF(HOUR, COALESCE(a.submitted_at, a.started_at), NOW()) AS pending_hours
              FROM attempts a
              JOIN exercises e ON e.id = a.exercise_id
              JOIN users student ON student.id = a.student_id
              JOIN users teacher ON teacher.id = e.teacher_id
              LEFT JOIN turmas t ON t.id = a.turma_id
+             LEFT JOIN grading_jobs gj ON gj.attempt_id = a.id
              {$where}
              ORDER BY COALESCE(a.submitted_at, a.started_at) ASC
              LIMIT {$safeLimit} OFFSET {$safeOffset}",
@@ -172,12 +174,14 @@ class Attempt extends Model
     return $this->db->fetchAll(
       "SELECT a.*, e.title AS exercise_title, student.name AS student_name, student.email AS student_email,
                     t.name AS turma_name,
+                    gj.status AS grading_job_status, gj.attempts AS grading_job_attempts, gj.last_error AS grading_job_last_error,
                     TIMESTAMPDIFF(HOUR, COALESCE(a.submitted_at, a.started_at), NOW()) AS pending_hours
              FROM attempts a
              JOIN exercises e ON e.id = a.exercise_id
              JOIN users student ON student.id = a.student_id
              JOIN users teacher ON teacher.id = e.teacher_id
              LEFT JOIN turmas t ON t.id = a.turma_id
+             LEFT JOIN grading_jobs gj ON gj.attempt_id = a.id
              {$where}
              ORDER BY COALESCE(a.submitted_at, a.started_at) ASC
              LIMIT {$safeLimit} OFFSET {$safeOffset}",
