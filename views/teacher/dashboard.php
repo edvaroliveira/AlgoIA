@@ -9,6 +9,8 @@ $exercises = $exercises ?? [];
 $recentStudents = $recentStudents ?? [];
 $pendingGradingCount = $pendingGradingCount ?? 0;
 $pendingGradingAttempts = $pendingGradingAttempts ?? [];
+$gradingJobSummary = $gradingJobSummary ?? ['queued' => 0, 'processing' => 0, 'failed' => 0, 'completed_24h' => 0, 'stale' => 0];
+$gradingJobFailures = $gradingJobFailures ?? [];
 ?>
 
 <section class="hero-panel hero-panel--teacher">
@@ -53,6 +55,10 @@ $pendingGradingAttempts = $pendingGradingAttempts ?? [];
     <div class="stat-value"><?= $pendingGradingCount ?></div>
     <div class="stat-label">Correções pendentes</div>
   </div>
+  <div class="stat-card <?= ((int) ($gradingJobSummary['failed'] ?? 0) > 0 || (int) ($gradingJobSummary['stale'] ?? 0) > 0) ? 'stat-card--warning' : '' ?>">
+    <div class="stat-value"><?= (int) (($gradingJobSummary['queued'] ?? 0) + ($gradingJobSummary['processing'] ?? 0)) ?></div>
+    <div class="stat-label">Fila de IA</div>
+  </div>
 </div>
 
 <?php if ($pendingTotal > 0): ?>
@@ -63,6 +69,13 @@ $pendingGradingAttempts = $pendingGradingAttempts ?? [];
 <?php endif; ?>
 
 <?php global $session; ?>
+
+<?php if (!empty($gradingJobFailures)): ?>
+  <div class="alert alert--warning">
+    Há <strong><?= count($gradingJobFailures) ?></strong> falha(s) recente(s) na fila de correção dos seus exercícios.
+    <a href="<?= \Core\app_url('/teacher/attempts/pending') ?>">Abrir pendências →</a>
+  </div>
+<?php endif; ?>
 
 <?php if (!empty($pendingGradingAttempts)): ?>
   <div class="section">
@@ -82,6 +95,7 @@ $pendingGradingAttempts = $pendingGradingAttempts ?? [];
               <th>Exercício</th>
               <th>Turma</th>
               <th>Enviada em</th>
+              <th>Status</th>
               <th></th>
             </tr>
           </thead>
@@ -92,6 +106,19 @@ $pendingGradingAttempts = $pendingGradingAttempts ?? [];
                 <td><?= \Core\View::e($attempt['exercise_title'] ?? '—') ?></td>
                 <td><?= \Core\View::e($attempt['turma_name'] ?? '—') ?></td>
                 <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : '—' ?></td>
+                <td>
+                  <?php
+                  $jobStatus = (string) ($attempt['grading_job_status'] ?? 'manual');
+                  $jobLabel = [
+                    'queued' => 'Na fila',
+                    'processing' => 'Processando',
+                    'failed' => 'Falha técnica',
+                    'completed' => 'Concluída',
+                    'manual' => 'Sem job',
+                  ][$jobStatus] ?? $jobStatus;
+                  ?>
+                  <span class="badge badge--info"><?= \Core\View::e($jobLabel) ?></span>
+                </td>
                 <td class="td-actions">
                   <form method="POST" action="<?= \Core\app_url('/teacher/attempts/' . (int) ($attempt['id'] ?? 0) . '/regrade') ?>">
                     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">

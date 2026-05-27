@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Models\AuditLog;
 use App\Models\Attempt;
 use App\Models\Exercise;
+use App\Models\GradingJob;
 use App\Models\Question;
 use App\Models\SystemSetting;
 use App\Models\Turma;
@@ -49,6 +50,8 @@ class AdminController
     $pendingGradingAttempts = $this->attempts->getPendingGradingForAdmin(6);
     $pendingTeacherRequestCount = $this->users->countPendingTeacherRequests();
     $settings = new SystemSetting();
+    $gradingJobs = new GradingJob();
+    $pendingGradingAttempts = $this->attachGradingJobStatuses($pendingGradingAttempts, $gradingJobs);
 
     View::render('admin/dashboard', [
       'totalUsers' => count($users),
@@ -68,9 +71,25 @@ class AdminController
       'closingExercises' => $closingExercises,
       'pendingUsers' => $pendingUsers,
       'pendingGradingAttempts' => $pendingGradingAttempts,
+      'gradingJobSummary' => $gradingJobs->operationalSummary(),
+      'gradingJobFailures' => $gradingJobs->recentFailures(null, 5),
       'pendingActions' => $this->buildDashboardPendingActions($pendingUsers, $pendingTurmas, $closingExercises, $pendingGradingAttempts, $this->users->getPendingTeacherRequests(3)),
       'recentAdminEvents' => $recentAdminEvents,
     ]);
+  }
+
+  private function attachGradingJobStatuses(array $attempts, GradingJob $gradingJobs): array
+  {
+    $statuses = $gradingJobs->statusesForAttempts(array_column($attempts, 'id'));
+
+    foreach ($attempts as &$attempt) {
+      $job = $statuses[(int) ($attempt['id'] ?? 0)] ?? null;
+      $attempt['grading_job_status'] = $job['status'] ?? null;
+      $attempt['grading_job_attempts'] = $job['attempts'] ?? null;
+    }
+    unset($attempt);
+
+    return $attempts;
   }
 
   public function saveFilterPreset(string $scope): void
