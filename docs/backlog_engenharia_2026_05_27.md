@@ -435,3 +435,23 @@ Um item do backlog so deve ser considerado pronto quando:
 - impacto operacional estiver documentado quando aplicavel
 - auditoria, logs ou visibilidade minima forem atualizados quando o item mexer em fluxo sensivel
 - validacao estreita do slice alterado tiver sido executada
+
+## Status de execucao
+
+### Implementado nesta iteracao
+
+- E1-H4: aprovacao de aluno agora exige role student, vinculo pendente na turma correta e atualizacao transacional
+- E1-H5: throttle persistente de login por email e origem com fallback por sessao
+- E2-H1: submit do aluno enfileira correcao e nao depende da OpenAI no request
+- E2-H2: tabela grading_jobs, worker CLI e retry/backoff basico implementados
+- E2-H3: dashboards e paineis exibem status operacional da fila de correcao
+- E3-H1 parcial: logs registram latencia por resposta/tentativa e categoria basica de falha do worker
+- E3-H2 parcial: dashboards exibem fila de IA, falhas recentes, jobs atrasados e concluidos em 24h
+- E4-H4 parcial: smoke estatico cobre invariantes de aprovacao de aluno, fila de correcao e throttle persistente
+
+### Pendente de validacao operacional
+
+- aplicar migrations 013 e 014 em banco de homologacao
+- executar smoke funcional com login, aprovacao, submit, worker e consulta de resultado
+- configurar cron do worker em ambiente real
+- validar metricas de latencia/falha em logs reais

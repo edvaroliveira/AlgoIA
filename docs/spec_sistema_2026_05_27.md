@@ -147,6 +147,8 @@ IAProg e uma aplicacao web de apoio academico para:
 ### RNF-03 Observabilidade
 
 - falhas de avaliacao devem registrar auditoria e error_log
+- avaliacao deve registrar latencia por resposta e por tentativa em error_log
+- falhas do worker devem ser categorizadas ao menos em timeout, indisponibilidade do provedor, resposta invalida ou desconhecida
 - dashboards administrativos devem destacar pendencias operacionais
 - dashboards devem exibir resumo da fila de IA: jobs em fila, em processamento, falhas, atrasos e concluidos recentes
 

@@ -321,6 +321,7 @@ class AttemptController
 
     try {
       $score = (new AttemptGradingService())->gradeSubmittedAttempt($attemptId);
+      (new GradingJob())->markCompletedForAttempt($attemptId);
       AuditService::record($auditAction, 'attempt', $attemptId, [
         'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
         'student_id' => (int) ($attempt['student_id'] ?? 0),
