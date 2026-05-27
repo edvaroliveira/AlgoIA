@@ -23,6 +23,7 @@ class AttemptGradingService
 
   public function gradeSubmittedAttempt(int $attemptId): float
   {
+    $startedAt = microtime(true);
     $attempt = $this->attempts->find($attemptId);
 
     if (!$attempt || (string) ($attempt['status'] ?? '') !== 'submitted') {
@@ -46,14 +47,21 @@ class AttemptGradingService
         continue;
       }
 
-      $result = $this->ai->evaluateAnswer(
-        (string) $answer['question_text'],
-        (string) $answer['expected_answer_hint'],
-        (string) $answer['student_answer'],
-        (float) $answer['max_score'],
-        (int) $answer['id'],
-        (int) $attempt['student_id']
-      );
+      $answerStartedAt = microtime(true);
+
+      try {
+        $result = $this->ai->evaluateAnswer(
+          (string) $answer['question_text'],
+          (string) $answer['expected_answer_hint'],
+          (string) $answer['student_answer'],
+          (float) $answer['max_score'],
+          (int) $answer['id'],
+          (int) $attempt['student_id']
+        );
+      } finally {
+        $answerDurationMs = (int) round((microtime(true) - $answerStartedAt) * 1000);
+        error_log("Attempt {$attemptId} answer " . (int) ($answer['id'] ?? 0) . " evaluation duration: {$answerDurationMs}ms");
+      }
 
       $evaluations[] = [
         'answer_id' => (int) $answer['id'],
@@ -87,6 +95,9 @@ class AttemptGradingService
 
       throw $e;
     }
+
+    $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+    error_log("Attempt {$attemptId} grading completed in {$durationMs}ms with score {$totalScore}.");
 
     return $totalScore;
   }

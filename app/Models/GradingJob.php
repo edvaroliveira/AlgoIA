@@ -12,6 +12,7 @@ class GradingJob extends Model
   public const STATUS_FAILED = 'failed';
 
   private const MAX_ATTEMPTS = 3;
+  private const STALE_PROCESSING_MINUTES = 15;
 
   protected string $table = 'grading_jobs';
 
@@ -93,6 +94,16 @@ class GradingJob extends Model
     );
   }
 
+  public function markCompletedForAttempt(int $attemptId): void
+  {
+    $this->db->execute(
+      "UPDATE grading_jobs
+             SET status = ?, completed_at = NOW(), last_error = NULL
+             WHERE attempt_id = ?",
+      [self::STATUS_COMPLETED, $attemptId]
+    );
+  }
+
   public function markFailed(int $jobId, string $error, int $delaySeconds = 300): void
   {
     $safeDelay = max(60, $delaySeconds);
@@ -105,6 +116,25 @@ class GradingJob extends Model
              WHERE id = ?",
       [self::STATUS_FAILED, mb_substr($error, 0, 2000), $jobId]
     );
+  }
+
+  public function recoverStaleProcessing(): int
+  {
+    try {
+      return $this->db->execute(
+        "UPDATE grading_jobs
+               SET status = ?,
+                   available_at = NOW(),
+                   last_error = 'Job recuperado após ficar travado em processamento.'
+               WHERE status = ?
+                 AND locked_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+                 AND attempts < ?",
+        [self::STATUS_FAILED, self::STATUS_PROCESSING, self::STALE_PROCESSING_MINUTES, self::MAX_ATTEMPTS]
+      );
+    } catch (\Throwable $e) {
+      error_log('grading_jobs stale recovery unavailable: ' . $e->getMessage());
+      return 0;
+    }
   }
 
   public function operationalSummary(?int $teacherId = null): array
@@ -165,7 +195,9 @@ class GradingJob extends Model
                JOIN exercises e ON e.id = a.exercise_id
                JOIN users student ON student.id = a.student_id
                JOIN users teacher ON teacher.id = e.teacher_id
-               WHERE gj.status = 'failed' {$teacherWhere}
+               WHERE gj.status = 'failed'
+                 AND a.status = 'submitted'
+                 {$teacherWhere}
                ORDER BY gj.updated_at DESC, gj.id DESC
                LIMIT {$safeLimit}",
         $params
@@ -236,7 +268,7 @@ class GradingJob extends Model
              {$teacherJoin}
              WHERE (
                (gj.status = 'queued' AND gj.available_at <= DATE_SUB(NOW(), INTERVAL 15 MINUTE))
-               OR (gj.status = 'processing' AND gj.locked_at <= DATE_SUB(NOW(), INTERVAL 15 MINUTE))
+               OR (gj.status = 'processing' AND gj.locked_at <= DATE_SUB(NOW(), INTERVAL " . self::STALE_PROCESSING_MINUTES . " MINUTE))
              )
              {$teacherWhere}",
       $params

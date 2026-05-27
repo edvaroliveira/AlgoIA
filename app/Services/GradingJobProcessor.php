@@ -12,6 +12,7 @@ class GradingJobProcessor
   public function processNext(): bool
   {
     $jobs = new GradingJob();
+    $jobs->recoverStaleProcessing();
     $job = $jobs->claimNext();
 
     if (!$job) {
@@ -36,7 +37,7 @@ class GradingJobProcessor
     } catch (\Throwable $e) {
       $delay = $this->retryDelaySeconds((int) ($job['attempts'] ?? 1));
       $jobs->markFailed($jobId, $e->getMessage(), $delay);
-      error_log("Grading job {$jobId} failed for attempt {$attemptId}: " . $e->getMessage());
+      error_log("Grading job {$jobId} failed for attempt {$attemptId} [" . $this->errorCategory($e) . "]: " . $e->getMessage());
       return true;
     }
   }
@@ -56,5 +57,24 @@ class GradingJobProcessor
   private function retryDelaySeconds(int $attempts): int
   {
     return min(3600, 120 * (2 ** max(0, $attempts - 1)));
+  }
+
+  private function errorCategory(\Throwable $e): string
+  {
+    $message = mb_strtolower($e->getMessage());
+
+    if (str_contains($message, 'comunicação') || str_contains($message, 'timeout') || str_contains($message, 'timed out')) {
+      return 'timeout';
+    }
+
+    if (str_contains($message, 'temporariamente indisponível') || str_contains($message, 'rate') || str_contains($message, '429')) {
+      return 'provider_unavailable';
+    }
+
+    if (str_contains($message, 'formato inesperado') || str_contains($message, 'json')) {
+      return 'invalid_response';
+    }
+
+    return 'unknown';
   }
 }

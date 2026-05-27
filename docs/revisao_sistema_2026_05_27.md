@@ -73,6 +73,7 @@ O sistema esta organizado em MVC artesanal em PHP, com bootstrap enxuto, roteame
 - submit persiste todas as respostas e muda tentativa para submitted
 - sistema cria job em grading_jobs para correcao assincrona
 - worker executa AttemptGradingService, chama OpenAIService por resposta e grava nota/feedback em answers e attempts
+- latencia por resposta/tentativa e falhas categorizadas do worker sao registradas em error_log
 
 ### 4. Operacao administrativa
 
@@ -101,7 +102,7 @@ O sistema esta organizado em MVC artesanal em PHP, com bootstrap enxuto, roteame
 
 ### P1
 
-- monitoramento de fila ainda precisa evoluir para alertas externos de latencia, falhas e backlog acumulado
+- monitoramento de fila ainda precisa evoluir para alertas externos e historico analitico de latencia, falhas e backlog acumulado
 - o produto ainda depende fortemente de views server-rendered e operacoes administrativas centralizadas, o que aumenta custo de manutencao de UX
 - regras de negocio estao razoavelmente espalhadas entre controller e model; isso ainda funciona, mas dificulta evolucao modular
 - ha historico de complexidade em migrations, apesar de a documentacao recente ter reduzido o risco operacional
