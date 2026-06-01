@@ -237,6 +237,30 @@ class GradingJob extends Model
     }
   }
 
+  public function nextRunnable(int $limit = 10): array
+  {
+    try {
+      $safeLimit = max(1, $limit);
+
+      return $this->db->fetchAll(
+        "SELECT gj.*, a.status AS attempt_status, e.title AS exercise_title, student.email AS student_email
+               FROM grading_jobs gj
+               JOIN attempts a ON a.id = gj.attempt_id
+               JOIN exercises e ON e.id = a.exercise_id
+               JOIN users student ON student.id = a.student_id
+               WHERE gj.status IN ('queued', 'failed')
+                 AND gj.attempts < ?
+                 AND gj.available_at <= NOW()
+               ORDER BY gj.available_at ASC, gj.id ASC
+               LIMIT {$safeLimit}",
+        [self::MAX_ATTEMPTS]
+      );
+    } catch (\Throwable $e) {
+      error_log('grading_jobs next runnable unavailable: ' . $e->getMessage());
+      return [];
+    }
+  }
+
   private function countCompletedSince(?int $teacherId, int $hours): int
   {
     $teacherJoin = $teacherId !== null ? 'JOIN attempts a ON a.id = gj.attempt_id JOIN exercises e ON e.id = a.exercise_id' : '';
