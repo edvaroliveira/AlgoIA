@@ -44,6 +44,7 @@ Antes de atualizar uma base de producao:
 3. Aplicar somente as migrations pendentes.
 4. Se a base recebeu ajustes manuais, validar colunas existentes antes de executar arquivos antigos com `ADD COLUMN`.
 5. Executar `php bin/smoke_static.php` para validar invariantes basicos do codigo antes do smoke test funcional.
+6. Executar `php bin/smoke_schema.php` apos aplicar migrations para confirmar que o schema esperado esta disponivel.
 
 ## Variaveis de Ambiente
 
@@ -92,6 +93,12 @@ php bin/process_grading_jobs.php 10
 
 O argumento numerico define o maximo de jobs processados por execucao. Jobs com falha ficam recuperaveis para nova tentativa automatica ou reprocessamento manual.
 Jobs que ficarem travados como `processing` por mais de 15 minutos sao recuperados pelo proprio worker e voltam ao ciclo de tentativa. Quando uma tentativa e corrigida manualmente, o job correspondente e marcado como concluido para evitar alerta falso.
+
+Para validar a fila sem chamar a OpenAI, use:
+
+```bash
+php bin/process_grading_jobs.php --dry-run 10
+```
 
 ## Prompt e Auditoria Pedagogica
 

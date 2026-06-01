@@ -65,6 +65,7 @@ $lintFiles = [
   'app/Services/AttemptGradingService.php',
   'app/Services/GradingJobProcessor.php',
   'bin/process_grading_jobs.php',
+  'bin/smoke_schema.php',
 ];
 
 $failures = [];

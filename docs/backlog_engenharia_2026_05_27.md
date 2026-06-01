@@ -448,10 +448,12 @@ Um item do backlog so deve ser considerado pronto quando:
 - E3-H1 parcial: logs registram latencia por resposta/tentativa e categoria basica de falha do worker
 - E3-H2 parcial: dashboards exibem fila de IA, falhas recentes, jobs atrasados e concluidos em 24h
 - E4-H4 parcial: smoke estatico cobre invariantes de aprovacao de aluno, fila de correcao e throttle persistente
+- E7-H2 parcial: smoke de schema valida tabelas e colunas essenciais apos migrations
 
 ### Pendente de validacao operacional
 
 - aplicar migrations 013 e 014 em banco de homologacao
+- executar `php bin/smoke_schema.php` contra homologacao
 - executar smoke funcional com login, aprovacao, submit, worker e consulta de resultado
 - configurar cron do worker em ambiente real
 - validar metricas de latencia/falha em logs reais
