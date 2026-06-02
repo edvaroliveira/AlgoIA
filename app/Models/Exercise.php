@@ -17,18 +17,7 @@ class Exercise extends Model
 
   public function delete(int $id): int
   {
-    $this->db->beginTransaction();
-
-    try {
-      $this->db->execute("DELETE FROM attempts WHERE exercise_id = ?", [$id]);
-      $deleted = $this->db->execute("DELETE FROM {$this->table} WHERE id = ?", [$id]);
-      $this->db->commit();
-
-      return $deleted;
-    } catch (\Throwable $e) {
-      $this->db->rollback();
-      throw $e;
-    }
+    return $this->db->execute("DELETE FROM {$this->table} WHERE id = ?", [$id]);
   }
 
   public function createDraft(
@@ -526,9 +515,6 @@ class Exercise extends Model
 
   public function activate(int $id, array $publicationConfigs): void
   {
-    $turmaIds = array_values(array_map('intval', array_keys($publicationConfigs)));
-    $primaryTurmaId = $turmaIds[0] ?? null;
-
     $this->db->beginTransaction();
 
     try {
@@ -543,8 +529,8 @@ class Exercise extends Model
       }
 
       $this->db->execute(
-        "UPDATE exercises SET turma_id = ?, status = ? WHERE id = ?",
-        [$primaryTurmaId, self::STATUS_ACTIVE, $id]
+        "UPDATE exercises SET status = ? WHERE id = ?",
+        [self::STATUS_ACTIVE, $id]
       );
 
       $this->db->commit();

@@ -107,6 +107,11 @@ class Auth
       View::redirect('/login');
     }
 
+    $lastRefresh = (int) self::$session->get('_user_refreshed_at', 0);
+    if ($lastRefresh > 0 && (time() - $lastRefresh) < 60) {
+      return;
+    }
+
     try {
       $user = (new \App\Models\User())->find((int) $sessionUser['id']);
     } catch (\Throwable $e) {
@@ -127,6 +132,7 @@ class Auth
       'role' => $user['role'],
       'must_change_password' => !empty($user['must_change_password']),
     ]);
+    self::$session->set('_user_refreshed_at', time());
   }
 
   public static function requireTeacher(): void

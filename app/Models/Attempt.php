@@ -28,15 +28,19 @@ class Attempt extends Model
 
   public function markGraded(int $attemptId, float $totalScore): void
   {
-    $this->db->execute(
-      "UPDATE attempts SET status = 'graded', total_score = ? WHERE id = ?",
+    $rows = $this->db->execute(
+      "UPDATE attempts SET status = 'graded', total_score = ? WHERE id = ? AND status = 'submitted'",
       [$totalScore, $attemptId]
     );
+
+    if ($rows === 0) {
+      error_log("markGraded: attempt {$attemptId} not in submitted state — update skipped.");
+    }
   }
 
   public function getInProgress(int $studentId, int $exerciseId, ?int $turmaId = null): array|false
   {
-    $turmaFilter = $turmaId !== null ? "AND (turma_id = ? OR turma_id IS NULL)" : '';
+    $turmaFilter = $turmaId !== null ? "AND turma_id = ?" : "AND turma_id IS NULL";
     $params = $turmaId !== null ? [$studentId, $exerciseId, $turmaId] : [$studentId, $exerciseId];
 
     return $this->db->fetchOne(
@@ -49,7 +53,7 @@ class Attempt extends Model
 
   public function countUsedAttempts(int $studentId, int $exerciseId, ?int $turmaId = null): int
   {
-    $turmaFilter = $turmaId !== null ? "AND (turma_id = ? OR turma_id IS NULL)" : '';
+    $turmaFilter = $turmaId !== null ? "AND turma_id = ?" : "AND turma_id IS NULL";
     $params = $turmaId !== null ? [$studentId, $exerciseId, $turmaId] : [$studentId, $exerciseId];
 
     $row = $this->db->fetchOne(
@@ -62,7 +66,7 @@ class Attempt extends Model
 
   public function getBestScore(int $studentId, int $exerciseId, ?int $turmaId = null): ?float
   {
-    $turmaFilter = $turmaId !== null ? "AND (turma_id = ? OR turma_id IS NULL)" : '';
+    $turmaFilter = $turmaId !== null ? "AND turma_id = ?" : "AND turma_id IS NULL";
     $params = $turmaId !== null ? [$studentId, $exerciseId, $turmaId] : [$studentId, $exerciseId];
 
     $row = $this->db->fetchOne(

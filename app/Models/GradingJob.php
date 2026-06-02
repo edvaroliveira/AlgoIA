@@ -237,6 +237,22 @@ class GradingJob extends Model
     }
   }
 
+  public function retryExhausted(int $jobId): bool
+  {
+    $rows = $this->db->execute(
+      "UPDATE grading_jobs
+             SET status = ?,
+                 attempts = 0,
+                 available_at = NOW(),
+                 last_error = NULL
+             WHERE id = ?
+               AND status = ?",
+      [self::STATUS_QUEUED, $jobId, self::STATUS_FAILED]
+    );
+
+    return $rows > 0;
+  }
+
   public function nextRunnable(int $limit = 10): array
   {
     try {

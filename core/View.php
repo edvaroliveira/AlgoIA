@@ -6,6 +6,8 @@ namespace Core;
 
 class View
 {
+  public static string $nonce = '';
+
   /**
    * Renders $template inside $layout.
    * The layout receives $content (the rendered template) plus all $data keys.
@@ -52,6 +54,9 @@ class View
       throw new \RuntimeException("View not found: {$template}");
     }
 
+    if (!isset($data['csp_nonce'])) {
+      $data['csp_nonce'] = self::$nonce;
+    }
     extract($data, EXTR_SKIP);
     ob_start();
     require $file;
