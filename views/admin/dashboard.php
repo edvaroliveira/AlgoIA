@@ -154,6 +154,7 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
             <th>Docente</th>
             <th>Tentativas</th>
             <th>Erro</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -164,6 +165,12 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
               <td><?= \Core\View::e($job['teacher_name'] ?? '—') ?></td>
               <td><span class="badge badge--warning"><?= (int) ($job['attempts'] ?? 0) ?></span></td>
               <td><?= \Core\View::e(mb_substr((string) ($job['last_error'] ?? 'Sem detalhe'), 0, 160)) ?></td>
+              <td>
+                <form method="POST" action="<?= \Core\app_url('/admin/grading-jobs/' . (int) ($job['id'] ?? 0) . '/retry') ?>">
+                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                  <button type="submit" class="btn btn--ghost btn--sm">Retentar</button>
+                </form>
+              </td>
             </tr>
           <?php endforeach; ?>
         </tbody>

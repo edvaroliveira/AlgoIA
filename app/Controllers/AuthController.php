@@ -41,8 +41,6 @@ class AuthController
   {
     Request::validateCsrf();
 
-    global $session;
-
     $email    = Request::email('email');
     $password = (string) ($_POST['password'] ?? '');
 
@@ -143,7 +141,7 @@ class AuthController
     if ($password !== $passwordConf) {
       $errors[] = 'As senhas não coincidem.';
     }
-    if ($currentPassword !== '' && $password !== '' && hash_equals($currentPassword, $password)) {
+    if ($currentPassword !== '' && $password !== '' && $currentPassword === $password) {
       $errors[] = 'A nova senha deve ser diferente da senha temporária.';
     }
 
@@ -311,8 +309,6 @@ class AuthController
       View::render('auth/register_teacher', ['disabled' => true], 'layouts/guest');
       return;
     }
-
-    global $session;
 
     if ($this->isTeacherRegLocked()) {
       View::render('auth/register_teacher', [

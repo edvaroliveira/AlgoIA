@@ -169,10 +169,11 @@ PROMPT;
 
   private function buildInjectionLogSummary(string $studentAnswer): string
   {
-    return sprintf(
-      '[conteudo omitido por privacidade; tamanho=%d caracteres]',
-      mb_strlen($studentAnswer)
-    );
+    $maxChars = 500;
+    $len = mb_strlen($studentAnswer);
+    $excerpt = mb_substr($studentAnswer, 0, $maxChars);
+    $truncated = $len > $maxChars ? '…[truncado; total=' . $len . ' chars]' : '';
+    return $excerpt . $truncated;
   }
 
   // ── API call ──────────────────────────────────────────────────────────────
@@ -207,7 +208,7 @@ PROMPT;
       $response = curl_exec($ch);
       $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
       $curlErr  = curl_error($ch);
-      curl_close($ch);
+      unset($ch);
 
       if ($curlErr) {
         error_log("OpenAI cURL error (try {$attempt}): {$curlErr}");

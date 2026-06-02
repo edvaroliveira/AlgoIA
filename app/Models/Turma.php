@@ -4,11 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-/**
- * @method void reactivate(int $id)
- * @method int countPendingEnrollmentsForAdmin()
- * @method array getPendingTurmasForAdmin(int $limit = 5)
- */
 class Turma extends Model
 {
   protected string $table = 'turmas';

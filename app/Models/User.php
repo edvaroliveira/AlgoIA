@@ -178,6 +178,25 @@ class User extends Model
     return (int) ($row['total'] ?? 0);
   }
 
+  public function countByRole(): array
+  {
+    $rows = $this->db->fetchAll(
+      "SELECT role, COUNT(*) AS total FROM users GROUP BY role"
+    );
+
+    $map = ['admin' => 0, 'teacher' => 0, 'student' => 0, 'total' => 0];
+    foreach ($rows as $row) {
+      $role = (string) ($row['role'] ?? '');
+      $count = (int) ($row['total'] ?? 0);
+      if (array_key_exists($role, $map)) {
+        $map[$role] = $count;
+      }
+      $map['total'] += $count;
+    }
+
+    return $map;
+  }
+
   public function countPendingForAdmin(): int
   {
     $row = $this->db->fetchOne(

@@ -14,10 +14,13 @@ class Session
       return;
     }
 
+    $isSecure = isset($_SERVER['HTTPS'])
+      || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+
     session_set_cookie_params([
       'lifetime' => 0,
       'path'     => '/',
-      'secure'   => isset($_SERVER['HTTPS']),
+      'secure'   => $isSecure,
       'httponly' => true,
       'samesite' => 'Lax',
     ]);

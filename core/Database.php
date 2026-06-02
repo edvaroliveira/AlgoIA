@@ -68,6 +68,9 @@ class Database
 
   public function beginTransaction(): void
   {
+    if ($this->pdo->inTransaction()) {
+      throw new \LogicException('Nested transactions are not supported. Compose operations within the outer transaction instead.');
+    }
     $this->pdo->beginTransaction();
   }
   public function commit(): void

@@ -72,7 +72,7 @@
     <button type="submit" class="btn btn--primary btn--full">Enviar solicitação</button>
   </form>
 
-  <script>
+  <script nonce="<?= \Core\View::e(\Core\View::$nonce) ?>">
   (function () {
     var form = document.getElementById('teacher-reg-form');
     if (!form) return;

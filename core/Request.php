@@ -51,10 +51,10 @@ class Request
     return trim($value);
   }
 
-  /** Returns a sanitized email from POST. */
+  /** Returns a trimmed email from POST — validate with FILTER_VALIDATE_EMAIL in caller. */
   public static function email(string $key, string $default = ''): string
   {
-    return (string) filter_var($_POST[$key] ?? $default, FILTER_SANITIZE_EMAIL);
+    return trim((string) ($_POST[$key] ?? $default));
   }
 
   /** Returns an int from POST. */

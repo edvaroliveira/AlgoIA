@@ -91,7 +91,7 @@ class AttemptController
 
     if ($questionId <= 0 || $studentAnswer === '') {
       header('Content-Type: application/json');
-      exit(json_encode(['ok' => false]));
+      exit(json_encode(['ok' => false, 'error' => 'Dados inválidos.']));
     }
 
     if (!$this->questions->belongsToExercise($questionId, (int) $attempt['exercise_id'])) {
@@ -116,7 +116,7 @@ class AttemptController
 
     Auth::ensure($attempt && (int) $attempt['student_id'] === $studentId && $attempt['status'] === 'in_progress', 'Tentativa inválida.');
 
-    $exercise  = $this->ensureAttemptIsOpen($attempt, $studentId);
+    $this->ensureAttemptIsOpen($attempt, $studentId);
     $questions = $this->questions->findByExercise((int) $attempt['exercise_id']);
 
     // Save all answers from POST
