@@ -81,6 +81,7 @@ class AttemptController
     $attempt = $this->attempts->find((int) $id);
     if (!$attempt || $attempt['status'] !== 'in_progress') {
       http_response_code(400);
+      header('Content-Type: application/json');
       exit(json_encode(['ok' => false, 'error' => 'Tentativa inválida.']));
     }
 
