@@ -6,7 +6,6 @@ namespace App\Services;
 
 use App\Models\Answer;
 use App\Models\Attempt;
-use Core\Database;
 
 class AttemptGradingService
 {
@@ -31,18 +30,24 @@ class AttemptGradingService
     }
 
     $answers = $this->answers->findByAttempt($attemptId);
-    $evaluations = [];
     $totalScore = 0.0;
 
     foreach ($answers as $answer) {
+      // Reuse a prior successful evaluation so a retried job does not re-call
+      // (and re-charge) the AI for answers already graded in an earlier run.
+      if (!empty($answer['evaluated_at'])) {
+        $totalScore += (float) ($answer['ai_score'] ?? 0.0);
+        continue;
+      }
+
       if (trim((string) ($answer['student_answer'] ?? '')) === '') {
         if (!empty($answer['id'])) {
-          $evaluations[] = [
-            'answer_id' => (int) $answer['id'],
-            'score' => 0.0,
-            'feedback' => 'Questão não respondida.',
-            'deduction_reasons' => ['missing_concept', 'incomplete_explanation'],
-          ];
+          $this->answers->updateAiResult(
+            (int) $answer['id'],
+            0.0,
+            'Questão não respondida.',
+            ['missing_concept', 'incomplete_explanation']
+          );
         }
         continue;
       }
@@ -63,38 +68,17 @@ class AttemptGradingService
         error_log("Attempt {$attemptId} answer " . (int) ($answer['id'] ?? 0) . " evaluation duration: {$answerDurationMs}ms");
       }
 
-      $evaluations[] = [
-        'answer_id' => (int) $answer['id'],
-        'score' => (float) $result['score'],
-        'feedback' => (string) $result['feedback'],
-        'deduction_reasons' => $result['deduction_reasons'] ?? [],
-      ];
+      // Persist immediately so a later failure does not discard this evaluation.
+      $this->answers->updateAiResult(
+        (int) $answer['id'],
+        (float) $result['score'],
+        (string) $result['feedback'],
+        $result['deduction_reasons'] ?? []
+      );
       $totalScore += (float) $result['score'];
     }
 
-    $db = Database::getInstance();
-
-    try {
-      $db->beginTransaction();
-
-      foreach ($evaluations as $evaluation) {
-        $this->answers->updateAiResult(
-          $evaluation['answer_id'],
-          $evaluation['score'],
-          $evaluation['feedback'],
-          $evaluation['deduction_reasons']
-        );
-      }
-
-      $this->attempts->markGraded($attemptId, $totalScore);
-      $db->commit();
-    } catch (\Throwable $e) {
-      if ($db->inTransaction()) {
-        $db->rollback();
-      }
-
-      throw $e;
-    }
+    $this->attempts->markGraded($attemptId, $totalScore);
 
     $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
     error_log("Attempt {$attemptId} grading completed in {$durationMs}ms with score {$totalScore}.");
