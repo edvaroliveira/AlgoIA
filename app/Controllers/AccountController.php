@@ -21,6 +21,10 @@ class AccountController
   /** Subpasta (relativa a public/assets/uploads) onde os avatares ficam. */
   private const SUBDIR = 'avatars';
 
+  /** Limite operacional de uploads por janela (anti-abuso de CPU/disco). */
+  private const UPLOAD_MAX = 12;
+  private const UPLOAD_WINDOW_SECONDS = 600;
+
   private const ALLOWED_MIME = [
     'image/jpeg' => true,
     'image/png'  => true,
@@ -47,6 +51,11 @@ class AccountController
 
     global $session;
     $userId = (int) Auth::id();
+
+    if ($this->isUploadThrottled()) {
+      $session->flash('error', 'Muitas trocas de foto em pouco tempo. Aguarde alguns minutos e tente novamente.');
+      View::redirect('/conta');
+    }
 
     $error = $this->validateUpload($_FILES['avatar'] ?? null);
     if ($error !== null) {
@@ -182,6 +191,26 @@ class AccountController
         imagedestroy($dst);
       }
     }
+  }
+
+  /** Throttle por sessão: no máximo UPLOAD_MAX uploads na janela. */
+  private function isUploadThrottled(): bool
+  {
+    global $session;
+    $now  = time();
+    $hits = array_values(array_filter(
+      (array) $session->get('avatar_upload_hits', []),
+      static fn($t): bool => ($now - (int) $t) < self::UPLOAD_WINDOW_SECONDS
+    ));
+
+    if (count($hits) >= self::UPLOAD_MAX) {
+      $session->set('avatar_upload_hits', $hits);
+      return true;
+    }
+
+    $hits[] = $now;
+    $session->set('avatar_upload_hits', $hits);
+    return false;
   }
 
   private function storageDir(): string

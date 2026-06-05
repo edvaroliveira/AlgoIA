@@ -130,7 +130,7 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
     <strong class="overview-card__value"><?= $pendingTeacherRequestCount ?></strong>
     <span class="overview-card__signal"><span class="badge badge--<?= $pendingTeacherRequestCount > 0 ? 'warning' : 'neutral' ?>"><?= $pendingTeacherRequestCount > 0 ? 'aguardando análise' : 'sem fila' ?></span></span>
     <p class="overview-card__copy">Cadastro público: <span class="badge badge--<?= $teacherRegistrationEnabled ? 'success' : 'neutral' ?>"><?= $teacherRegistrationEnabled ? 'aberto' : 'fechado' ?></span></p>
-    <div class="td-actions" style="margin-top:.5rem">
+    <div class="td-actions u-mt-2">
       <a href="<?= \Core\app_url('/admin/teacher-requests') ?>" class="btn btn--sm btn--primary">Gerenciar</a>
     </div>
   </article>
