@@ -32,8 +32,11 @@ Para um ambiente que ja foi criado com schema antigo, nao reexecute `001_create_
 12. `012_user_registration_source.sql`
 13. `013_login_attempts.sql`
 14. `014_grading_jobs.sql`
+15. `015_fix_exercises_turma_fk.sql`
 
 Observacao: existem dois arquivos iniciados por `002` por historico do projeto. A ordem acima e a referencia oficial.
+
+A migration `015` recria a FK `fk_ex_turma` com `ON DELETE SET NULL`, permitindo excluir turma com exercicio referenciado sem erro. Esse comportamento ja vem no schema consolidado `001` para instalacoes limpas; a `015` corrige apenas bases criadas com a versao antiga da `001`.
 
 As migrations `010`, `011`, `012`, `013` e `014` usam verificacoes ou criacao idempotente para evitar erro quando uma coluna, indice, chave estrangeira ou tabela ja existir. Ainda assim, migrations historicas anteriores devem ser aplicadas uma unica vez e na ordem indicada.
 
@@ -106,4 +109,10 @@ O prompt de IA usa rubrica por faixa de pontuacao e retorna `deduction_reasons`.
 
 Os motivos de desconto sao salvos em `answers.deduction_reasons_json` e podem ser consultados por professor/admin no detalhe da tentativa corrigida.
 
-Tentativas suspeitas de prompt injection sao registradas em `injection_logs` sem armazenar o conteudo completo da resposta do aluno.
+Tentativas suspeitas de prompt injection sao registradas em `injection_logs`.
+
+### Politica de privacidade e retencao dos `injection_logs`
+
+- **Redacao por truncamento:** o registro guarda apenas um trecho redigido da resposta do aluno (ate 500 caracteres, com marcador de truncamento), nunca o conteudo integral. Vide `OpenAIService::buildInjectionLogSummary`.
+- **Uso restrito:** o conteudo serve para revisao manual de incidentes; as telas de professor/admin usam apenas a contagem de ocorrencias (`injection_flag_count`), nao o texto.
+- **Retencao:** registros sao apagados apos 180 dias (`App\Models\InjectionLog::RETENTION_DAYS`). A limpeza roda automaticamente ao final de cada execucao do worker `bin/process_grading_jobs.php`, portanto nao requer cron adicional alem do ja configurado para a fila.
