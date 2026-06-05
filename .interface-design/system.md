@@ -101,6 +101,8 @@ Utilitárias para layout: `.form-group--end`, `.u-inline`, `.u-mt-2`, `.row-betw
   cor. `--pct`/`--ring-color` vêm do JS (ver seção acima). Padrão para futuras métricas com razão.
 - Estender o mesmo storytelling a `overview-card` **onde houver razão** (X de Y); contadores
   absolutos seguem número-label.
-- Aplicar `--text-2` aos secundários hoje em `--text-muted` (hierarquia mais rica).
+- ✅ **`--text-2` ativo na hierarquia:** copy de apoio (`.auth-copy`, `.card-subtitle`,
+  `.surface-copy`, `.overview-card__copy`, `.info-step p`) promovida de `--text-muted` para
+  `--text-2` (secundário > terciário). Labels/metadados/micro seguem em `--text-muted`.
 - ✅ **Input inset:** `--control-bg` agora `#f6f3ea` (mais escuro que o card `#fdfbf5`),
   sinalizando "recebe conteúdo"; `:focus` levanta para `#fffefb`. Antes era mais claro que o card.
