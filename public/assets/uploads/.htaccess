@@ -1,0 +1,23 @@
+# Diretorio de uploads do usuario — somente arquivos estaticos.
+# Nunca executar codigo a partir daqui (defesa contra upload malicioso).
+
+# Apache 2.4+
+<IfModule mod_authz_core.c>
+  <FilesMatch "\.(php|phtml|php3|php4|php5|php7|phps|pht|cgi|pl|py|sh|asp|aspx)$">
+    Require all denied
+  </FilesMatch>
+</IfModule>
+
+# Apache 2.2
+<IfModule !mod_authz_core.c>
+  <FilesMatch "\.(php|phtml|php3|php4|php5|php7|phps|pht|cgi|pl|py|sh|asp|aspx)$">
+    Order allow,deny
+    Deny from all
+  </FilesMatch>
+</IfModule>
+
+# Desliga handlers/engine de script se disponiveis.
+php_flag engine off
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .pht
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .pht
+Options -ExecCGI -Indexes
