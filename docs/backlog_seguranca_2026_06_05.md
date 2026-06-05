@@ -99,7 +99,11 @@ Critérios de aceite:
 
 ## Epic S2 — Endurecimento de Transporte e Cabeçalhos
 
-### Prioridade: P2
+### Prioridade: P2 — ✅ IMPLEMENTADO (2026-06-05)
+
+`public/index.php` envia `Strict-Transport-Security` apenas sob HTTPS; `core/Session.php`
+usa prefixo `__Host-` no cookie sob HTTPS e corrige a detecção de HTTPS (antes `isset`
+aceitava `HTTPS=off`).
 
 ### S2-H1 Cabeçalho HSTS
 
@@ -127,7 +131,12 @@ Critérios de aceite:
 
 ## Epic S3 — Anti-abuso e Limites
 
-### Prioridade: P2
+### Prioridade: P2 — ✅ IMPLEMENTADO (2026-06-05)
+
+`LoginAttempt` ganhou throttle genérico por IP (`isActionRateLimited`/`recordAction`,
+namespaced por `@scope`); aplicado a `register` (aluno) e `resetPassword` (anti
+brute-force de token). `registerTeacher` já tinha throttle próprio. `AccountController`
+limita uploads de avatar por sessão (`UPLOAD_MAX`/janela).
 
 ### S3-H1 Rate limit em cadastro e reset de senha
 
@@ -203,10 +212,10 @@ Critérios de aceite:
 |------|----------|------------|----------------------|
 | S1 | H1 Tratamento global de erros | P1 ✅ | `public/index.php`, `config/app.php:9` |
 | S1 | H2 500 do Router sem nomes internos | P1 ✅ | `core/Router.php` (`abort`) |
-| S2 | H1 Cabeçalho HSTS | P2 | `public/index.php` |
-| S2 | H2 Prefixo de cookie | P2 | `core/Session.php` |
-| S3 | H1 Rate limit cadastro/reset | P2 | `app/Controllers/AuthController.php` |
-| S3 | H2 Limite de upload de avatar | P2 | `app/Controllers/AccountController.php` |
+| S2 | H1 Cabeçalho HSTS | P2 ✅ | `public/index.php` |
+| S2 | H2 Prefixo de cookie | P2 ✅ | `core/Session.php` |
+| S3 | H1 Rate limit cadastro/reset | P2 ✅ | `app/Controllers/AuthController.php`, `app/Models/LoginAttempt.php` |
+| S3 | H2 Limite de upload de avatar | P2 ✅ | `app/Controllers/AccountController.php` |
 | S4 | H1 Allowlist de templates | P3 | `core/View.php:62` |
 | S4 | H2 Reduzir `unsafe-inline` em style-src | P3 | `public/index.php` (CSP) |
 | S4 | H3 Teto de senha / HIBP | P3 | `app/Controllers/AuthController.php` |
