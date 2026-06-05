@@ -34,6 +34,18 @@
     ring.style.setProperty("--ring-color", color);
   });
 
+  // ── Barra de proporção dos overview-cards (setProperty é permitido pela CSP) ─
+  document.querySelectorAll(".overview-card__ratio").forEach(function (el) {
+    var value = parseFloat(el.dataset.value) || 0;
+    var total = parseFloat(el.dataset.total) || 0;
+    var pct = total > 0 ? Math.max(0, Math.min(100, (value / total) * 100)) : 0;
+    el.style.setProperty("--fill", pct.toFixed(1));
+    var label = el.querySelector(".overview-card__ratio-label");
+    if (label) {
+      label.textContent = Math.round(pct) + "% da base";
+    }
+  });
+
   // ── Auto-save ──────────────────────────────────────────────────────────────
   const textareas = document.querySelectorAll("textarea[data-question]");
 
