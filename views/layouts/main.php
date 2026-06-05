@@ -15,7 +15,7 @@ $content = $content ?? '';
   <link rel="icon" type="image/x-icon" href="<?= \Core\app_url('/assets/img/algoIA.ico') ?>">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="<?= \Core\app_url('/assets/css/app.css') ?>">
+  <link rel="stylesheet" href="<?= \Core\asset_url('/assets/css/app.css') ?>">
 </head>
 
 <body class="layout">
@@ -106,7 +106,7 @@ $content = $content ?? '';
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="<?= \Core\app_url('/assets/js/app.js') ?>"></script>
+  <script src="<?= \Core\asset_url('/assets/js/app.js') ?>"></script>
 </body>
 
 </html>
