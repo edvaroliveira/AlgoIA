@@ -45,15 +45,6 @@ $content = $content ?? '';
         <?php endif; ?>
       </nav>
 
-      <div class="sidebar__footer">
-        <div class="sidebar-user-label">Usuário autenticado</div>
-        <div class="user-name"><?= \Core\View::e(\Core\Auth::user()['name'] ?? '') ?></div>
-        <div class="user-role"><?= \Core\Auth::isAdmin() ? 'Administrador' : (\Core\Auth::isTeacher() ? 'Docente' : 'Aluno') ?></div>
-        <form method="POST" action="<?= \Core\app_url('/logout') ?>">
-          <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-          <button type="submit" class="btn btn--ghost btn--full">Encerrar sessão</button>
-        </form>
-      </div>
     </aside>
 
     <main class="main-content">
@@ -63,9 +54,27 @@ $content = $content ?? '';
             <div class="app-kicker">Aprendizagem • Algoritmos • Amazônia</div>
             <h1 class="app-title"><?= \Core\View::e($pageTitle ?? 'Painel') ?></h1>
           </div>
-          <div class="topbar-card">
-            <span class="topbar-dot"></span>
-            <span><?= \Core\Auth::isAdmin() ? 'Modo administrativo ativo' : (\Core\Auth::isTeacher() ? 'Modo docente ativo' : 'Modo aluno ativo') ?></span>
+          <?php
+          $userName = \Core\Auth::user()['name'] ?? '';
+          $userRole = \Core\Auth::isAdmin() ? 'Administrador' : (\Core\Auth::isTeacher() ? 'Docente' : 'Aluno');
+          $userInitial = function_exists('mb_substr') ? mb_strtoupper(mb_substr(trim($userName), 0, 1)) : strtoupper(substr(trim($userName), 0, 1));
+          ?>
+          <div class="topbar-actions">
+            <span class="topbar-card">
+              <span class="topbar-dot"></span>
+              <span><?= \Core\Auth::isAdmin() ? 'Modo administrativo ativo' : (\Core\Auth::isTeacher() ? 'Modo docente ativo' : 'Modo aluno ativo') ?></span>
+            </span>
+            <div class="topbar-user">
+              <span class="topbar-user__avatar" aria-hidden="true"><?= \Core\View::e($userInitial) ?></span>
+              <span class="topbar-user__meta">
+                <span class="topbar-user__name"><?= \Core\View::e($userName) ?></span>
+                <span class="topbar-user__role"><?= \Core\View::e($userRole) ?></span>
+              </span>
+              <form method="POST" action="<?= \Core\app_url('/logout') ?>">
+                <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                <button type="submit" class="btn btn--ghost btn--sm">Sair</button>
+              </form>
+            </div>
           </div>
         </header>
 
