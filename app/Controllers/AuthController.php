@@ -175,6 +175,16 @@ class AuthController
   {
     Request::validateCsrf();
 
+    if ($this->isActionThrottled('reset')) {
+      View::render('auth/reset_password', [
+        'token' => trim((string) Request::post('token', '')),
+        'validToken' => false,
+        'errors' => ['Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.'],
+      ], 'layouts/guest');
+      return;
+    }
+    $this->recordActionAttempt('reset');
+
     $token = trim((string) Request::post('token', ''));
     $password = (string) ($_POST['password'] ?? '');
     $passwordConf = (string) ($_POST['password_confirm'] ?? '');
@@ -222,6 +232,15 @@ class AuthController
   public function register(): void
   {
     Request::validateCsrf();
+
+    if ($this->isActionThrottled('register')) {
+      View::render('auth/register', [
+        'errors' => ['Muitas tentativas de cadastro. Aguarde alguns minutos antes de tentar novamente.'],
+        'old'    => ['name' => Request::str('name'), 'email' => Request::email('email'), 'turmaKey' => strtoupper(trim((string) ($_POST['turma_key'] ?? '')))],
+      ], 'layouts/guest');
+      return;
+    }
+    $this->recordActionAttempt('register');
 
     $name          = Request::str('name');
     $email         = Request::email('email');
@@ -471,6 +490,28 @@ class AuthController
   private function loginUserAgent(): string
   {
     return (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+  }
+
+  /** Throttle persistente por IP para ações públicas (cadastro de aluno / reset). */
+  private function isActionThrottled(string $scope): bool
+  {
+    try {
+      return (new LoginAttempt())->isActionRateLimited($scope, $this->loginClientIp());
+    } catch (\Throwable $e) {
+      error_log('Action throttle unavailable: ' . $e->getMessage());
+      return false;
+    }
+  }
+
+  private function recordActionAttempt(string $scope): void
+  {
+    try {
+      $attempts = new LoginAttempt();
+      $attempts->recordAction($scope, $this->loginClientIp(), $this->loginUserAgent());
+      $attempts->pruneOld();
+    } catch (\Throwable $e) {
+      error_log('Action throttle record unavailable: ' . $e->getMessage());
+    }
   }
 
   private function isTeacherRegLocked(): bool
