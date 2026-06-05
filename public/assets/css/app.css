@@ -1250,7 +1250,25 @@ img.topbar-user__avatar--img {
 
 .form-textarea { min-height: 120px; resize: vertical; font-family: inherit; }
 .form-input--short { max-width: 140px; }
-.form-input--key { max-width: 170px; text-align: center; letter-spacing: 0.18em; font-weight: 700; }
+.form-input--key { max-width: 170px; text-align: center; letter-spacing: 0.18em; font-weight: 700; text-transform: uppercase; }
+
+.join-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+}
+
+.join-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.join-form .form-input--key {
+  width: 170px;
+}
 
 .form-row {
   display: grid;
