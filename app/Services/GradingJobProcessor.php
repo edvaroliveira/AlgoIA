@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Attempt;
 use App\Models\GradingJob;
+use App\Models\InjectionLog;
 
 class GradingJobProcessor
 {
@@ -49,6 +50,13 @@ class GradingJobProcessor
 
     while ($processed < $max && $this->processNext()) {
       $processed++;
+    }
+
+    // Enforce injection-log retention as part of the periodic worker run.
+    try {
+      (new InjectionLog())->pruneOld();
+    } catch (\Throwable $e) {
+      error_log('injection_log prune failed: ' . $e->getMessage());
     }
 
     return $processed;
