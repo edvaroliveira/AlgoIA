@@ -1723,14 +1723,53 @@ img.topbar-user__avatar--img {
 
 .result-summary--best { border-color: rgba(29, 143, 89, 0.46); }
 
-.result-score {
-  font-size: clamp(2.8rem, 6vw, 4.4rem);
-  font-weight: 800;
-  line-height: 1;
-  color: var(--brand);
+/* Anel de pontuação — storytelling da nota (preenchimento = score/máximo).
+   --pct e --ring-color são definidos por app.js via CSSOM (compatível com CSP
+   sem unsafe-inline). Sem JS, o número central permanece legível. */
+.score-ring {
+  --pct: 0;
+  --ring-color: var(--brand);
+  position: relative;
+  width: 156px;
+  height: 156px;
+  margin: 0 auto;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--ring-color) calc(var(--pct) * 1%), var(--surface-sunken) 0);
+  transition: background .7s ease;
 }
 
-.result-max { font-size: clamp(1.1rem, 2vw, 1.6rem); }
+.score-ring::before {
+  content: "";
+  position: absolute;
+  inset: 15px;
+  border-radius: 999px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
+}
+
+.score-ring__inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.score-ring__value {
+  font-size: clamp(2.1rem, 5vw, 3rem);
+  font-weight: 800;
+  color: var(--ring-color);
+  transition: color .7s ease;
+}
+
+.score-ring__max {
+  margin-top: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
 
 .result-title {
   margin-top: 0.75rem;
