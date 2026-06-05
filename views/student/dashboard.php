@@ -105,11 +105,19 @@ $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pe
 
 <!-- Entrar em nova turma -->
 <div class="card card--narrow">
-  <h3>Entrar em outra turma</h3>
-  <form method="POST" action="<?= \Core\app_url('/student/turma/join') ?>" class="form form--inline">
-    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-    <input class="form-input form-input--key" type="text" name="turma_key"
-      maxlength="6" placeholder="CHAVE" style="text-transform:uppercase" required>
-    <button type="submit" class="btn btn--primary">Solicitar ingresso</button>
-  </form>
+  <div class="card-header">
+    <h3>Entrar em outra turma</h3>
+  </div>
+  <div class="card-body">
+    <p class="card-subtitle">Tem a chave de uma turma? Solicite ingresso para participar.</p>
+    <form method="POST" action="<?= \Core\app_url('/student/turma/join') ?>" class="join-form">
+      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+      <div class="join-form__field">
+        <label class="form-label" for="turma_key">Chave da turma</label>
+        <input class="form-input form-input--key" type="text" id="turma_key" name="turma_key"
+          maxlength="6" placeholder="CHAVE" required>
+      </div>
+      <button type="submit" class="btn btn--primary">Solicitar ingresso</button>
+    </form>
+  </div>
 </div>
