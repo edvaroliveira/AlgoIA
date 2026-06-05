@@ -47,7 +47,8 @@ Antes de atualizar uma base de producao:
 3. Aplicar somente as migrations pendentes.
 4. Se a base recebeu ajustes manuais, validar colunas existentes antes de executar arquivos antigos com `ADD COLUMN`.
 5. Executar `php bin/smoke_static.php` para validar invariantes basicos do codigo antes do smoke test funcional.
-6. Executar `php bin/smoke_schema.php` apos aplicar migrations para confirmar que o schema esperado esta disponivel.
+6. Executar `php bin/run_tests.php` para rodar os testes unitarios (sem banco): sanitizacao de entrada, allowlist de templates, rotas e cache-busting.
+7. Executar `php bin/smoke_schema.php` apos aplicar migrations para confirmar que o schema esperado esta disponivel.
 
 ## Variaveis de Ambiente
 
