@@ -665,7 +665,7 @@ img.topbar-user__avatar--img {
 
 .auth-copy {
   margin-bottom: 1.4rem;
-  color: var(--text-muted);
+  color: var(--text-2);
   line-height: 1.65;
 }
 
@@ -909,7 +909,7 @@ img.topbar-user__avatar--img {
 
 .card-subtitle {
   margin: 0.35rem 0 0;
-  color: var(--text-muted);
+  color: var(--text-2);
   line-height: 1.55;
 }
 
@@ -1349,7 +1349,7 @@ img.topbar-user__avatar--img {
 
 .info-step p {
   margin: 0.4rem 0 0;
-  color: var(--text-muted);
+  color: var(--text-2);
   line-height: 1.6;
 }
 
@@ -1421,7 +1421,7 @@ img.topbar-user__avatar--img {
 
 .overview-card__copy {
   margin: 0.7rem 0 0;
-  color: var(--text-muted);
+  color: var(--text-2);
   line-height: 1.55;
 }
 
@@ -1463,7 +1463,7 @@ img.topbar-user__avatar--img {
 
 .surface-copy {
   margin: 0.35rem 0 0;
-  color: var(--text-muted);
+  color: var(--text-2);
   line-height: 1.6;
 }
 
