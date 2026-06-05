@@ -102,4 +102,5 @@ Utilitárias para layout: `.form-group--end`, `.u-inline`, `.u-mt-2`, `.row-betw
 - Estender o mesmo storytelling a `overview-card` **onde houver razão** (X de Y); contadores
   absolutos seguem número-label.
 - Aplicar `--text-2` aos secundários hoje em `--text-muted` (hierarquia mais rica).
-- Avaliar input "inset" levemente mais escuro que o card (skill sugere; hoje é mais claro).
+- ✅ **Input inset:** `--control-bg` agora `#f6f3ea` (mais escuro que o card `#fdfbf5`),
+  sinalizando "recebe conteúdo"; `:focus` levanta para `#fffefb`. Antes era mais claro que o card.
