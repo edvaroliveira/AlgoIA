@@ -111,7 +111,7 @@ global $session;
               <label class="form-label" for="turma-batch-reopen-until">Reabrir até</label>
               <input id="turma-batch-reopen-until" type="datetime-local" name="reopen_until" class="form-input" value="<?= date('Y-m-d\TH:i', strtotime('+7 days')) ?>" min="<?= $defaultPublicationMin ?>">
             </div>
-            <div class="form-group" style="justify-content: flex-end;">
+            <div class="form-group form-group--end">
               <label class="form-label">Ações em lote</label>
               <div class="td-actions">
                 <span class="selection-summary" data-selection-count="turma-publications">0 selecionados</span>
@@ -167,7 +167,7 @@ global $session;
                       <label class="form-label" for="turma-publication-attempts-<?= (int) ($publication['id'] ?? 0) ?>">Tentativas</label>
                       <input id="turma-publication-attempts-<?= (int) ($publication['id'] ?? 0) ?>" type="number" min="0" name="max_attempts" class="form-input" value="<?= (int) ($publication['max_attempts'] ?? 1) ?>">
                     </div>
-                    <div class="form-group" style="justify-content: flex-end;">
+                    <div class="form-group form-group--end">
                       <label class="form-label">Publicação</label>
                       <button type="submit" class="btn btn--sm">Salvar</button>
                     </div>

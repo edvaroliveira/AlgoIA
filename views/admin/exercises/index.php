@@ -77,7 +77,7 @@ global $session;
           <label class="form-label" for="exercises-preset-name">Salvar preset atual</label>
           <input id="exercises-preset-name" type="text" name="preset_name" class="form-input" placeholder="Ex.: fechando em breve">
         </div>
-        <div class="form-group" style="justify-content: flex-end;">
+        <div class="form-group form-group--end">
           <label class="form-label">Preset</label>
           <div class="td-actions">
             <button type="submit" class="btn btn--ghost">Salvar preset</button>
@@ -223,7 +223,7 @@ global $session;
             <label class="form-label" for="exercises-list-reopen-until">Reabrir até</label>
             <input id="exercises-list-reopen-until" type="datetime-local" name="reopen_until" class="form-input" value="<?= date('Y-m-d\TH:i', strtotime('+7 days')) ?>" min="<?= date('Y-m-d\TH:i', strtotime('+1 hour')) ?>">
           </div>
-          <div class="form-group" style="justify-content: flex-end;">
+          <div class="form-group form-group--end">
             <label class="form-label">Ações em lote</label>
             <div class="td-actions">
               <span class="selection-summary" data-selection-count="admin-exercises-list">0 selecionados</span>

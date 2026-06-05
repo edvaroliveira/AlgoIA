@@ -136,7 +136,7 @@ class AuthController
       $errors[] = 'Senha temporária incorreta.';
     }
     if (!$this->isStrongPassword($password)) {
-      $errors[] = 'Nova senha deve ter ao menos 10 caracteres, com letra maiúscula, minúscula e número.';
+      $errors[] = 'Nova senha deve ter de 10 a 72 caracteres, com letra maiúscula, minúscula e número.';
     }
     if ($password !== $passwordConf) {
       $errors[] = 'As senhas não coincidem.';
@@ -195,7 +195,7 @@ class AuthController
       $errors[] = 'Link de redefinição inválido ou expirado.';
     }
     if (!$this->isStrongPassword($password)) {
-      $errors[] = 'Nova senha deve ter ao menos 10 caracteres, com letra maiúscula, minúscula e número.';
+      $errors[] = 'Nova senha deve ter de 10 a 72 caracteres, com letra maiúscula, minúscula e número.';
     }
     if ($password !== $passwordConf) {
       $errors[] = 'As senhas não coincidem.';
@@ -257,7 +257,7 @@ class AuthController
       $errors[] = 'E-mail inválido.';
     }
     if (!$this->isStrongPassword($password)) {
-      $errors[] = 'Senha deve ter ao menos 10 caracteres, com letra maiúscula, minúscula e número.';
+      $errors[] = 'Senha deve ter de 10 a 72 caracteres, com letra maiúscula, minúscula e número.';
     }
     if ($password !== $passwordConf) {
       $errors[] = 'As senhas não coincidem.';
@@ -352,7 +352,7 @@ class AuthController
       $errors[] = 'E-mail inválido.';
     }
     if (!$this->isStrongPassword($password)) {
-      $errors[] = 'Senha deve ter ao menos 10 caracteres, com letra maiúscula, minúscula e número.';
+      $errors[] = 'Senha deve ter de 10 a 72 caracteres, com letra maiúscula, minúscula e número.';
     }
     if ($password !== $passwordConf) {
       $errors[] = 'As senhas não coincidem.';
@@ -414,7 +414,9 @@ class AuthController
 
   private function isStrongPassword(string $password): bool
   {
+    // Teto de 72 bytes: bcrypt (password_hash) trunca silenciosamente além disso.
     return strlen($password) >= 10
+      && strlen($password) <= 72
       && preg_match('/[A-Z]/', $password) === 1
       && preg_match('/[a-z]/', $password) === 1
       && preg_match('/\d/', $password) === 1;

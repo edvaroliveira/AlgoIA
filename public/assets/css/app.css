@@ -1285,6 +1285,18 @@ img.topbar-user__avatar--img {
 
 .form--inline { align-items: flex-end; }
 
+/* Utilitárias — substituem styles inline (CSP sem unsafe-inline em style-src) */
+.form-group--end { justify-content: flex-end; }
+.u-inline { display: inline; }
+.u-mt-2 { margin-top: 0.5rem; }
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .editor-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.75fr);

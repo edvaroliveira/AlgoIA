@@ -19,7 +19,7 @@ global $session;
 
 <section class="card card--narrow">
   <div class="card-body">
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+    <div class="row-between">
       <div>
         <strong>Cadastro público:</strong>
         <span class="badge badge--<?= $teacherRegistrationEnabled ? 'success' : 'neutral' ?>">
@@ -66,11 +66,11 @@ global $session;
               <td><?= \Core\View::e(mb_strimwidth((string) ($req['registration_note'] ?? '—'), 0, 120, '…')) ?></td>
               <td><?= !empty($req['created_at']) ? date('d/m/Y H:i', strtotime((string) $req['created_at'])) : '—' ?></td>
               <td class="td-actions">
-                <form method="POST" action="<?= \Core\app_url('/admin/teacher-requests/' . (int) ($req['id'] ?? 0) . '/approve') ?>" style="display:inline">
+                <form method="POST" action="<?= \Core\app_url('/admin/teacher-requests/' . (int) ($req['id'] ?? 0) . '/approve') ?>" class="u-inline">
                   <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                   <button type="submit" class="btn btn--sm btn--primary">Aprovar</button>
                 </form>
-                <form method="POST" action="<?= \Core\app_url('/admin/teacher-requests/' . (int) ($req['id'] ?? 0) . '/reject') ?>" style="display:inline">
+                <form method="POST" action="<?= \Core\app_url('/admin/teacher-requests/' . (int) ($req['id'] ?? 0) . '/reject') ?>" class="u-inline">
                   <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                   <button type="submit" class="btn btn--sm btn--ghost">Rejeitar</button>
                 </form>

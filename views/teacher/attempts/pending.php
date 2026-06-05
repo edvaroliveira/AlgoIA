@@ -36,7 +36,7 @@ global $session;
           <label class="form-label" for="pending-to">Até</label>
           <input id="pending-to" type="date" name="to_date" class="form-input" value="<?= \Core\View::e($filters['to_date'] ?? '') ?>">
         </div>
-        <div class="form-group" style="justify-content: flex-end;">
+        <div class="form-group form-group--end">
           <label class="form-label">Ações</label>
           <div class="td-actions">
             <button type="submit" class="btn btn--primary">Filtrar</button>
