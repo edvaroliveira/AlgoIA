@@ -467,4 +467,17 @@
         });
       });
   }
+
+  // ── Avatar: refletir nome do arquivo escolhido ───────────────────────────────
+  const avatarInput = document.getElementById("avatar");
+  if (avatarInput) {
+    const label = document.querySelector(".avatar-uploader__filename");
+    avatarInput.addEventListener("change", function () {
+      if (!label) {
+        return;
+      }
+      const file = avatarInput.files && avatarInput.files[0];
+      label.textContent = file ? file.name : label.dataset.placeholder;
+    });
+  }
 })();
