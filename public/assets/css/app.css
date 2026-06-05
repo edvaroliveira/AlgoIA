@@ -1,3 +1,4 @@
+/* Author: Edvar da Luz Oliveira */
 :root {
   /* Brand — verde-quadro, a identidade do produto */
   --brand: #22844f;
@@ -956,16 +957,15 @@ summary:focus-visible {
 }
 
 .td-actions {
-  white-space: nowrap;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .td-actions > * {
   display: inline-flex;
   vertical-align: middle;
-}
-
-.td-actions > * + * {
-  margin-left: 0.55rem;
 }
 
 .selection-summary {
