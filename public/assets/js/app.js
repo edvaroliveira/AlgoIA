@@ -19,6 +19,21 @@
     });
   }
 
+  // ── Anel de pontuação: preenche via CSSOM (setProperty é permitido pela CSP) ─
+  document.querySelectorAll(".score-ring").forEach(function (ring) {
+    var score = parseFloat(ring.dataset.score) || 0;
+    var max = parseFloat(ring.dataset.max) || 0;
+    var pct = max > 0 ? Math.max(0, Math.min(100, (score / max) * 100)) : 0;
+    var color =
+      pct >= 60
+        ? "var(--success)"
+        : pct >= 40
+          ? "var(--warning)"
+          : "var(--error)";
+    ring.style.setProperty("--pct", pct.toFixed(1));
+    ring.style.setProperty("--ring-color", color);
+  });
+
   // ── Auto-save ──────────────────────────────────────────────────────────────
   const textareas = document.querySelectorAll("textarea[data-question]");
 
