@@ -5,9 +5,9 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = table_name_value
-      AND COLUMN_NAME = column_name_value
+    WHERE TABLE_SCHEMA = CONVERT(DATABASE() USING utf8) COLLATE utf8_general_ci
+      AND TABLE_NAME = CONVERT(table_name_value USING utf8) COLLATE utf8_general_ci
+      AND COLUMN_NAME = CONVERT(column_name_value USING utf8) COLLATE utf8_general_ci
   ) THEN
     SET @add_column_sql = CONCAT('ALTER TABLE `', table_name_value, '` ADD COLUMN `', column_name_value, '` ', column_definition);
     PREPARE add_column_stmt FROM @add_column_sql;
