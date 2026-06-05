@@ -107,6 +107,15 @@ class User extends Model
     );
   }
 
+  /** Sets or clears (null) the avatar path. */
+  public function updateAvatar(int $id, ?string $avatarPath): void
+  {
+    $this->db->execute(
+      "UPDATE users SET avatar_path = ? WHERE id = ?",
+      [$avatarPath, $id]
+    );
+  }
+
   public function getAllStudents(): array
   {
     return $this->db->fetchAll(

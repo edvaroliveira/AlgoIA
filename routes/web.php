@@ -18,6 +18,11 @@ $router->get('/password/reset', 'AuthController@showResetPassword');
 $router->post('/password/reset', 'AuthController@resetPassword');
 $router->post('/logout',   'AuthController@logout');
 
+// ── Conta (perfil próprio) ───────────────────────────────────────────────────
+$router->get('/conta',               'AccountController@show');
+$router->post('/conta/foto',         'AccountController@uploadAvatar');
+$router->post('/conta/foto/remover', 'AccountController@deleteAvatar');
+
 // ── Teacher ──────────────────────────────────────────────────────────────────
 $router->get('/teacher/dashboard', 'DashboardController@teacher');
 

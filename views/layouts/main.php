@@ -57,7 +57,8 @@ $content = $content ?? '';
           <?php
           $userName = \Core\Auth::user()['name'] ?? '';
           $userRole = \Core\Auth::isAdmin() ? 'Administrador' : (\Core\Auth::isTeacher() ? 'Docente' : 'Aluno');
-          $userInitial = function_exists('mb_substr') ? mb_strtoupper(mb_substr(trim($userName), 0, 1)) : strtoupper(substr(trim($userName), 0, 1));
+          $userInitial = mb_strtoupper(mb_substr(trim($userName), 0, 1));
+          $userAvatar = \Core\Auth::avatar();
           ?>
           <div class="topbar-actions">
             <span class="topbar-card">
@@ -65,11 +66,19 @@ $content = $content ?? '';
               <span><?= \Core\Auth::isAdmin() ? 'Modo administrativo ativo' : (\Core\Auth::isTeacher() ? 'Modo docente ativo' : 'Modo aluno ativo') ?></span>
             </span>
             <div class="topbar-user">
-              <span class="topbar-user__avatar" aria-hidden="true"><?= \Core\View::e($userInitial) ?></span>
-              <span class="topbar-user__meta">
-                <span class="topbar-user__name"><?= \Core\View::e($userName) ?></span>
-                <span class="topbar-user__role"><?= \Core\View::e($userRole) ?></span>
-              </span>
+              <a class="topbar-user__identity" href="<?= \Core\app_url('/conta') ?>" title="Minha conta">
+                <?php if ($userAvatar): ?>
+                  <img class="topbar-user__avatar topbar-user__avatar--img"
+                       src="<?= \Core\app_url('/assets/uploads/' . $userAvatar) ?>"
+                       alt="Foto de <?= \Core\View::e($userName) ?>">
+                <?php else: ?>
+                  <span class="topbar-user__avatar" aria-hidden="true"><?= \Core\View::e($userInitial) ?></span>
+                <?php endif; ?>
+                <span class="topbar-user__meta">
+                  <span class="topbar-user__name"><?= \Core\View::e($userName) ?></span>
+                  <span class="topbar-user__role"><?= \Core\View::e($userRole) ?></span>
+                </span>
+              </a>
               <form method="POST" action="<?= \Core\app_url('/logout') ?>">
                 <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                 <button type="submit" class="btn btn--ghost btn--sm">Sair</button>

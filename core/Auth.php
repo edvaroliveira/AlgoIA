@@ -21,6 +21,7 @@ class Auth
       'name' => $user['name'],
       'email' => $user['email'],
       'role' => $user['role'],
+      'avatar_path' => $user['avatar_path'] ?? null,
       'must_change_password' => !empty($user['must_change_password']),
     ]);
   }
@@ -46,6 +47,14 @@ class Auth
     return $u ? (int) $u['id'] : null;
   }
 
+  /** Relative avatar path (under public/assets/uploads) or null. */
+  public static function avatar(): ?string
+  {
+    $u = self::user();
+    $path = $u['avatar_path'] ?? null;
+    return is_string($path) && $path !== '' ? $path : null;
+  }
+
   public static function isTeacher(): bool
   {
     $u = self::user();
@@ -68,6 +77,17 @@ class Auth
   {
     $u = self::user();
     return $u && !empty($u['must_change_password']);
+  }
+
+  public static function setAvatar(?string $avatarPath): void
+  {
+    $u = self::user();
+    if (!$u) {
+      return;
+    }
+
+    $u['avatar_path'] = $avatarPath;
+    self::$session->set('user', $u);
   }
 
   public static function clearMustChangePassword(): void
@@ -130,6 +150,7 @@ class Auth
       'name' => $user['name'],
       'email' => $user['email'],
       'role' => $user['role'],
+      'avatar_path' => $user['avatar_path'] ?? null,
       'must_change_password' => !empty($user['must_change_password']),
     ]);
     self::$session->set('_user_refreshed_at', time());
