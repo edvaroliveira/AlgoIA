@@ -30,9 +30,15 @@ $isBest    = $bestScore !== null
 </div>
 
 <div class="result-summary <?= $isBest ? 'result-summary--best' : '' ?>">
-  <div class="result-score">
-    <?= number_format((float) $attempt['total_score'], 1) ?>
-    <span class="result-max">/ <?= number_format((float) $maxScore, 1) ?> pts</span>
+  <div class="score-ring"
+       data-score="<?= (float) $attempt['total_score'] ?>"
+       data-max="<?= (float) $maxScore ?>"
+       role="img"
+       aria-label="Nota <?= number_format((float) $attempt['total_score'], 1) ?> de <?= number_format((float) $maxScore, 1) ?> pontos">
+    <div class="score-ring__inner">
+      <span class="score-ring__value"><?= number_format((float) $attempt['total_score'], 1) ?></span>
+      <span class="score-ring__max">/ <?= number_format((float) $maxScore, 1) ?> pts</span>
+    </div>
   </div>
   <p class="result-title"><?= \Core\View::e($attempt['exercise_title']) ?></p>
   <p class="result-meta">

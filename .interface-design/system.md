@@ -87,8 +87,19 @@ para verde/cinza-quente; todos os verdes/sombras decorativos tokenizados no `:ro
 (`--brand-darker`, `--accent-bright`, `--accent-label`, `--shadow-hero`). Sem hex/sombra
 hardcoded fora do `:root`.
 
-## Próximos refinos sugeridos (ainda não feitos)
+## Valores dinâmicos sob CSP (sem `unsafe-inline`)
+`style-src` não tem mais `'unsafe-inline'` (audit S4). Nunca usar `style="..."` inline nas
+views. Para valor dinâmico de CSS (ex.: percentual de um anel), renderizar `data-*` no HTML e
+setar a custom property por **`el.style.setProperty('--x', ...)`** em `app.js` — o caminho
+CSSOM por propriedade é permitido pela CSP; `setAttribute('style')`/`cssText` **não**.
+Utilitárias para layout: `.form-group--end`, `.u-inline`, `.u-mt-2`, `.row-between`.
+
+## Próximos refinos sugeridos
+- ✅ **Anel de pontuação** (`.score-ring`) na tela de resultado do aluno: preenchimento
+  `score/máximo` via `conic-gradient(var(--ring-color) calc(var(--pct)*1%), var(--surface-sunken))`,
+  cor por faixa (≥60 `--success`, ≥40 `--warning`, abaixo `--error`), número central na mesma
+  cor. `--pct`/`--ring-color` vêm do JS (ver seção acima). Padrão para futuras métricas com razão.
+- Estender o mesmo storytelling a `overview-card` **onde houver razão** (X de Y); contadores
+  absolutos seguem número-label.
 - Aplicar `--text-2` aos secundários hoje em `--text-muted` (hierarquia mais rica).
-- `stat-card`/`overview-card` com storytelling (anel de progresso, delta de tendência)
-  em vez de número-label puro.
 - Avaliar input "inset" levemente mais escuro que o card (skill sugere; hoje é mais claro).
