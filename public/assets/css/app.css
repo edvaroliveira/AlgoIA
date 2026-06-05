@@ -33,8 +33,10 @@
   --border-strong: rgba(35, 57, 47, 0.16);
   --focus-ring: rgba(34, 132, 79, 0.26);
 
-  /* Controles — tokens próprios p/ campos, independentes das superfícies */
-  --control-bg: #fffdf8;
+  /* Controles — tokens próprios p/ campos, independentes das superfícies.
+     Input "inset": fundo levemente mais escuro que o card (#fdfbf5), sinalizando
+     "recebe conteúdo"; :focus levanta para quase-branco. */
+  --control-bg: #f6f3ea;
   --control-border: #d2d8c9;
 
   /* Semântica */
