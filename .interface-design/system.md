@@ -99,8 +99,9 @@ Utilitárias para layout: `.form-group--end`, `.u-inline`, `.u-mt-2`, `.row-betw
   `score/máximo` via `conic-gradient(var(--ring-color) calc(var(--pct)*1%), var(--surface-sunken))`,
   cor por faixa (≥60 `--success`, ≥40 `--warning`, abaixo `--error`), número central na mesma
   cor. `--pct`/`--ring-color` vêm do JS (ver seção acima). Padrão para futuras métricas com razão.
-- Estender o mesmo storytelling a `overview-card` **onde houver razão** (X de Y); contadores
-  absolutos seguem número-label.
+- ✅ **`overview-card__ratio`:** barra de proporção (`papel / total de usuários`) nos cards de
+  papel do dashboard admin (Admin/Docente/Aluno), com label "X% da base". `--fill` via JS
+  (CSSOM). Contadores absolutos (turmas/exercícios/auditoria) seguem número-label.
 - ✅ **`--text-2` ativo na hierarquia:** copy de apoio (`.auth-copy`, `.card-subtitle`,
   `.surface-copy`, `.overview-card__copy`, `.info-step p`) promovida de `--text-muted` para
   `--text-2` (secundário > terciário). Labels/metadados/micro seguem em `--text-muted`.

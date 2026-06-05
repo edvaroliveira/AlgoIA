@@ -69,16 +69,28 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
     <span class="overview-card__label">Administradores</span>
     <strong class="overview-card__value"><?= $adminCount ?></strong>
     <p class="overview-card__copy">Perfis com acesso global ao sistema.</p>
+    <div class="overview-card__ratio" data-value="<?= (int) $adminCount ?>" data-total="<?= (int) $totalUsers ?>">
+      <div class="overview-card__bar"><span></span></div>
+      <span class="overview-card__ratio-label"></span>
+    </div>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Docentes</span>
     <strong class="overview-card__value"><?= $teacherCount ?></strong>
     <p class="overview-card__copy">Usuários que gerenciam turmas e exercícios.</p>
+    <div class="overview-card__ratio" data-value="<?= (int) $teacherCount ?>" data-total="<?= (int) $totalUsers ?>">
+      <div class="overview-card__bar"><span></span></div>
+      <span class="overview-card__ratio-label"></span>
+    </div>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Alunos</span>
     <strong class="overview-card__value"><?= $studentCount ?></strong>
     <p class="overview-card__copy">Usuários vinculados às turmas da plataforma.</p>
+    <div class="overview-card__ratio" data-value="<?= (int) $studentCount ?>" data-total="<?= (int) $totalUsers ?>">
+      <div class="overview-card__bar"><span></span></div>
+      <span class="overview-card__ratio-label"></span>
+    </div>
   </article>
   <article class="overview-card">
     <span class="overview-card__label">Turmas</span>

@@ -1425,6 +1425,37 @@ img.topbar-user__avatar--img {
   line-height: 1.55;
 }
 
+/* Proporção do card sobre a base (ex.: papel / total de usuários).
+   --fill é definido por app.js via CSSOM (CSP sem unsafe-inline). */
+.overview-card__ratio {
+  margin-top: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.overview-card__bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.overview-card__bar span {
+  display: block;
+  height: 100%;
+  width: calc(var(--fill, 0) * 1%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brand), var(--accent));
+  transition: width .7s ease;
+}
+
+.overview-card__ratio-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
 .surface-block {
   border-radius: 1.35rem;
   border: 1px solid var(--border);
