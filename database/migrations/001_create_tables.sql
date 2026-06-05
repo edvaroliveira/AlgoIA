@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name          VARCHAR(100)  NOT NULL,
     email         VARCHAR(150)  NOT NULL UNIQUE,
+    avatar_path   VARCHAR(255)  NULL,
     password_hash VARCHAR(255)  NOT NULL,
     must_change_password TINYINT(1) NOT NULL DEFAULT 0,
     password_reset_at DATETIME NULL,
