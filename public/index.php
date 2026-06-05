@@ -17,7 +17,7 @@ if ($isHttps) {
   // HSTS só sob TLS (não fixa política em ambiente local http).
   header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 }
-header("Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'nonce-{$cspNonce}' https://cdn.jsdelivr.net; connect-src 'self'; font-src 'self' https://cdn.jsdelivr.net; form-action 'self'; base-uri 'self'; frame-ancestors 'self'");
+header("Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; style-src 'self' https://cdn.jsdelivr.net; script-src 'self' 'nonce-{$cspNonce}' https://cdn.jsdelivr.net; connect-src 'self'; font-src 'self' https://cdn.jsdelivr.net; form-action 'self'; base-uri 'self'; frame-ancestors 'self'");
 
 // Env loader must come before autoloader (defines Core\Env and env())
 require ROOT_PATH . '/core/Env.php';

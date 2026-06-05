@@ -53,7 +53,7 @@
       </label>
       <input class="form-input form-input--key" type="text" id="turma_key" name="turma_key"
         value="<?= \Core\View::e($old['turmaKey'] ?? '') ?>"
-        maxlength="6" style="text-transform:uppercase; letter-spacing:.25em"
+        maxlength="6"
         required>
     </div>
 

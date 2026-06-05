@@ -135,7 +135,7 @@ global $session;
               value="<?= date('Y-m-d\TH:i', strtotime('+7 days')) ?>"
               min="<?= date('Y-m-d\TH:i', strtotime('+1 hour')) ?>">
           </div>
-          <div class="form-group" style="justify-content: flex-end;">
+          <div class="form-group form-group--end">
             <label class="form-label">Ação administrativa</label>
             <button type="submit" class="btn btn--primary">Reabrir publicações</button>
           </div>
@@ -203,7 +203,7 @@ global $session;
                 <label class="form-label" for="batch-reopen-until">Reabrir até</label>
                 <input id="batch-reopen-until" type="datetime-local" name="reopen_until" class="form-input" value="<?= $defaultReopenUntil ?>" min="<?= $defaultPublicationMin ?>">
               </div>
-              <div class="form-group" style="justify-content: flex-end;">
+              <div class="form-group form-group--end">
                 <label class="form-label">Ações em lote</label>
                 <div class="td-actions">
                   <span class="selection-summary" data-selection-count="exercise-publications">0 selecionadas</span>
@@ -267,7 +267,7 @@ global $session;
                     class="form-input"
                     value="<?= (int) ($publication['max_attempts'] ?? 1) ?>">
                 </div>
-                <div class="form-group" style="justify-content: flex-end;">
+                <div class="form-group form-group--end">
                   <label class="form-label">Janela da publicação</label>
                   <button type="submit" class="btn btn--sm">Salvar janela</button>
                 </div>
@@ -292,7 +292,7 @@ global $session;
                     value="<?= $defaultReopenUntil ?>"
                     min="<?= $defaultPublicationMin ?>">
                 </div>
-                <div class="form-group" style="justify-content: flex-end;">
+                <div class="form-group form-group--end">
                   <label class="form-label">Ação por turma</label>
                   <button type="submit" class="btn btn--sm btn--primary">Reabrir esta publicação</button>
                 </div>

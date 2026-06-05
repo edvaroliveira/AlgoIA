@@ -167,7 +167,14 @@ Critérios de aceite:
 
 ## Epic S4 — Endurecimento de Renderização
 
-### Prioridade: P3
+### Prioridade: P3 — ✅ IMPLEMENTADO (2026-06-05)
+
+S4-H1: `View::capture` valida `realpath` dentro de `views/` (anti path-traversal/LFI).
+S4-H2: removidos todos os `style=` inline das views (classes utilitárias `.form-group--end`,
+`.u-inline`, `.u-mt-2`, `.row-between`) e `style-src` perdeu `'unsafe-inline'`. App não usa
+componentes JS do Bootstrap (sem `data-bs-*`) e `app.js` só usa `el.style.prop` (permitido).
+S4-H3: `isStrongPassword` rejeita senha acima de 72 bytes (truncamento do bcrypt); mensagens
+ajustadas para "de 10 a 72 caracteres".
 
 ### S4-H1 Allowlist de templates em `View::capture`
 
@@ -216,9 +223,9 @@ Critérios de aceite:
 | S2 | H2 Prefixo de cookie | P2 ✅ | `core/Session.php` |
 | S3 | H1 Rate limit cadastro/reset | P2 ✅ | `app/Controllers/AuthController.php`, `app/Models/LoginAttempt.php` |
 | S3 | H2 Limite de upload de avatar | P2 ✅ | `app/Controllers/AccountController.php` |
-| S4 | H1 Allowlist de templates | P3 | `core/View.php:62` |
-| S4 | H2 Reduzir `unsafe-inline` em style-src | P3 | `public/index.php` (CSP) |
-| S4 | H3 Teto de senha / HIBP | P3 | `app/Controllers/AuthController.php` |
+| S4 | H1 Allowlist de templates | P3 ✅ | `core/View.php` |
+| S4 | H2 Reduzir `unsafe-inline` em style-src | P3 ✅ | `public/index.php` (CSP), views |
+| S4 | H3 Teto de senha (72 bytes) | P3 ✅ | `app/Controllers/AuthController.php` |
 
 ## Sequenciamento recomendado
 

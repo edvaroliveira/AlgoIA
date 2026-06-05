@@ -74,7 +74,7 @@ global $session;
           <label class="form-label" for="turmas-preset-name">Salvar preset atual</label>
           <input id="turmas-preset-name" type="text" name="preset_name" class="form-input" placeholder="Ex.: turmas com pendência">
         </div>
-        <div class="form-group" style="justify-content: flex-end;">
+        <div class="form-group form-group--end">
           <label class="form-label">Preset</label>
           <div class="td-actions">
             <button type="submit" class="btn btn--ghost">Salvar preset</button>
@@ -194,7 +194,7 @@ global $session;
           </tbody>
         </table>
         <div class="form-row">
-          <div class="form-group" style="justify-content: flex-end;">
+          <div class="form-group form-group--end">
             <label class="form-label">Ações em lote</label>
             <div class="td-actions">
               <span class="selection-summary" data-selection-count="admin-turmas-list">0 selecionadas</span>

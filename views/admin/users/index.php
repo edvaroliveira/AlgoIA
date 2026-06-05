@@ -55,7 +55,7 @@ global $session;
             <option value="inactive" <?= ($filters['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inativo</option>
           </select>
         </div>
-        <div class="form-group" style="justify-content: flex-end;">
+        <div class="form-group form-group--end">
           <label class="form-label">Ações</label>
           <div class="td-actions">
             <button type="submit" class="btn btn--primary">Filtrar</button>
@@ -82,7 +82,7 @@ global $session;
           <label class="form-label" for="users-preset-name">Salvar preset atual</label>
           <input id="users-preset-name" type="text" name="preset_name" class="form-input" placeholder="Ex.: pendentes docentes">
         </div>
-        <div class="form-group" style="justify-content: flex-end;">
+        <div class="form-group form-group--end">
           <label class="form-label">Preset</label>
           <div class="td-actions">
             <button type="submit" class="btn btn--ghost">Salvar preset</button>
@@ -231,7 +231,7 @@ global $session;
         </tbody>
       </table>
       <div class="form-row">
-        <div class="form-group" style="justify-content: flex-end;">
+        <div class="form-group form-group--end">
           <label class="form-label">Ações em lote</label>
           <div class="td-actions">
             <span class="selection-summary" data-selection-count="admin-users-list">0 selecionados</span>

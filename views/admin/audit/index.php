@@ -85,7 +85,7 @@ global $session;
           <label class="form-label" for="audit-preset-name">Salvar preset atual</label>
           <input id="audit-preset-name" type="text" name="preset_name" class="form-input" placeholder="Ex.: auditoria admin 7 dias">
         </div>
-        <div class="form-group" style="justify-content: flex-end;">
+        <div class="form-group form-group--end">
           <label class="form-label">Preset</label>
           <div class="td-actions">
             <button type="submit" class="btn btn--ghost">Salvar preset</button>
@@ -146,7 +146,7 @@ global $session;
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group" style="justify-content: flex-end;">
+        <div class="form-group form-group--end">
           <label class="form-label">Ações</label>
           <div class="td-actions">
             <button type="submit" class="btn btn--primary">Filtrar</button>
