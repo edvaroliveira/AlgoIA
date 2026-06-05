@@ -48,11 +48,20 @@ class View
 
   private static function capture(string $template, array $data, bool $echo = false): string
   {
-    $file = ROOT_PATH . '/views/' . $template . '.php';
+    $base = ROOT_PATH . '/views/';
+    $file = $base . $template . '.php';
 
-    if (!file_exists($file)) {
+    // Allowlist: o caminho resolvido precisa ficar dentro de views/ (evita LFI/path traversal).
+    $real     = realpath($file);
+    $realBase = realpath($base);
+    if (
+      $real === false
+      || $realBase === false
+      || !str_starts_with($real, $realBase . DIRECTORY_SEPARATOR)
+    ) {
       throw new \RuntimeException("View not found: {$template}");
     }
+    $file = $real;
 
     if (!isset($data['csp_nonce'])) {
       $data['csp_nonce'] = self::$nonce;

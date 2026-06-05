@@ -10,7 +10,39 @@ class LoginAttempt extends Model
   private const WINDOW_SECONDS = 300;
   private const RETENTION_DAYS = 30;
 
+  /** Throttle genérico por IP para ações públicas (cadastro, reset). */
+  private const ACTION_MAX = 8;
+  private const ACTION_WINDOW_SECONDS = 600;
+
   protected string $table = 'login_attempts';
+
+  /**
+   * Limite por IP para ações públicas além do login. Reaproveita a tabela
+   * com uma sentinela "@scope" no campo email (e-mail real nunca começa com @),
+   * sem colidir com a contagem de login.
+   */
+  public function isActionRateLimited(string $scope, string $ipAddress): bool
+  {
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(*) AS total
+             FROM login_attempts
+             WHERE email = ?
+               AND ip_address = ?
+               AND created_at >= DATE_SUB(NOW(), INTERVAL ? SECOND)",
+      ['@' . $scope, $ipAddress, self::ACTION_WINDOW_SECONDS]
+    );
+
+    return (int) ($row['total'] ?? 0) >= self::ACTION_MAX;
+  }
+
+  public function recordAction(string $scope, string $ipAddress, string $userAgent): void
+  {
+    $this->db->insert(
+      "INSERT INTO login_attempts (email, ip_address, user_agent, succeeded)
+             VALUES (?, ?, ?, 0)",
+      ['@' . $scope, $ipAddress, $this->summarizeUserAgent($userAgent)]
+    );
+  }
 
   public function isLocked(string $email, string $ipAddress): bool
   {

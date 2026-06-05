@@ -14,8 +14,11 @@ class Session
       return;
     }
 
-    $isSecure = isset($_SERVER['HTTPS'])
+    $isSecure = (($_SERVER['HTTPS'] ?? '') !== '' && ($_SERVER['HTTPS'] ?? '') !== 'off')
       || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+
+    // Prefixo __Host- (exige secure + path=/ + sem domain) sob HTTPS; nome simples no http local.
+    session_name($isSecure ? '__Host-AlgoIASession' : 'AlgoIASession');
 
     session_set_cookie_params([
       'lifetime' => 0,

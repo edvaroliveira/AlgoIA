@@ -136,7 +136,7 @@ class AuthController
       $errors[] = 'Senha temporária incorreta.';
     }
     if (!$this->isStrongPassword($password)) {
-      $errors[] = 'Nova senha deve ter ao menos 10 caracteres, com letra maiúscula, minúscula e número.';
+      $errors[] = 'Nova senha deve ter de 10 a 72 caracteres, com letra maiúscula, minúscula e número.';
     }
     if ($password !== $passwordConf) {
       $errors[] = 'As senhas não coincidem.';
@@ -175,6 +175,16 @@ class AuthController
   {
     Request::validateCsrf();
 
+    if ($this->isActionThrottled('reset')) {
+      View::render('auth/reset_password', [
+        'token' => trim((string) Request::post('token', '')),
+        'validToken' => false,
+        'errors' => ['Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.'],
+      ], 'layouts/guest');
+      return;
+    }
+    $this->recordActionAttempt('reset');
+
     $token = trim((string) Request::post('token', ''));
     $password = (string) ($_POST['password'] ?? '');
     $passwordConf = (string) ($_POST['password_confirm'] ?? '');
@@ -185,7 +195,7 @@ class AuthController
       $errors[] = 'Link de redefinição inválido ou expirado.';
     }
     if (!$this->isStrongPassword($password)) {
-      $errors[] = 'Nova senha deve ter ao menos 10 caracteres, com letra maiúscula, minúscula e número.';
+      $errors[] = 'Nova senha deve ter de 10 a 72 caracteres, com letra maiúscula, minúscula e número.';
     }
     if ($password !== $passwordConf) {
       $errors[] = 'As senhas não coincidem.';
@@ -223,6 +233,15 @@ class AuthController
   {
     Request::validateCsrf();
 
+    if ($this->isActionThrottled('register')) {
+      View::render('auth/register', [
+        'errors' => ['Muitas tentativas de cadastro. Aguarde alguns minutos antes de tentar novamente.'],
+        'old'    => ['name' => Request::str('name'), 'email' => Request::email('email'), 'turmaKey' => strtoupper(trim((string) ($_POST['turma_key'] ?? '')))],
+      ], 'layouts/guest');
+      return;
+    }
+    $this->recordActionAttempt('register');
+
     $name          = Request::str('name');
     $email         = Request::email('email');
     $password      = (string) ($_POST['password'] ?? '');
@@ -238,7 +257,7 @@ class AuthController
       $errors[] = 'E-mail inválido.';
     }
     if (!$this->isStrongPassword($password)) {
-      $errors[] = 'Senha deve ter ao menos 10 caracteres, com letra maiúscula, minúscula e número.';
+      $errors[] = 'Senha deve ter de 10 a 72 caracteres, com letra maiúscula, minúscula e número.';
     }
     if ($password !== $passwordConf) {
       $errors[] = 'As senhas não coincidem.';
@@ -333,7 +352,7 @@ class AuthController
       $errors[] = 'E-mail inválido.';
     }
     if (!$this->isStrongPassword($password)) {
-      $errors[] = 'Senha deve ter ao menos 10 caracteres, com letra maiúscula, minúscula e número.';
+      $errors[] = 'Senha deve ter de 10 a 72 caracteres, com letra maiúscula, minúscula e número.';
     }
     if ($password !== $passwordConf) {
       $errors[] = 'As senhas não coincidem.';
@@ -395,7 +414,9 @@ class AuthController
 
   private function isStrongPassword(string $password): bool
   {
+    // Teto de 72 bytes: bcrypt (password_hash) trunca silenciosamente além disso.
     return strlen($password) >= 10
+      && strlen($password) <= 72
       && preg_match('/[A-Z]/', $password) === 1
       && preg_match('/[a-z]/', $password) === 1
       && preg_match('/\d/', $password) === 1;
@@ -471,6 +492,28 @@ class AuthController
   private function loginUserAgent(): string
   {
     return (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+  }
+
+  /** Throttle persistente por IP para ações públicas (cadastro de aluno / reset). */
+  private function isActionThrottled(string $scope): bool
+  {
+    try {
+      return (new LoginAttempt())->isActionRateLimited($scope, $this->loginClientIp());
+    } catch (\Throwable $e) {
+      error_log('Action throttle unavailable: ' . $e->getMessage());
+      return false;
+    }
+  }
+
+  private function recordActionAttempt(string $scope): void
+  {
+    try {
+      $attempts = new LoginAttempt();
+      $attempts->recordAction($scope, $this->loginClientIp(), $this->loginUserAgent());
+      $attempts->pruneOld();
+    } catch (\Throwable $e) {
+      error_log('Action throttle record unavailable: ' . $e->getMessage());
+    }
   }
 
   private function isTeacherRegLocked(): bool
