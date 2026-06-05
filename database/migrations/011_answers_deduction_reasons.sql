@@ -7,9 +7,9 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = table_name_value
-      AND COLUMN_NAME = column_name_value
+    WHERE TABLE_SCHEMA = CONVERT(DATABASE() USING utf8) COLLATE utf8_general_ci
+      AND TABLE_NAME = CONVERT(table_name_value USING utf8) COLLATE utf8_general_ci
+      AND COLUMN_NAME = CONVERT(column_name_value USING utf8) COLLATE utf8_general_ci
   ) THEN
     SET @add_column_sql = CONCAT('ALTER TABLE `', table_name_value, '` ADD COLUMN `', column_name_value, '` ', column_definition);
     PREPARE add_column_stmt FROM @add_column_sql;
@@ -23,9 +23,9 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM INFORMATION_SCHEMA.STATISTICS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = table_name_value
-      AND INDEX_NAME = index_name_value
+    WHERE TABLE_SCHEMA = CONVERT(DATABASE() USING utf8) COLLATE utf8_general_ci
+      AND TABLE_NAME = CONVERT(table_name_value USING utf8) COLLATE utf8_general_ci
+      AND INDEX_NAME = CONVERT(index_name_value USING utf8) COLLATE utf8_general_ci
   ) THEN
     SET @add_index_sql = CONCAT('ALTER TABLE `', table_name_value, '` ADD ', index_definition);
     PREPARE add_index_stmt FROM @add_index_sql;
@@ -39,9 +39,9 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME = table_name_value
-      AND CONSTRAINT_NAME = constraint_name_value
+    WHERE TABLE_SCHEMA = CONVERT(DATABASE() USING utf8) COLLATE utf8_general_ci
+      AND TABLE_NAME = CONVERT(table_name_value USING utf8) COLLATE utf8_general_ci
+      AND CONSTRAINT_NAME = CONVERT(constraint_name_value USING utf8) COLLATE utf8_general_ci
   ) THEN
     SET @add_fk_sql = CONCAT('ALTER TABLE `', table_name_value, '` ADD CONSTRAINT `', constraint_name_value, '` ', fk_definition);
     PREPARE add_fk_stmt FROM @add_fk_sql;
