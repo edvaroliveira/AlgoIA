@@ -75,6 +75,13 @@ class Router
   private function abort(int $code, string $message): void
   {
     http_response_code($code);
+
+    // Erros 5xx não devem revelar estrutura interna (classe/método); só loga.
+    if ($code >= 500) {
+      error_log("Router {$code}: {$message}");
+      $message = 'Erro interno. Tente novamente mais tarde.';
+    }
+
     echo "<h1>{$code}</h1><p>" . htmlspecialchars($message) . "</p>";
   }
 }
