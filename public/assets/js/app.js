@@ -5,6 +5,20 @@
 (function () {
   "use strict";
 
+  // ── Avatar: refletir nome do arquivo escolhido ───────────────────────────────
+  // Primeiro de tudo, para nao depender de blocos anteriores nesta pagina.
+  const avatarInput = document.getElementById("avatar");
+  if (avatarInput) {
+    const avatarLabel = document.querySelector(".avatar-uploader__filename");
+    avatarInput.addEventListener("change", function () {
+      if (!avatarLabel) {
+        return;
+      }
+      const file = avatarInput.files && avatarInput.files[0];
+      avatarLabel.textContent = file ? file.name : avatarLabel.dataset.placeholder;
+    });
+  }
+
   // ── Auto-save ──────────────────────────────────────────────────────────────
   const textareas = document.querySelectorAll("textarea[data-question]");
 
@@ -466,18 +480,5 @@
           feedbackEl.hidden = true;
         });
       });
-  }
-
-  // ── Avatar: refletir nome do arquivo escolhido ───────────────────────────────
-  const avatarInput = document.getElementById("avatar");
-  if (avatarInput) {
-    const label = document.querySelector(".avatar-uploader__filename");
-    avatarInput.addEventListener("change", function () {
-      if (!label) {
-        return;
-      }
-      const file = avatarInput.files && avatarInput.files[0];
-      label.textContent = file ? file.name : label.dataset.placeholder;
-    });
   }
 })();

@@ -105,3 +105,17 @@ function app_url(string $path = ''): string
   $normalized = '/' . ltrim($path, '/');
   return ($basePath !== '' ? $basePath : '') . $normalized;
 }
+
+/**
+ * URL de asset estático com cache-busting por mtime (?v=...).
+ * Garante que CSS/JS atualizados sejam recarregados pelo navegador.
+ */
+function asset_url(string $path): string
+{
+  $url  = app_url($path);
+  $file = ROOT_PATH . '/public/' . ltrim($path, '/');
+  if (is_file($file)) {
+    $url .= (str_contains($url, '?') ? '&' : '?') . 'v=' . filemtime($file);
+  }
+  return $url;
+}
