@@ -1,5 +1,7 @@
 # AlgoIA (IAProg)
 
+[![CI](https://github.com/edvaroliveira/AlgoIA/actions/workflows/ci.yml/badge.svg)](https://github.com/edvaroliveira/AlgoIA/actions/workflows/ci.yml)
+
 Aplicação web de apoio acadêmico para criação, publicação e **correção automática por IA** de exercícios avaliativos. Professores criam turmas e exercícios; alunos respondem; a correção é feita de forma assíncrona usando a API da OpenAI, com rastreabilidade administrativa e auditoria completa.
 
 Construída em **PHP puro** (sem framework, sem Composer), com um mini-framework MVC próprio em `core/`.
@@ -104,8 +106,10 @@ Construída em **PHP puro** (sem framework, sem Composer), com um mini-framework
 5. **Validar a instalação:**
    ```bash
    php bin/smoke_static.php    # invariantes de código
+   php bin/run_tests.php       # testes unitários (sem banco)
    php bin/smoke_schema.php    # schema esperado no banco
    ```
+   Os dois primeiros (mais o `php -l`) também rodam no CI a cada push/PR.
 
 ---
 
