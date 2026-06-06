@@ -18,7 +18,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: pdo, pdo_mysql, gd, mbstring, fileinfo
+          extensions: pdo, pdo_mysql, pdo_sqlite, gd, mbstring, fileinfo
           coverage: none
 
       - name: Lint de sintaxe (php -l em todos os .php)
@@ -31,3 +31,6 @@ jobs:
 
       - name: Testes unitários
         run: php bin/run_tests.php
+
+      - name: Testes da camada de dados (SQLite em memória)
+        run: php bin/run_db_tests.php
