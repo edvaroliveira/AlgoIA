@@ -92,6 +92,42 @@ check(str_contains($cssUrl, '?v='), 'asset_url adiciona ?v= para arquivo existen
 $noFile = \Core\asset_url('/assets/nao-existe-xyz.css');
 check(!str_contains($noFile, '?v='), 'asset_url não adiciona ?v= para arquivo inexistente');
 
+// ── GradingJobProcessor::retryDelaySeconds — backoff exponencial com teto ────
+$gjp = new \App\Services\GradingJobProcessor();
+$rds = new ReflectionMethod($gjp, 'retryDelaySeconds');
+same(120, $rds->invoke($gjp, 0), 'backoff: attempts<=1 → 120s');
+same(120, $rds->invoke($gjp, 1), 'backoff: attempt 1 → 120s');
+same(240, $rds->invoke($gjp, 2), 'backoff: attempt 2 → 240s');
+same(480, $rds->invoke($gjp, 3), 'backoff: attempt 3 → 480s');
+same(3600, $rds->invoke($gjp, 20), 'backoff: satura em 3600s');
+
+// ── GradingJobProcessor::errorCategory — classificação de falha ───────────────
+$ec = new ReflectionMethod($gjp, 'errorCategory');
+same('timeout', $ec->invoke($gjp, new \RuntimeException('Falha de comunicação com a IA')), 'erro: comunicação → timeout');
+same('provider_unavailable', $ec->invoke($gjp, new \RuntimeException('HTTP 429 rate limit')), 'erro: 429 → provider_unavailable');
+same('invalid_response', $ec->invoke($gjp, new \RuntimeException('Resposta em formato inesperado (JSON)')), 'erro: json → invalid_response');
+same('unknown', $ec->invoke($gjp, new \RuntimeException('algo totalmente diferente')), 'erro: sem match → unknown');
+
+// ── OpenAIService::buildInjectionLogSummary — redação por truncamento ────────
+$oai = new \App\Services\OpenAIService();
+$bls = new ReflectionMethod($oai, 'buildInjectionLogSummary');
+same('resposta curta', $bls->invoke($oai, 'resposta curta'), 'injection log: texto curto preservado');
+$long = str_repeat('x', 600);
+$summary = $bls->invoke($oai, $long);
+check(str_starts_with($summary, str_repeat('x', 500)), 'injection log: mantém os primeiros 500 chars');
+check(str_contains($summary, '[truncado; total=600 chars]'), 'injection log: marca truncamento com total');
+check(!str_contains($summary, str_repeat('x', 501)), 'injection log: não guarda o conteúdo além de 500');
+
+// ── Core\Session — token CSRF ────────────────────────────────────────────────
+$_SESSION = [];
+$session = new \Core\Session();
+$csrf = $session->regenerateCsrfToken();
+check(preg_match('/^[a-f0-9]{64}$/', $csrf) === 1, 'csrf: token é 64 hex (32 bytes)');
+check($session->validateCsrf($csrf), 'csrf: aceita o token correto');
+check(!$session->validateCsrf('token-errado'), 'csrf: rejeita token incorreto');
+check(!$session->validateCsrf(''), 'csrf: rejeita token vazio');
+$_SESSION = [];
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];
