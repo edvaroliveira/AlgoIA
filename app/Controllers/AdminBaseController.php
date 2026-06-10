@@ -35,6 +35,14 @@ abstract class AdminBaseController
 
   // ── CSV / JSON streaming ─────────────────────────────────────────────────
 
+  protected static function csvCell(string $value): string
+  {
+    if ($value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+      return "\t" . $value;
+    }
+    return $value;
+  }
+
   protected function streamCsvDownload(string $filename, array $headers, array $rows, callable $mapper): void
   {
     header('Content-Type: text/csv; charset=UTF-8');
@@ -51,7 +59,11 @@ abstract class AdminBaseController
     fputcsv($output, $headers, ';');
 
     foreach ($rows as $row) {
-      fputcsv($output, $mapper($row), ';');
+      $cells = array_map(
+        static fn($cell): string => static::csvCell((string) $cell),
+        $mapper($row)
+      );
+      fputcsv($output, $cells, ';');
     }
 
     fclose($output);

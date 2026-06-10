@@ -49,14 +49,14 @@ class AdminAuditController extends AdminBaseController
     foreach ($logs as $log) {
       fputcsv($output, [
         (string) ($log['created_at']  ?? ''),
-        (string) ($log['actor_name']  ?? 'Sistema'),
-        (string) ($log['actor_email'] ?? ''),
-        (string) ($log['actor_role']  ?? ''),
+        static::csvCell((string) ($log['actor_name']  ?? 'Sistema')),
+        static::csvCell((string) ($log['actor_email'] ?? '')),
+        static::csvCell((string) ($log['actor_role']  ?? '')),
         (string) ($log['action']      ?? ''),
         (string) ($log['entity_type'] ?? ''),
         (string) ($log['entity_id']   ?? ''),
-        $this->buildAuditContextText($log),
-        (string) ($log['ip_address']  ?? ''),
+        static::csvCell($this->buildAuditContextText($log)),
+        static::csvCell((string) ($log['ip_address']  ?? '')),
       ], ';');
     }
 
