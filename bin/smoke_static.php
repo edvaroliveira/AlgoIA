@@ -15,12 +15,20 @@ $checks = [
   [
     'file' => 'app/Controllers/AttemptController.php',
     'mustContain' => [
-      'enqueueAttempt',
       'grading_enqueue_failed',
       'markCompletedForAttempt',
+      'AttemptSubmissionService',
     ],
     'mustNotContain' => [
       'gradeSubmittedAttempt((int) $id)',
+    ],
+  ],
+  [
+    'file' => 'app/Services/AttemptSubmissionService.php',
+    'mustContain' => [
+      'enqueueAttempt',
+      'FOR UPDATE',
+      'beginTransaction',
     ],
   ],
   [
