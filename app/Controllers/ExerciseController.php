@@ -212,7 +212,8 @@ class ExerciseController
 
     $this->exercises->delete((int) $id);
     AuditService::record('teacher.exercise.delete', 'exercise', (int) $id, [
-      'title' => $exercise['title'] ?? null,
+      'title'  => $exercise['title']  ?? null,
+      'status' => $exercise['status'] ?? null,
     ]);
     View::redirect('/teacher/exercises');
   }
