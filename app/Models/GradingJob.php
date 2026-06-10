@@ -38,7 +38,7 @@ class GradingJob extends Model
     );
   }
 
-  public function claimNext(): array|false
+  public function claimNext(string $workerId): array|false
   {
     $this->db->beginTransaction();
 
@@ -62,18 +62,20 @@ class GradingJob extends Model
 
       $this->db->execute(
         "UPDATE grading_jobs
-               SET status = ?,
-                   attempts = attempts + 1,
+               SET status    = ?,
+                   attempts  = attempts + 1,
                    locked_at = NOW(),
+                   worker_id = ?,
                    last_error = NULL
                WHERE id = ?",
-        [self::STATUS_PROCESSING, (int) $job['id']]
+        [self::STATUS_PROCESSING, $workerId, (int) $job['id']]
       );
 
       $this->db->commit();
 
-      $job['status'] = self::STATUS_PROCESSING;
-      $job['attempts'] = (int) $job['attempts'] + 1;
+      $job['status']    = self::STATUS_PROCESSING;
+      $job['attempts']  = (int) $job['attempts'] + 1;
+      $job['worker_id'] = $workerId;
       return $job;
     } catch (\Throwable $e) {
       if ($this->db->inTransaction()) {
@@ -84,14 +86,18 @@ class GradingJob extends Model
     }
   }
 
-  public function markCompleted(int $jobId): void
+  public function markCompleted(int $jobId, string $workerId): void
   {
-    $this->db->execute(
+    $rows = $this->db->execute(
       "UPDATE grading_jobs
-             SET status = ?, completed_at = NOW(), last_error = NULL
-             WHERE id = ?",
-      [self::STATUS_COMPLETED, $jobId]
+             SET status = ?, completed_at = NOW(), last_error = NULL, worker_id = NULL
+             WHERE id = ? AND (worker_id IS NULL OR worker_id = ?)",
+      [self::STATUS_COMPLETED, $jobId, $workerId]
     );
+
+    if ($rows === 0) {
+      error_log("markCompleted: job {$jobId} not owned by worker {$workerId} or already completed — skipped.");
+    }
   }
 
   public function markCompletedForAttempt(int $attemptId): void
@@ -104,18 +110,23 @@ class GradingJob extends Model
     );
   }
 
-  public function markFailed(int $jobId, string $error, int $delaySeconds = 300): void
+  public function markFailed(int $jobId, string $error, int $delaySeconds = 300, string $workerId = ''): void
   {
     $safeDelay = max(60, $delaySeconds);
 
-    $this->db->execute(
+    $rows = $this->db->execute(
       "UPDATE grading_jobs
-             SET status = ?,
+             SET status      = ?,
                  available_at = DATE_ADD(NOW(), INTERVAL {$safeDelay} SECOND),
-                 last_error = ?
-             WHERE id = ?",
-      [self::STATUS_FAILED, mb_substr($error, 0, 2000), $jobId]
+                 last_error  = ?,
+                 worker_id   = NULL
+             WHERE id = ? AND (worker_id IS NULL OR worker_id = ? OR ? = '')",
+      [self::STATUS_FAILED, mb_substr($error, 0, 2000), $jobId, $workerId, $workerId]
     );
+
+    if ($rows === 0) {
+      error_log("markFailed: job {$jobId} not owned by worker — skipped.");
+    }
   }
 
   public function recoverStaleProcessing(): int
@@ -135,6 +146,16 @@ class GradingJob extends Model
       error_log('grading_jobs stale recovery unavailable: ' . $e->getMessage());
       return 0;
     }
+  }
+
+  public function renewLease(int $jobId, string $workerId): bool
+  {
+    return $this->db->execute(
+      "UPDATE grading_jobs
+             SET locked_at = NOW()
+             WHERE id = ? AND worker_id = ? AND status = ?",
+      [$jobId, $workerId, self::STATUS_PROCESSING]
+    ) > 0;
   }
 
   public function operationalSummary(?int $teacherId = null): array
