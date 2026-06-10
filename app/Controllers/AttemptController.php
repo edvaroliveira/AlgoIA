@@ -10,6 +10,8 @@ use App\Models\Attempt;
 use App\Models\Answer;
 use App\Models\GradingJob;
 use App\Services\AttemptGradingService;
+use App\Services\AttemptStartService;
+use App\Services\AttemptSubmissionService;
 use App\Services\AuditService;
 use Core\Auth;
 use Core\Request;
@@ -38,32 +40,29 @@ class AttemptController
     Auth::requireStudent();
     Request::validateCsrf();
 
-    $studentId = Auth::id();
-    $exercise  = $this->getStudentExercise((int) $id, $studentId);
+    $studentId   = Auth::id();
+    $exercise    = $this->getStudentExercise((int) $id, $studentId);
     $publication = $this->exercises->findOpenPublicationForStudent((int) $id, $studentId);
 
     if (!$publication) {
       global $session;
       $session->flash('error', 'Este exercício não está aberto para respostas.');
       View::redirect("/student/exercises/{$id}");
+      return;
     }
 
-    $exercise = $this->exercises->applyPublicationContext($exercise, $publication);
-    $turmaId = (int) $publication['turma_id'];
-
-    // Check attempt limit
-    $submitted   = $this->attempts->countUsedAttempts($studentId, (int) $id, $turmaId);
+    $exercise    = $this->exercises->applyPublicationContext($exercise, $publication);
+    $turmaId     = (int) $publication['turma_id'];
     $maxAttempts = (int) $exercise['max_attempts'];
 
-    if ($maxAttempts > 0 && $submitted >= $maxAttempts) {
+    try {
+      $attemptId = (new AttemptStartService())->start($studentId, (int) $id, $turmaId, $maxAttempts);
+    } catch (\RuntimeException) {
       global $session;
       $session->flash('error', 'Você atingiu o número máximo de tentativas.');
       View::redirect("/student/exercises/{$id}");
+      return;
     }
-
-    // Reuse in-progress attempt or create new
-    $inProgress = $this->attempts->getInProgress($studentId, (int) $id, $turmaId);
-    $attemptId  = $inProgress ? (int) $inProgress['id'] : $this->attempts->start($studentId, (int) $id, $turmaId);
 
     View::redirect("/student/exercises/{$id}?attempt={$attemptId}");
   }
@@ -115,35 +114,31 @@ class AttemptController
     $studentId = Auth::id();
     $attempt   = $this->attempts->find((int) $id);
 
-    Auth::ensure($attempt && (int) $attempt['student_id'] === $studentId && $attempt['status'] === 'in_progress', 'Tentativa inválida.');
+    // Ownership check only — status is re-validated atomically inside AttemptSubmissionService (FOR UPDATE).
+    Auth::ensure(
+      $attempt && (int) $attempt['student_id'] === $studentId,
+      'Tentativa inválida.'
+    );
 
     $this->ensureAttemptIsOpen($attempt, $studentId);
-    $questions = $this->questions->findByExercise((int) $attempt['exercise_id']);
 
-    // Save all answers from POST
-    foreach ($questions as $q) {
-      $text = trim((string) ($_POST["answer_{$q['id']}"] ?? ''));
-      $this->answers->saveOrUpdate((int) $id, (int) $q['id'], $text);
-    }
-
-    $this->attempts->markSubmitted((int) $id);
     $gradingStatus = 'queued';
 
     try {
-      (new GradingJob())->enqueueAttempt((int) $id);
+      $gradingStatus = (new AttemptSubmissionService())->submit((int) $id, $studentId, $_POST);
     } catch (\Throwable $e) {
       $gradingStatus = 'queue_unavailable';
-      error_log("Attempt grading enqueue failed for attempt {$id}: " . $e->getMessage());
+      error_log("Attempt submission failed for attempt {$id}: " . $e->getMessage());
       AuditService::record('student.attempt.grading_enqueue_failed', 'attempt', (int) $id, [
         'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
-        'student_id' => (int) ($attempt['student_id'] ?? 0),
-        'error' => $e->getMessage(),
+        'student_id'  => (int) ($attempt['student_id']  ?? 0),
+        'error'       => $e->getMessage(),
       ]);
     }
 
     AuditService::record('student.attempt.submitted', 'attempt', (int) $id, [
-      'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
-      'student_id' => (int) ($attempt['student_id'] ?? 0),
+      'exercise_id'    => (int) ($attempt['exercise_id'] ?? 0),
+      'student_id'     => (int) ($attempt['student_id']  ?? 0),
       'grading_status' => $gradingStatus,
     ]);
 

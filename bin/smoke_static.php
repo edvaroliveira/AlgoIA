@@ -15,12 +15,20 @@ $checks = [
   [
     'file' => 'app/Controllers/AttemptController.php',
     'mustContain' => [
-      'enqueueAttempt',
       'grading_enqueue_failed',
       'markCompletedForAttempt',
+      'AttemptSubmissionService',
     ],
     'mustNotContain' => [
       'gradeSubmittedAttempt((int) $id)',
+    ],
+  ],
+  [
+    'file' => 'app/Services/AttemptSubmissionService.php',
+    'mustContain' => [
+      'enqueueAttempt',
+      'FOR UPDATE',
+      'beginTransaction',
     ],
   ],
   [
@@ -63,6 +71,8 @@ $lintFiles = [
   'app/Models/LoginAttempt.php',
   'app/Models/Turma.php',
   'app/Services/AttemptGradingService.php',
+  'app/Services/AttemptStartService.php',
+  'app/Services/AttemptSubmissionService.php',
   'app/Services/GradingJobProcessor.php',
   'bin/process_grading_jobs.php',
   'bin/smoke_schema.php',

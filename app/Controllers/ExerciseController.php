@@ -199,9 +199,21 @@ class ExerciseController
     Request::validateCsrf();
     $exercise = $this->getOwnedExercise((int) $id);
 
+    if (!$this->exercises->canDelete($exercise)) {
+      AuditService::record('teacher.exercise.delete_blocked', 'exercise', (int) $id, [
+        'title'  => $exercise['title']  ?? null,
+        'status' => $exercise['status'] ?? null,
+      ]);
+      global $session;
+      $session->flash('error', 'Este exercício não pode ser excluído: já foi publicado ou possui tentativas registradas.');
+      View::redirect("/teacher/exercises/{$id}");
+      return;
+    }
+
     $this->exercises->delete((int) $id);
     AuditService::record('teacher.exercise.delete', 'exercise', (int) $id, [
-      'title' => $exercise['title'] ?? null,
+      'title'  => $exercise['title']  ?? null,
+      'status' => $exercise['status'] ?? null,
     ]);
     View::redirect('/teacher/exercises');
   }
