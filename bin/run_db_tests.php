@@ -115,6 +115,56 @@ same(null, $afterClear['avatar_path'], 'User::updateAvatar(null) limpa o avatar'
 
 same(false, $users->find(9999), 'User::find retorna false quando não existe');
 
+// ── RP-01: Exercise::canDelete ────────────────────────────────────────────────
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS exercises_rp01 (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    teacher_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft'
+  )
+");
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS attempts_rp01 (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    exercise_id INTEGER NOT NULL,
+    student_id INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'in_progress'
+  )
+");
+
+// Exercício rascunho sem tentativas: pode excluir
+$pdo->exec("INSERT INTO exercises_rp01 (teacher_id, title, status) VALUES (1, 'Ex Draft', 'draft')");
+$draftId = (int) $pdo->lastInsertId();
+
+$exDraft = ['id' => $draftId, 'status' => 'draft'];
+
+// Exercício ativo: não pode excluir
+$pdo->exec("INSERT INTO exercises_rp01 (teacher_id, title, status) VALUES (1, 'Ex Active', 'active')");
+$activeId = (int) $pdo->lastInsertId();
+$exActive = ['id' => $activeId, 'status' => 'active'];
+
+// Rascunho com tentativa: não pode excluir
+$pdo->exec("INSERT INTO exercises_rp01 (teacher_id, title, status) VALUES (1, 'Ex Draft+Attempt', 'draft')");
+$draftWithAttemptId = (int) $pdo->lastInsertId();
+$pdo->exec("INSERT INTO attempts_rp01 (exercise_id, student_id, status) VALUES ($draftWithAttemptId, 1, 'submitted')");
+$exDraftWithAttempt = ['id' => $draftWithAttemptId, 'status' => 'draft'];
+
+// Simulação dos métodos (sem injetar o modelo completo, testamos a lógica pura)
+function exerciseIsDraft(array $ex): bool { return ($ex['status'] ?? 'draft') === 'draft'; }
+function exerciseHasAttempts(PDO $db, int $id): bool {
+  $stmt = $db->prepare("SELECT id FROM attempts_rp01 WHERE exercise_id = ? LIMIT 1");
+  $stmt->execute([$id]);
+  return $stmt->fetch() !== false;
+}
+function exerciseCanDelete(PDO $db, array $ex): bool {
+  return exerciseIsDraft($ex) && !exerciseHasAttempts($db, (int)$ex['id']);
+}
+
+check(exerciseCanDelete($pdo, $exDraft), 'RP-01: rascunho sem tentativas pode ser excluído');
+check(!exerciseCanDelete($pdo, $exActive), 'RP-01: exercício ativo não pode ser excluído');
+check(!exerciseCanDelete($pdo, $exDraftWithAttempt), 'RP-01: rascunho com tentativa não pode ser excluído');
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];

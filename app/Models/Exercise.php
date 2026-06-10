@@ -67,6 +67,20 @@ class Exercise extends Model
     return (string) ($exercise['admin_review_status'] ?? self::REVIEW_APPROVED) === self::REVIEW_BLOCKED;
   }
 
+  public function hasAttempts(int $exerciseId): bool
+  {
+    $row = $this->db->fetchOne(
+      "SELECT id FROM attempts WHERE exercise_id = ? LIMIT 1",
+      [$exerciseId]
+    );
+    return $row !== false;
+  }
+
+  public function canDelete(array $exercise): bool
+  {
+    return $this->isDraft($exercise) && !$this->hasAttempts((int) ($exercise['id'] ?? 0));
+  }
+
   public function findByTeacher(int $teacherId): array
   {
     return $this->db->fetchAll(
