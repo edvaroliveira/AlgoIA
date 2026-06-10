@@ -10,6 +10,7 @@ use App\Models\Attempt;
 use App\Models\Answer;
 use App\Models\GradingJob;
 use App\Services\AttemptGradingService;
+use App\Services\AttemptStartService;
 use App\Services\AttemptSubmissionService;
 use App\Services\AuditService;
 use Core\Auth;
@@ -39,32 +40,29 @@ class AttemptController
     Auth::requireStudent();
     Request::validateCsrf();
 
-    $studentId = Auth::id();
-    $exercise  = $this->getStudentExercise((int) $id, $studentId);
+    $studentId   = Auth::id();
+    $exercise    = $this->getStudentExercise((int) $id, $studentId);
     $publication = $this->exercises->findOpenPublicationForStudent((int) $id, $studentId);
 
     if (!$publication) {
       global $session;
       $session->flash('error', 'Este exercício não está aberto para respostas.');
       View::redirect("/student/exercises/{$id}");
+      return;
     }
 
-    $exercise = $this->exercises->applyPublicationContext($exercise, $publication);
-    $turmaId = (int) $publication['turma_id'];
-
-    // Check attempt limit
-    $submitted   = $this->attempts->countUsedAttempts($studentId, (int) $id, $turmaId);
+    $exercise    = $this->exercises->applyPublicationContext($exercise, $publication);
+    $turmaId     = (int) $publication['turma_id'];
     $maxAttempts = (int) $exercise['max_attempts'];
 
-    if ($maxAttempts > 0 && $submitted >= $maxAttempts) {
+    try {
+      $attemptId = (new AttemptStartService())->start($studentId, (int) $id, $turmaId, $maxAttempts);
+    } catch (\RuntimeException $e) {
       global $session;
       $session->flash('error', 'Você atingiu o número máximo de tentativas.');
       View::redirect("/student/exercises/{$id}");
+      return;
     }
-
-    // Reuse in-progress attempt or create new
-    $inProgress = $this->attempts->getInProgress($studentId, (int) $id, $turmaId);
-    $attemptId  = $inProgress ? (int) $inProgress['id'] : $this->attempts->start($studentId, (int) $id, $turmaId);
 
     View::redirect("/student/exercises/{$id}?attempt={$attemptId}");
   }
