@@ -29,7 +29,7 @@ $requiredColumns = [
   'attempts' => ['id', 'exercise_id', 'student_id', 'turma_id', 'status', 'submitted_at', 'total_score'],
   'answers' => ['attempt_id', 'question_id', 'student_answer', 'ai_score', 'ai_feedback', 'deduction_reasons_json'],
   'login_attempts' => ['email', 'ip_address', 'user_agent', 'succeeded', 'created_at'],
-  'grading_jobs' => ['attempt_id', 'status', 'attempts', 'last_error', 'available_at', 'locked_at', 'completed_at'],
+  'grading_jobs' => ['attempt_id', 'status', 'attempts', 'last_error', 'available_at', 'locked_at', 'worker_id', 'completed_at'],
 ];
 
 try {
