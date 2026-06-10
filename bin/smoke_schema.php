@@ -24,7 +24,7 @@ $requiredTables = [
 ];
 
 $requiredColumns = [
-  'users' => ['id', 'email', 'role', 'status', 'must_change_password', 'registration_source'],
+  'users' => ['id', 'email', 'role', 'status', 'must_change_password', 'registration_source', 'avatar_path'],
   'student_turma' => ['student_id', 'turma_id', 'status'],
   'attempts' => ['id', 'exercise_id', 'student_id', 'turma_id', 'status', 'submitted_at', 'total_score'],
   'answers' => ['attempt_id', 'question_id', 'student_answer', 'ai_score', 'ai_feedback', 'deduction_reasons_json'],
