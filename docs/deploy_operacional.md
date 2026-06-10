@@ -33,6 +33,9 @@ Para um ambiente que ja foi criado com schema antigo, nao reexecute `001_create_
 13. `013_login_attempts.sql`
 14. `014_grading_jobs.sql`
 15. `015_fix_exercises_turma_fk.sql`
+16. `016_user_avatar.sql`
+17. `017_grading_jobs_worker_id.sql`
+18. `018_attempts_start_index.sql`
 
 Observacao: existem dois arquivos iniciados por `002` por historico do projeto. A ordem acima e a referencia oficial.
 
