@@ -10,6 +10,7 @@ use App\Models\Attempt;
 use App\Models\Answer;
 use App\Models\GradingJob;
 use App\Services\AttemptGradingService;
+use App\Services\AttemptSubmissionService;
 use App\Services\AuditService;
 use Core\Auth;
 use Core\Request;
@@ -115,35 +116,30 @@ class AttemptController
     $studentId = Auth::id();
     $attempt   = $this->attempts->find((int) $id);
 
-    Auth::ensure($attempt && (int) $attempt['student_id'] === $studentId && $attempt['status'] === 'in_progress', 'Tentativa inválida.');
+    Auth::ensure(
+      $attempt && (int) $attempt['student_id'] === $studentId && $attempt['status'] === 'in_progress',
+      'Tentativa inválida.'
+    );
 
     $this->ensureAttemptIsOpen($attempt, $studentId);
-    $questions = $this->questions->findByExercise((int) $attempt['exercise_id']);
 
-    // Save all answers from POST
-    foreach ($questions as $q) {
-      $text = trim((string) ($_POST["answer_{$q['id']}"] ?? ''));
-      $this->answers->saveOrUpdate((int) $id, (int) $q['id'], $text);
-    }
-
-    $this->attempts->markSubmitted((int) $id);
     $gradingStatus = 'queued';
 
     try {
-      (new GradingJob())->enqueueAttempt((int) $id);
+      $gradingStatus = (new AttemptSubmissionService())->submit((int) $id, $studentId, $_POST);
     } catch (\Throwable $e) {
       $gradingStatus = 'queue_unavailable';
-      error_log("Attempt grading enqueue failed for attempt {$id}: " . $e->getMessage());
+      error_log("Attempt submission failed for attempt {$id}: " . $e->getMessage());
       AuditService::record('student.attempt.grading_enqueue_failed', 'attempt', (int) $id, [
         'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
-        'student_id' => (int) ($attempt['student_id'] ?? 0),
-        'error' => $e->getMessage(),
+        'student_id'  => (int) ($attempt['student_id']  ?? 0),
+        'error'       => $e->getMessage(),
       ]);
     }
 
     AuditService::record('student.attempt.submitted', 'attempt', (int) $id, [
-      'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
-      'student_id' => (int) ($attempt['student_id'] ?? 0),
+      'exercise_id'    => (int) ($attempt['exercise_id'] ?? 0),
+      'student_id'     => (int) ($attempt['student_id']  ?? 0),
       'grading_status' => $gradingStatus,
     ]);
 
