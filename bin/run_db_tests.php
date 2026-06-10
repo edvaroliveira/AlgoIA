@@ -152,6 +152,60 @@ check($exModel->canDelete(['id' => $rp01DraftId, 'status' => 'draft']), 'RP-01: 
 check(!$exModel->canDelete(['id' => $rp01ActiveId, 'status' => 'active']), 'RP-01: exercício ativo não pode ser excluído');
 check(!$exModel->canDelete(['id' => $rp01DraftWithAttemptId, 'status' => 'draft']), 'RP-01: rascunho com tentativa não pode ser excluído');
 
+// ── RP-05: worker_id protection (estado-máquina, sem MySQL FOR UPDATE) ────────
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS grading_jobs_rp05 (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    attempt_id INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'queued',
+    worker_id TEXT NULL,
+    locked_at TEXT NULL,
+    completed_at TEXT NULL,
+    last_error TEXT NULL
+  )
+");
+$pdo->exec("INSERT INTO grading_jobs_rp05 (attempt_id, status, worker_id) VALUES (1, 'processing', 'worker-A')");
+$jobId = (int) $pdo->lastInsertId();
+
+// Simula markCompleted: worker correto consegue completar
+function markCompletedRp05(PDO $db, int $jobId, string $workerId): int {
+  $stmt = $db->prepare(
+    "UPDATE grading_jobs_rp05 SET status='completed', worker_id=NULL
+     WHERE id=? AND (worker_id IS NULL OR worker_id=?)"
+  );
+  $stmt->execute([$jobId, $workerId]);
+  return $stmt->rowCount();
+}
+
+// Worker-B NÃO consegue completar o job de worker-A
+$rowsB = markCompletedRp05($pdo, $jobId, 'worker-B');
+check($rowsB === 0, 'RP-05: worker-B não pode completar job de worker-A');
+
+// Worker-A consegue completar seu próprio job
+$rowsA = markCompletedRp05($pdo, $jobId, 'worker-A');
+check($rowsA === 1, 'RP-05: worker-A completa seu próprio job');
+
+// Verifica status final
+$row = $pdo->query("SELECT status, worker_id FROM grading_jobs_rp05 WHERE id=$jobId")->fetch();
+check((string)($row['status'] ?? '') === 'completed', 'RP-05: status é completed após conclusão');
+check($row['worker_id'] === null, 'RP-05: worker_id limpo após conclusão');
+
+// ── RP-06: csvCell sanitização ────────────────────────────────────────────────
+function csvCellRp06(string $value): string {
+  if ($value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+    return "\t" . $value;
+  }
+  return $value;
+}
+
+check(csvCellRp06('=SUM(A1)') === "\t=SUM(A1)", 'RP-06: prefixo = é neutralizado');
+check(csvCellRp06('+1234') === "\t+1234", 'RP-06: prefixo + é neutralizado');
+check(csvCellRp06('-1') === "\t-1", 'RP-06: prefixo - é neutralizado');
+check(csvCellRp06('@foo') === "\t@foo", 'RP-06: prefixo @ é neutralizado');
+check(csvCellRp06('João Silva') === 'João Silva', 'RP-06: valor normal não é alterado');
+check(csvCellRp06('') === '', 'RP-06: string vazia não é alterada');
+check(csvCellRp06('42') === '42', 'RP-06: número normal não é alterado');
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];
