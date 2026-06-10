@@ -57,7 +57,7 @@ class AttemptController
 
     try {
       $attemptId = (new AttemptStartService())->start($studentId, (int) $id, $turmaId, $maxAttempts);
-    } catch (\RuntimeException $e) {
+    } catch (\RuntimeException) {
       global $session;
       $session->flash('error', 'Você atingiu o número máximo de tentativas.');
       View::redirect("/student/exercises/{$id}");
@@ -114,8 +114,9 @@ class AttemptController
     $studentId = Auth::id();
     $attempt   = $this->attempts->find((int) $id);
 
+    // Ownership check only — status is re-validated atomically inside AttemptSubmissionService (FOR UPDATE).
     Auth::ensure(
-      $attempt && (int) $attempt['student_id'] === $studentId && $attempt['status'] === 'in_progress',
+      $attempt && (int) $attempt['student_id'] === $studentId,
       'Tentativa inválida.'
     );
 
