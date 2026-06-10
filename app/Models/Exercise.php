@@ -78,7 +78,7 @@ class Exercise extends Model
 
   public function canDelete(array $exercise): bool
   {
-    return $this->isDraft($exercise) && !$this->hasAttempts((int) ($exercise['id'] ?? 0));
+    return $this->isDraft($exercise) && !$this->hasAttempts((int) $exercise['id']);
   }
 
   public function findByTeacher(int $teacherId): array
