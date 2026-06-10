@@ -12,32 +12,33 @@ class GradingJobProcessor
 {
   public function processNext(): bool
   {
-    $jobs = new GradingJob();
+    $workerId = bin2hex(random_bytes(8));
+    $jobs     = new GradingJob();
     $jobs->recoverStaleProcessing();
-    $job = $jobs->claimNext();
+    $job = $jobs->claimNext($workerId);
 
     if (!$job) {
       return false;
     }
 
-    $jobId = (int) $job['id'];
+    $jobId     = (int) $job['id'];
     $attemptId = (int) $job['attempt_id'];
 
     try {
       $attempt = (new Attempt())->find($attemptId);
       if ($attempt && (string) ($attempt['status'] ?? '') === 'graded') {
-        $jobs->markCompleted($jobId);
+        $jobs->markCompleted($jobId, $workerId);
         error_log("Grading job {$jobId} skipped because attempt {$attemptId} is already graded.");
         return true;
       }
 
       $score = (new AttemptGradingService())->gradeSubmittedAttempt($attemptId);
-      $jobs->markCompleted($jobId);
+      $jobs->markCompleted($jobId, $workerId);
       error_log("Grading job {$jobId} completed for attempt {$attemptId} with score {$score}.");
       return true;
     } catch (\Throwable $e) {
       $delay = $this->retryDelaySeconds((int) ($job['attempts'] ?? 1));
-      $jobs->markFailed($jobId, $e->getMessage(), $delay);
+      $jobs->markFailed($jobId, $e->getMessage(), $delay, $workerId);
       error_log("Grading job {$jobId} failed for attempt {$attemptId} [" . $this->errorCategory($e) . "]: " . $e->getMessage());
       return true;
     }
