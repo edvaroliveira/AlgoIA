@@ -121,6 +121,8 @@ class GradingJob extends Model
                  last_error  = ?,
                  worker_id   = NULL
              WHERE id = ? AND (worker_id IS NULL OR worker_id = ? OR ? = '')",
+             // OR ? = '' allows admin/manual callers (empty workerId) to fail any job;
+             // non-empty workerId callers are still guarded by the ownership check.
       [self::STATUS_FAILED, mb_substr($error, 0, 2000), $jobId, $workerId, $workerId]
     );
 

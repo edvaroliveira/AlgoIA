@@ -26,6 +26,9 @@ class AttemptStartService
         return (int) $inProgress['id'];
       }
 
+      // FOR UPDATE here locks visited rows; primary protection against phantom inserts
+      // comes from the gap lock acquired by the in-progress SELECT above (requires
+      // idx_attempts_student_exercise_turma from migration 018).
       $row = $db->fetchOne(
         "SELECT COUNT(*) AS c FROM attempts
                WHERE student_id = ? AND exercise_id = ? AND turma_id = ? AND status IN ('submitted', 'graded')
