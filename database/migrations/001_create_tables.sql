@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS attempts (
     total_score  DECIMAL(8,2) NULL,
     status       ENUM('in_progress','submitted','graded') NOT NULL DEFAULT 'in_progress',
     INDEX idx_attempts_turma (turma_id),
+    INDEX idx_attempts_student_exercise_turma (student_id, exercise_id, turma_id),
     CONSTRAINT fk_att_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
     CONSTRAINT fk_att_student  FOREIGN KEY (student_id)  REFERENCES users(id),
     CONSTRAINT fk_attempts_turma FOREIGN KEY (turma_id) REFERENCES turmas(id) ON DELETE SET NULL
@@ -124,6 +125,7 @@ CREATE TABLE IF NOT EXISTS grading_jobs (
     last_error   TEXT NULL,
     available_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     locked_at    DATETIME NULL,
+    worker_id    VARCHAR(36) NULL DEFAULT NULL,
     completed_at DATETIME NULL,
     created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
