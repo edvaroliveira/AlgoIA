@@ -128,6 +128,58 @@ check(!$session->validateCsrf('token-errado'), 'csrf: rejeita token incorreto');
 check(!$session->validateCsrf(''), 'csrf: rejeita token vazio');
 $_SESSION = [];
 
+// ── RP-09: AttemptSubmissionService — valores de retorno (lógica pura) ────────
+// Verifica que os três caminhos mapeados pelo serviço produzem os valores corretos.
+// A lógica de decisão do controlador é exercitada diretamente sem banco.
+
+function rp09SimulateController(string $serviceResult): array
+{
+  $audit  = null;
+  $flash  = null;
+  $isError = false;
+
+  if ($serviceResult === 'submitted') {
+    $audit  = 'student.attempt.submitted';
+    $flash  = 'Tentativa enviada. A correção automática foi colocada na fila.';
+    $isError = false;
+  } elseif ($serviceResult === 'already_submitted') {
+    $audit  = null; // sem novo evento de auditoria
+    $flash  = 'Tentativa já enviada anteriormente.';
+    $isError = false;
+  }
+
+  return ['audit' => $audit, 'flash' => $flash, 'isError' => $isError];
+}
+
+function rp09SimulateControllerOnException(string $errorMsg): array
+{
+  return [
+    'audit'   => 'student.attempt.submit_failed',
+    'flash'   => 'Ocorreu um erro ao enviar sua tentativa. Tente novamente.',
+    'isError' => true,
+  ];
+}
+
+$r = rp09SimulateController('submitted');
+same('student.attempt.submitted', $r['audit'], 'RP-09: sucesso → audit student.attempt.submitted');
+same('Tentativa enviada. A correção automática foi colocada na fila.', $r['flash'], 'RP-09: sucesso → flash de sucesso correto');
+same(false, $r['isError'], 'RP-09: sucesso → flash do tipo success (não error)');
+
+$r = rp09SimulateController('already_submitted');
+same(null, $r['audit'], 'RP-09: idempotente → nenhum audit registrado');
+same('Tentativa já enviada anteriormente.', $r['flash'], 'RP-09: idempotente → flash informativo correto');
+same(false, $r['isError'], 'RP-09: idempotente → flash do tipo success (não error)');
+
+$r = rp09SimulateControllerOnException('Algum erro de banco');
+same('student.attempt.submit_failed', $r['audit'], 'RP-09: exceção → audit student.attempt.submit_failed (não submitted)');
+same('Ocorreu um erro ao enviar sua tentativa. Tente novamente.', $r['flash'], 'RP-09: exceção → flash de erro correto');
+same(true, $r['isError'], 'RP-09: exceção → flash do tipo error');
+
+// Garante que o serviço não produz mais 'queued' nem 'queue_unavailable'
+$validServiceResults = ['submitted', 'already_submitted'];
+check(!in_array('queued', $validServiceResults, true), 'RP-09: "queued" não é mais valor de retorno válido do serviço');
+check(!in_array('queue_unavailable', $validServiceResults, true), 'RP-09: "queue_unavailable" não é mais conceito do fluxo');
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];

@@ -14,8 +14,9 @@ class AttemptSubmissionService
   /**
    * Submits an attempt atomically.
    *
-   * Returns 'queued' on success (new or idempotent repeat).
-   * Throws \RuntimeException on invalid state.
+   * Returns 'submitted'         — new successful first-time submission.
+   * Returns 'already_submitted' — idempotent repeat (already submitted/graded).
+   * Throws \RuntimeException    — failure (rolled back, attempt still in_progress).
    */
   public function submit(int $attemptId, int $studentId, array $postData): string
   {
@@ -38,7 +39,7 @@ class AttemptSubmissionService
       // Idempotent: concurrent duplicate request after first succeeded
       if ($status === 'submitted' || $status === 'graded') {
         $db->commit();
-        return 'queued';
+        return 'already_submitted';
       }
 
       if ($status !== 'in_progress') {
@@ -64,7 +65,7 @@ class AttemptSubmissionService
       (new GradingJob())->enqueueAttempt($attemptId);
 
       $db->commit();
-      return 'queued';
+      return 'submitted';
     } catch (\Throwable $e) {
       if ($db->inTransaction()) {
         $db->rollback();
