@@ -122,33 +122,34 @@ class AttemptController
 
     $this->ensureAttemptIsOpen($attempt, $studentId);
 
-    $gradingStatus = 'queued';
+    global $session;
 
     try {
-      $gradingStatus = (new AttemptSubmissionService())->submit((int) $id, $studentId, $_POST);
+      $result = (new AttemptSubmissionService())->submit((int) $id, $studentId, $_POST);
     } catch (\Throwable $e) {
-      $gradingStatus = 'queue_unavailable';
       error_log("Attempt submission failed for attempt {$id}: " . $e->getMessage());
-      AuditService::record('student.attempt.grading_enqueue_failed', 'attempt', (int) $id, [
+      AuditService::record('student.attempt.submit_failed', 'attempt', (int) $id, [
         'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
         'student_id'  => (int) ($attempt['student_id']  ?? 0),
         'error'       => $e->getMessage(),
       ]);
+      $session->flash('error', 'Ocorreu um erro ao enviar sua tentativa. Tente novamente.');
+      View::redirect("/student/exercises/{$attempt['exercise_id']}");
+      return;
     }
 
-    AuditService::record('student.attempt.submitted', 'attempt', (int) $id, [
-      'exercise_id'    => (int) ($attempt['exercise_id'] ?? 0),
-      'student_id'     => (int) ($attempt['student_id']  ?? 0),
-      'grading_status' => $gradingStatus,
-    ]);
+    if ($result === 'submitted') {
+      AuditService::record('student.attempt.submitted', 'attempt', (int) $id, [
+        'exercise_id'    => (int) ($attempt['exercise_id'] ?? 0),
+        'student_id'     => (int) ($attempt['student_id']  ?? 0),
+        'grading_status' => 'queued',
+      ]);
+      $session->flash('success', 'Tentativa enviada. A correção automática foi colocada na fila.');
+    } else {
+      // 'already_submitted': idempotent repeat — no new audit event
+      $session->flash('success', 'Tentativa já enviada anteriormente.');
+    }
 
-    global $session;
-    $session->flash(
-      $gradingStatus === 'queued' ? 'success' : 'error',
-      $gradingStatus === 'queued'
-        ? 'Tentativa enviada. A correção automática foi colocada na fila.'
-        : 'Tentativa enviada. A fila automática está indisponível e a correção ficou pendente para reprocessamento.'
-    );
     View::redirect("/student/exercises/{$attempt['exercise_id']}");
   }
 

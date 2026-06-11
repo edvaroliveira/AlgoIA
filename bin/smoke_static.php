@@ -15,7 +15,7 @@ $checks = [
   [
     'file' => 'app/Controllers/AttemptController.php',
     'mustContain' => [
-      'grading_enqueue_failed',
+      'submit_failed',
       'markCompletedForAttempt',
       'AttemptSubmissionService',
     ],
