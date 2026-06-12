@@ -35,7 +35,7 @@ abstract class AdminBaseController
 
   // ── CSV / JSON streaming ─────────────────────────────────────────────────
 
-  protected static function csvCell(string $value): string
+  public static function csvCell(string $value): string
   {
     if ($value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
       return "\t" . $value;

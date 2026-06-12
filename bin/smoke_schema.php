@@ -69,6 +69,29 @@ try {
     }
   }
 
+  $requiredIndexes = [
+    'attempts'     => ['idx_attempts_student_exercise_turma'],
+    'grading_jobs' => ['idx_grading_jobs_status_available'],
+  ];
+
+  foreach ($requiredIndexes as $table => $indexes) {
+    foreach ($indexes as $indexName) {
+      $row = $db->fetchOne(
+        "SELECT INDEX_NAME
+               FROM INFORMATION_SCHEMA.STATISTICS
+               WHERE TABLE_SCHEMA = DATABASE()
+                 AND TABLE_NAME = ?
+                 AND INDEX_NAME = ?
+               LIMIT 1",
+        [$table, $indexName]
+      );
+
+      if (!$row) {
+        $missing[] = "índice ausente: {$table}.{$indexName}";
+      }
+    }
+  }
+
   if ($missing !== []) {
     fwrite(STDERR, "Smoke schema falhou:\n- " . implode("\n- ", $missing) . "\n");
     exit(1);

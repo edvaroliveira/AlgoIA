@@ -15,12 +15,14 @@ $checks = [
   [
     'file' => 'app/Controllers/AttemptController.php',
     'mustContain' => [
-      'grading_enqueue_failed',
-      'markCompletedForAttempt',
+      'submit_failed',
+      'adminRequeue',
       'AttemptSubmissionService',
     ],
     'mustNotContain' => [
-      'gradeSubmittedAttempt((int) $id)',
+      'gradeSubmittedAttempt',
+      'AttemptGradingService',
+      'markCompletedForAttempt',
     ],
   ],
   [
@@ -47,6 +49,7 @@ $checks = [
       'recoverStaleProcessing',
       'markCompletedForAttempt',
       'statusesForAttempts',
+      'adminRequeue',
     ],
   ],
   [

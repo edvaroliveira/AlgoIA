@@ -91,12 +91,12 @@ class GradingJob extends Model
     $rows = $this->db->execute(
       "UPDATE grading_jobs
              SET status = ?, completed_at = NOW(), last_error = NULL, worker_id = NULL
-             WHERE id = ? AND (worker_id IS NULL OR worker_id = ?)",
-      [self::STATUS_COMPLETED, $jobId, $workerId]
+             WHERE id = ? AND status = ? AND (worker_id IS NULL OR worker_id = ?)",
+      [self::STATUS_COMPLETED, $jobId, self::STATUS_PROCESSING, $workerId]
     );
 
     if ($rows === 0) {
-      error_log("markCompleted: job {$jobId} not owned by worker {$workerId} or already completed — skipped.");
+      error_log("markCompleted: job {$jobId} not in processing state or not owned by worker {$workerId} — skipped.");
     }
   }
 
@@ -138,11 +138,12 @@ class GradingJob extends Model
         "UPDATE grading_jobs
                SET status = ?,
                    available_at = NOW(),
+                   worker_id = NULL,
+                   locked_at = NULL,
                    last_error = 'Job recuperado após ficar travado em processamento.'
                WHERE status = ?
-                 AND locked_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
-                 AND attempts < ?",
-        [self::STATUS_FAILED, self::STATUS_PROCESSING, self::STALE_PROCESSING_MINUTES, self::MAX_ATTEMPTS]
+                 AND locked_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)",
+        [self::STATUS_FAILED, self::STATUS_PROCESSING, self::STALE_PROCESSING_MINUTES]
       );
     } catch (\Throwable $e) {
       error_log('grading_jobs stale recovery unavailable: ' . $e->getMessage());
@@ -258,6 +259,42 @@ class GradingJob extends Model
       error_log('grading_jobs status map unavailable: ' . $e->getMessage());
       return [];
     }
+  }
+
+  public function adminRequeue(int $attemptId): string
+  {
+    // Atomic UPDATE: skip the job if a worker is actively processing it,
+    // eliminating the TOCTOU race between SELECT and UPDATE.
+    $rows = $this->db->execute(
+      "UPDATE grading_jobs
+             SET status       = ?,
+                 available_at = NOW(),
+                 attempts     = 0,
+                 last_error   = NULL,
+                 worker_id    = NULL,
+                 locked_at    = NULL
+             WHERE attempt_id = ?
+               AND status != ?",
+      [self::STATUS_QUEUED, $attemptId, self::STATUS_PROCESSING]
+    );
+
+    if ($rows > 0) {
+      return 'queued';
+    }
+
+    // 0 rows: either no job exists, or a worker is actively processing it.
+    $job = $this->db->fetchOne(
+      "SELECT status FROM grading_jobs WHERE attempt_id = ? LIMIT 1",
+      [$attemptId]
+    );
+
+    if ($job && (string) ($job['status'] ?? '') === self::STATUS_PROCESSING) {
+      return 'already_processing';
+    }
+
+    // No job exists yet — create it.
+    $this->enqueueAttempt($attemptId);
+    return 'queued';
   }
 
   public function retryExhausted(int $jobId): bool
