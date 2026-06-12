@@ -91,12 +91,12 @@ class GradingJob extends Model
     $rows = $this->db->execute(
       "UPDATE grading_jobs
              SET status = ?, completed_at = NOW(), last_error = NULL, worker_id = NULL
-             WHERE id = ? AND (worker_id IS NULL OR worker_id = ?)",
-      [self::STATUS_COMPLETED, $jobId, $workerId]
+             WHERE id = ? AND status = ? AND (worker_id IS NULL OR worker_id = ?)",
+      [self::STATUS_COMPLETED, $jobId, self::STATUS_PROCESSING, $workerId]
     );
 
     if ($rows === 0) {
-      error_log("markCompleted: job {$jobId} not owned by worker {$workerId} or already completed — skipped.");
+      error_log("markCompleted: job {$jobId} not in processing state or not owned by worker {$workerId} — skipped.");
     }
   }
 
@@ -138,11 +138,12 @@ class GradingJob extends Model
         "UPDATE grading_jobs
                SET status = ?,
                    available_at = NOW(),
+                   worker_id = NULL,
+                   locked_at = NULL,
                    last_error = 'Job recuperado após ficar travado em processamento.'
                WHERE status = ?
-                 AND locked_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
-                 AND attempts < ?",
-        [self::STATUS_FAILED, self::STATUS_PROCESSING, self::STALE_PROCESSING_MINUTES, self::MAX_ATTEMPTS]
+                 AND locked_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)",
+        [self::STATUS_FAILED, self::STATUS_PROCESSING, self::STALE_PROCESSING_MINUTES]
       );
     } catch (\Throwable $e) {
       error_log('grading_jobs stale recovery unavailable: ' . $e->getMessage());
