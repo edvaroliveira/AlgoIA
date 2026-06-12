@@ -181,7 +181,15 @@ class ExerciseController
       return;
     }
 
-    $this->exercises->activate((int) $id, $publicationConfigs);
+    try {
+      $this->exercises->activate((int) $id, $publicationConfigs);
+    } catch (\RuntimeException $e) {
+      error_log("Exercise activation blocked for exercise {$id}: " . $e->getMessage());
+      global $session;
+      $session->flash('error', 'O exercício não pôde ser publicado porque sua situação ou moderação mudou. Revise os dados e tente novamente.');
+      View::redirect("/teacher/exercises/{$id}");
+    }
+
     AuditService::record('teacher.exercise.activate', 'exercise', (int) $id, [
       'turma_ids' => array_keys($publicationConfigs),
       'publication' => $publicationConfigs,
@@ -403,6 +411,11 @@ class ExerciseController
       }
 
       $session->flash('error', $message);
+      View::redirect('/teacher/exercises/' . $exercise['id']);
+    }
+
+    if ($this->questions->hasBlockedByExercise((int) $exercise['id'])) {
+      $session->flash('error', 'Este exercício possui questão bloqueada pela administração e não pode ser publicado.');
       View::redirect('/teacher/exercises/' . $exercise['id']);
     }
 

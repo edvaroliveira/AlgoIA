@@ -9,6 +9,8 @@
 ## Execution & Validation (Highest Priority)
 1. **[2026-06-10] Use the repository test runners**
    Do instead: run `php bin/run_tests.php` first, then use the DB and schema runners when their dependencies are available.
+2. **[2026-06-10] Validate clean installs against the current runtime schema**
+   Do instead: whenever adding an incremental migration, also update `001_create_tables.sql` and verify it contains every column and index required by current code.
 
 ## Shell & Command Reliability
 1. **[2026-06-10] Inspect this dependency-free PHP app with native tooling**
