@@ -52,10 +52,9 @@ class AttemptController
 
     $exercise    = $this->exercises->applyPublicationContext($exercise, $publication);
     $turmaId     = (int) $publication['turma_id'];
-    $maxAttempts = (int) $exercise['max_attempts'];
 
     try {
-      $attemptId = (new AttemptStartService())->start($studentId, (int) $id, $turmaId, $maxAttempts);
+      $attemptId = (new AttemptStartService())->start($studentId, (int) $id, $turmaId);
     } catch (\RuntimeException) {
       global $session;
       $session->flash('error', 'Você atingiu o número máximo de tentativas.');
