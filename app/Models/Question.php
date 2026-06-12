@@ -16,6 +16,16 @@ class Question extends Model
     );
   }
 
+  public function findActiveByExercise(int $exerciseId): array
+  {
+    return $this->db->fetchAll(
+      "SELECT * FROM questions
+             WHERE exercise_id = ? AND admin_review_status <> 'blocked'
+             ORDER BY order_index, id",
+      [$exerciseId]
+    );
+  }
+
   public function create(
     int    $exerciseId,
     string $text,

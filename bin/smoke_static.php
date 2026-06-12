@@ -34,6 +34,7 @@ $checks = [
       "st.status = 'active'",
       "e.status = 'active'",
       "blocked_q.admin_review_status = 'blocked'",
+      'findActiveByExercise',
     ],
   ],
   [
@@ -69,6 +70,7 @@ $checks = [
       'markCompletedForAttempt',
       'statusesForAttempts',
       'adminRequeue',
+      'locked_at = NULL',
     ],
     'mustNotContain' => [
       'worker_id IS NULL OR worker_id',
@@ -81,6 +83,26 @@ $checks = [
       'assertLease',
       'Lease do job de correção foi perdido.',
       'canonicalScore',
+    ],
+  ],
+  [
+    'file' => 'app/Services/GradingJobProcessor.php',
+    'mustContain' => [
+      'renewLease',
+      'gradeSubmittedAttempt',
+    ],
+  ],
+  [
+    'file' => 'app/Models/Answer.php',
+    'mustContain' => [
+      "admin_review_status <> 'blocked'",
+    ],
+  ],
+  [
+    'file' => 'app/Models/Question.php',
+    'mustContain' => [
+      'findActiveByExercise',
+      "admin_review_status <> 'blocked'",
     ],
   ],
   [
