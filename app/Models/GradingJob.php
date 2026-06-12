@@ -261,6 +261,39 @@ class GradingJob extends Model
     }
   }
 
+  public function adminRequeue(int $attemptId): string
+  {
+    // If job is currently being processed by a worker, refuse to steal it.
+    $job = $this->db->fetchOne(
+      "SELECT id, status FROM grading_jobs WHERE attempt_id = ? LIMIT 1",
+      [$attemptId]
+    );
+
+    if ($job && (string) ($job['status'] ?? '') === self::STATUS_PROCESSING) {
+      return 'already_processing';
+    }
+
+    // Force-reset to queued regardless of current state.
+    $rows = $this->db->execute(
+      "UPDATE grading_jobs
+             SET status       = ?,
+                 available_at = NOW(),
+                 attempts     = 0,
+                 last_error   = NULL,
+                 worker_id    = NULL,
+                 locked_at    = NULL
+             WHERE attempt_id = ?",
+      [self::STATUS_QUEUED, $attemptId]
+    );
+
+    if ($rows === 0) {
+      // No job exists yet — create it.
+      $this->enqueueAttempt($attemptId);
+    }
+
+    return 'queued';
+  }
+
   public function retryExhausted(int $jobId): bool
   {
     $rows = $this->db->execute(

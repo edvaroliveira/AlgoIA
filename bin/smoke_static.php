@@ -16,11 +16,13 @@ $checks = [
     'file' => 'app/Controllers/AttemptController.php',
     'mustContain' => [
       'submit_failed',
-      'markCompletedForAttempt',
+      'adminRequeue',
       'AttemptSubmissionService',
     ],
     'mustNotContain' => [
-      'gradeSubmittedAttempt((int) $id)',
+      'gradeSubmittedAttempt',
+      'AttemptGradingService',
+      'markCompletedForAttempt',
     ],
   ],
   [
@@ -47,6 +49,7 @@ $checks = [
       'recoverStaleProcessing',
       'markCompletedForAttempt',
       'statusesForAttempts',
+      'adminRequeue',
     ],
   ],
   [
