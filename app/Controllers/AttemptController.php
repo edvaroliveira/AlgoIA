@@ -9,7 +9,6 @@ use App\Models\Question;
 use App\Models\Attempt;
 use App\Models\Answer;
 use App\Models\GradingJob;
-use App\Services\AttemptGradingService;
 use App\Services\AttemptStartService;
 use App\Services\AttemptSubmissionService;
 use App\Services\AuditService;
@@ -53,13 +52,15 @@ class AttemptController
 
     $exercise    = $this->exercises->applyPublicationContext($exercise, $publication);
     $turmaId     = (int) $publication['turma_id'];
-    $maxAttempts = (int) $exercise['max_attempts'];
 
     try {
-      $attemptId = (new AttemptStartService())->start($studentId, (int) $id, $turmaId, $maxAttempts);
-    } catch (\RuntimeException) {
+      $attemptId = (new AttemptStartService())->start($studentId, (int) $id, $turmaId);
+    } catch (\RuntimeException $e) {
       global $session;
-      $session->flash('error', 'Você atingiu o número máximo de tentativas.');
+      $msg = str_contains($e->getMessage(), 'Publicação') || str_contains($e->getMessage(), 'matrícula')
+        ? 'Este exercício não está mais disponível para respostas.'
+        : 'Você atingiu o número máximo de tentativas.';
+      $session->flash('error', $msg);
       View::redirect("/student/exercises/{$id}");
       return;
     }
@@ -122,33 +123,34 @@ class AttemptController
 
     $this->ensureAttemptIsOpen($attempt, $studentId);
 
-    $gradingStatus = 'queued';
+    global $session;
 
     try {
-      $gradingStatus = (new AttemptSubmissionService())->submit((int) $id, $studentId, $_POST);
+      $result = (new AttemptSubmissionService())->submit((int) $id, $studentId, $_POST);
     } catch (\Throwable $e) {
-      $gradingStatus = 'queue_unavailable';
       error_log("Attempt submission failed for attempt {$id}: " . $e->getMessage());
-      AuditService::record('student.attempt.grading_enqueue_failed', 'attempt', (int) $id, [
+      AuditService::record('student.attempt.submit_failed', 'attempt', (int) $id, [
         'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
         'student_id'  => (int) ($attempt['student_id']  ?? 0),
         'error'       => $e->getMessage(),
       ]);
+      $session->flash('error', 'Ocorreu um erro ao enviar sua tentativa. Tente novamente.');
+      View::redirect("/student/exercises/{$attempt['exercise_id']}");
+      return;
     }
 
-    AuditService::record('student.attempt.submitted', 'attempt', (int) $id, [
-      'exercise_id'    => (int) ($attempt['exercise_id'] ?? 0),
-      'student_id'     => (int) ($attempt['student_id']  ?? 0),
-      'grading_status' => $gradingStatus,
-    ]);
+    if ($result === 'submitted') {
+      AuditService::record('student.attempt.submitted', 'attempt', (int) $id, [
+        'exercise_id'    => (int) ($attempt['exercise_id'] ?? 0),
+        'student_id'     => (int) ($attempt['student_id']  ?? 0),
+        'grading_status' => 'queued',
+      ]);
+      $session->flash('success', 'Tentativa enviada. A correção automática foi colocada na fila.');
+    } else {
+      // 'already_submitted': idempotent repeat — no new audit event
+      $session->flash('success', 'Tentativa já enviada anteriormente.');
+    }
 
-    global $session;
-    $session->flash(
-      $gradingStatus === 'queued' ? 'success' : 'error',
-      $gradingStatus === 'queued'
-        ? 'Tentativa enviada. A correção automática foi colocada na fila.'
-        : 'Tentativa enviada. A fila automática está indisponível e a correção ficou pendente para reprocessamento.'
-    );
     View::redirect("/student/exercises/{$attempt['exercise_id']}");
   }
 
@@ -313,27 +315,27 @@ class AttemptController
     if (!$attempt || (string) ($attempt['status'] ?? '') !== 'submitted') {
       $session->flash('error', 'Tentativa pendente de correção não encontrada.');
       View::redirect($this->safeReturnPath($fallbackPath));
+      return;
     }
 
-    try {
-      $score = (new AttemptGradingService())->gradeSubmittedAttempt($attemptId);
-      (new GradingJob())->markCompletedForAttempt($attemptId);
-      AuditService::record($auditAction, 'attempt', $attemptId, [
+    $result = (new GradingJob())->adminRequeue($attemptId);
+
+    if ($result === 'already_processing') {
+      AuditService::record($auditAction . '.skipped', 'attempt', $attemptId, [
         'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
-        'student_id' => (int) ($attempt['student_id'] ?? 0),
-        'score' => $score,
+        'student_id'  => (int) ($attempt['student_id']  ?? 0),
+        'reason'      => 'worker_active',
       ]);
-      $session->flash('success', 'Tentativa reprocessada com sucesso.');
-    } catch (\Throwable $e) {
-      error_log("Attempt regrade failed for attempt {$attemptId}: " . $e->getMessage());
-      AuditService::record($auditAction . '.failed', 'attempt', $attemptId, [
-        'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
-        'student_id' => (int) ($attempt['student_id'] ?? 0),
-        'error' => $e->getMessage(),
-      ]);
-      $session->flash('error', 'Não foi possível reprocessar a tentativa. Ela permanece pendente.');
+      $session->flash('error', 'A correção já está em andamento. Aguarde a conclusão.');
+      View::redirect($this->safeReturnPath($fallbackPath));
+      return;
     }
 
+    AuditService::record($auditAction, 'attempt', $attemptId, [
+      'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
+      'student_id'  => (int) ($attempt['student_id']  ?? 0),
+    ]);
+    $session->flash('success', 'Tentativa colocada em reprocessamento. A correção será concluída em breve.');
     View::redirect($this->safeReturnPath($fallbackPath));
   }
 
