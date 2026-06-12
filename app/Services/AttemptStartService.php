@@ -21,15 +21,14 @@ class AttemptStartService
         [$studentId, $exerciseId, $turmaId]
       );
 
-      if ($inProgress) {
-        $db->commit();
-        return (int) $inProgress['id'];
-      }
-
       // Lock and re-fetch the publication to get current max_attempts and validate the window.
       $pub = $db->fetchOne(
         "SELECT et.max_attempts, et.closes_at
                FROM exercise_turmas et
+               JOIN exercises e
+                 ON e.id = et.exercise_id
+                AND e.status = 'active'
+                AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
                JOIN student_turma st
                  ON st.turma_id = et.turma_id
                 AND st.student_id = ?
@@ -38,6 +37,11 @@ class AttemptStartService
                  AND et.turma_id = ?
                  AND et.opens_at <= NOW()
                  AND et.closes_at >= NOW()
+                 AND NOT EXISTS (
+                   SELECT 1 FROM questions blocked_q
+                   WHERE blocked_q.exercise_id = et.exercise_id
+                     AND blocked_q.admin_review_status = 'blocked'
+                 )
                FOR UPDATE",
         [$studentId, $exerciseId, $turmaId]
       );
@@ -45,6 +49,11 @@ class AttemptStartService
       if (!$pub) {
         $db->rollback();
         throw new \RuntimeException('Publicação encerrada ou matrícula inativa.');
+      }
+
+      if ($inProgress) {
+        $db->commit();
+        return (int) $inProgress['id'];
       }
 
       $maxAttempts = (int) $pub['max_attempts'];

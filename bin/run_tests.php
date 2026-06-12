@@ -108,6 +108,14 @@ same('provider_unavailable', $ec->invoke($gjp, new \RuntimeException('HTTP 429 r
 same('invalid_response', $ec->invoke($gjp, new \RuntimeException('Resposta em formato inesperado (JSON)')), 'erro: json → invalid_response');
 same('unknown', $ec->invoke($gjp, new \RuntimeException('algo totalmente diferente')), 'erro: sem match → unknown');
 
+// ── AP-04: precisão canônica da nota ────────────────────────────────────────
+$gradingService = (new ReflectionClass(\App\Services\AttemptGradingService::class))->newInstanceWithoutConstructor();
+$canonicalScore = new ReflectionMethod($gradingService, 'canonicalScore');
+same(7.3, $canonicalScore->invoke($gradingService, 7.26), 'AP-04: nota é arredondada para uma casa decimal');
+same(7.2, $canonicalScore->invoke($gradingService, 7.24), 'AP-04: nota abaixo do meio arredonda para baixo');
+same(10.0, $canonicalScore->invoke($gradingService, 9.96), 'AP-04: nota próxima do máximo mantém precisão canônica');
+same(12.3, $canonicalScore->invoke($gradingService, 4.1 + 4.1 + 4.1), 'AP-04: total elimina ruído de ponto flutuante');
+
 // ── OpenAIService::buildInjectionLogSummary — redação por truncamento ────────
 $oai = new \App\Services\OpenAIService();
 $bls = new ReflectionMethod($oai, 'buildInjectionLogSummary');

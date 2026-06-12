@@ -39,7 +39,10 @@ class GradingJobProcessor
         return true;
       }
 
-      $score = (new AttemptGradingService())->gradeSubmittedAttempt($attemptId);
+      $score = (new AttemptGradingService())->gradeSubmittedAttempt(
+        $attemptId,
+        static fn(): bool => $jobs->renewLease($jobId, $workerId)
+      );
       $jobs->markCompleted($jobId, $workerId);
       error_log("Grading job {$jobId} completed for attempt {$attemptId} with score {$score}.");
       return true;

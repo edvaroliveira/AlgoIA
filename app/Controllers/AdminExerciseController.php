@@ -162,16 +162,28 @@ class AdminExerciseController extends AdminBaseController
     $status = $this->sanitizeReviewStatus(Request::str('admin_review_status'));
     $note   = $this->sanitizeReviewNote(Request::text('admin_review_note'));
 
-    $this->questions->updateAdminReview($questionId, $status, $note, Auth::id());
+    $updated = $this->questions->updateAdminReviewAndProtectExercise($questionId, $status, $note, Auth::id());
+    if (!$updated) {
+      $session->flash('error', 'Questão não encontrada durante a atualização.');
+      View::redirect('/admin/exercises/' . $exerciseId);
+    }
+
+    $publicationsClosed = $status === Exercise::REVIEW_BLOCKED
+      && ($exercise['status'] ?? '') === Exercise::STATUS_ACTIVE;
     AuditService::record('admin.question.review_update', 'exercise', $exerciseId, [
       'question_id'            => $questionId,
       'exercise_title'         => $exercise['title']               ?? null,
       'previous_review_status' => $question['admin_review_status'] ?? Exercise::REVIEW_APPROVED,
       'new_review_status'      => $status,
       'review_note'            => $note,
+      'publications_closed'    => $publicationsClosed,
     ]);
 
-    $session->flash('success', 'Moderação da questão atualizada com sucesso.');
+    $message = 'Moderação da questão atualizada com sucesso.';
+    if ($publicationsClosed) {
+      $message .= ' As publicações do exercício foram encerradas.';
+    }
+    $session->flash('success', $message);
     View::redirect('/admin/exercises/' . $exerciseId);
   }
 
