@@ -263,17 +263,8 @@ class GradingJob extends Model
 
   public function adminRequeue(int $attemptId): string
   {
-    // If job is currently being processed by a worker, refuse to steal it.
-    $job = $this->db->fetchOne(
-      "SELECT id, status FROM grading_jobs WHERE attempt_id = ? LIMIT 1",
-      [$attemptId]
-    );
-
-    if ($job && (string) ($job['status'] ?? '') === self::STATUS_PROCESSING) {
-      return 'already_processing';
-    }
-
-    // Force-reset to queued regardless of current state.
+    // Atomic UPDATE: skip the job if a worker is actively processing it,
+    // eliminating the TOCTOU race between SELECT and UPDATE.
     $rows = $this->db->execute(
       "UPDATE grading_jobs
              SET status       = ?,
@@ -282,15 +273,27 @@ class GradingJob extends Model
                  last_error   = NULL,
                  worker_id    = NULL,
                  locked_at    = NULL
-             WHERE attempt_id = ?",
-      [self::STATUS_QUEUED, $attemptId]
+             WHERE attempt_id = ?
+               AND status != ?",
+      [self::STATUS_QUEUED, $attemptId, self::STATUS_PROCESSING]
     );
 
-    if ($rows === 0) {
-      // No job exists yet — create it.
-      $this->enqueueAttempt($attemptId);
+    if ($rows > 0) {
+      return 'queued';
     }
 
+    // 0 rows: either no job exists, or a worker is actively processing it.
+    $job = $this->db->fetchOne(
+      "SELECT status FROM grading_jobs WHERE attempt_id = ? LIMIT 1",
+      [$attemptId]
+    );
+
+    if ($job && (string) ($job['status'] ?? '') === self::STATUS_PROCESSING) {
+      return 'already_processing';
+    }
+
+    // No job exists yet — create it.
+    $this->enqueueAttempt($attemptId);
     return 'queued';
   }
 

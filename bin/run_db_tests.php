@@ -277,6 +277,73 @@ same('failed', (string)($afterRecover['status'] ?? ''), 'RP-13: job travado no m
 check(array_key_exists('worker_id', $afterRecover) && $afterRecover['worker_id'] === null, 'RP-13: worker_id limpo após recovery');
 check(array_key_exists('locked_at', $afterRecover) && $afterRecover['locked_at'] === null, 'RP-13: locked_at limpo após recovery');
 
+// ── RP-12: GradingJob::adminRequeue ──────────────────────────────────────────
+// Mirrors the atomic adminRequeue logic using SQLite-compatible datetime('now')
+// instead of MySQL's NOW(), following the same pattern as RP-05 and RP-13.
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS grading_jobs_rp12 (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    attempt_id INTEGER NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'queued',
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT NULL,
+    available_at TEXT NOT NULL,
+    locked_at TEXT NULL,
+    worker_id TEXT NULL,
+    completed_at TEXT NULL
+  )
+");
+
+// Mirror of adminRequeue using SQLite datetime('now') instead of MySQL NOW().
+function adminRequeueRp12(PDO $db, int $attemptId): string {
+  $stmt = $db->prepare(
+    "UPDATE grading_jobs_rp12
+     SET status       = 'queued',
+         available_at = datetime('now'),
+         attempts     = 0,
+         last_error   = NULL,
+         worker_id    = NULL,
+         locked_at    = NULL
+     WHERE attempt_id = ?
+       AND status != 'processing'"
+  );
+  $stmt->execute([$attemptId]);
+
+  if ($stmt->rowCount() > 0) {
+    return 'queued';
+  }
+
+  $row = $db->query("SELECT status FROM grading_jobs_rp12 WHERE attempt_id = {$attemptId} LIMIT 1")->fetch();
+  if ($row && (string)($row['status'] ?? '') === 'processing') {
+    return 'already_processing';
+  }
+
+  return 'queued'; // no-job branch (enqueueAttempt) not exercised here
+}
+
+// Case 1: job in 'failed' state → adminRequeue resets it → returns 'queued'
+$pdo->exec("INSERT INTO grading_jobs_rp12 (attempt_id, status, attempts, available_at, worker_id)
+            VALUES (101, 'failed', 2, datetime('now'), 'worker-old')");
+
+$resultRp12Case1 = adminRequeueRp12($pdo, 101);
+same('queued', $resultRp12Case1, 'RP-12: adminRequeue de job failed retorna queued');
+
+$rowRp12Case1 = $pdo->query("SELECT status, attempts, worker_id FROM grading_jobs_rp12 WHERE attempt_id=101")->fetch();
+same('queued', (string)($rowRp12Case1['status'] ?? ''), 'RP-12: status resetado para queued');
+same(0, (int)($rowRp12Case1['attempts'] ?? -1), 'RP-12: attempts zerado');
+check($rowRp12Case1['worker_id'] === null, 'RP-12: worker_id limpo após requeue');
+
+// Case 2: job in 'processing' state → atomic WHERE blocks update → returns 'already_processing'
+$pdo->exec("INSERT INTO grading_jobs_rp12 (attempt_id, status, attempts, available_at, worker_id)
+            VALUES (102, 'processing', 1, datetime('now'), 'worker-active')");
+
+$resultRp12Case2 = adminRequeueRp12($pdo, 102);
+same('already_processing', $resultRp12Case2, 'RP-12: adminRequeue de job processing retorna already_processing');
+
+$rowRp12Case2 = $pdo->query("SELECT status, worker_id FROM grading_jobs_rp12 WHERE attempt_id=102")->fetch();
+same('processing', (string)($rowRp12Case2['status'] ?? ''), 'RP-12: job processing permanece inalterado');
+same('worker-active', (string)($rowRp12Case2['worker_id'] ?? ''), 'RP-12: worker_id não foi limpo');
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];
