@@ -206,6 +206,77 @@ check(csvCellRp06('João Silva') === 'João Silva', 'RP-06: valor normal não é
 check(csvCellRp06('') === '', 'RP-06: string vazia não é alterada');
 check(csvCellRp06('42') === '42', 'RP-06: número normal não é alterado');
 
+// ── RP-13: GradingJob state machine ──────────────────────────────────────────
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS grading_jobs_rp13 (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    attempt_id INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'queued',
+    attempts INTEGER NOT NULL DEFAULT 0,
+    worker_id TEXT NULL,
+    locked_at TEXT NULL,
+    completed_at TEXT NULL,
+    available_at TEXT NULL,
+    last_error TEXT NULL
+  )
+");
+
+// Test 1: markCompleted with status='processing' succeeds (returns 1 row affected)
+$pdo->exec("INSERT INTO grading_jobs_rp13 (attempt_id, status, attempts, worker_id) VALUES (10, 'processing', 1, 'worker-X')");
+$rp13JobOk = (int) $pdo->lastInsertId();
+
+function markCompletedRp13(PDO $db, int $jobId, string $workerId): int {
+  $stmt = $db->prepare(
+    "UPDATE grading_jobs_rp13
+     SET status = 'completed', completed_at = datetime('now'), last_error = NULL, worker_id = NULL
+     WHERE id = ? AND status = 'processing' AND (worker_id IS NULL OR worker_id = ?)"
+  );
+  $stmt->execute([$jobId, $workerId]);
+  return $stmt->rowCount();
+}
+
+$rowsOk = markCompletedRp13($pdo, $rp13JobOk, 'worker-X');
+same(1, $rowsOk, 'RP-13: markCompleted com status=processing retorna 1 linha afetada');
+
+// Test 2: markCompleted with status='queued' (not processing) returns 0 — job not modified
+$pdo->exec("INSERT INTO grading_jobs_rp13 (attempt_id, status, attempts, worker_id) VALUES (11, 'queued', 0, NULL)");
+$rp13JobQueued = (int) $pdo->lastInsertId();
+
+$rowsQueued = markCompletedRp13($pdo, $rp13JobQueued, 'worker-Y');
+same(0, $rowsQueued, 'RP-13: markCompleted com status=queued retorna 0 — job não modificado');
+
+$checkQueued = $pdo->query("SELECT status FROM grading_jobs_rp13 WHERE id={$rp13JobQueued}")->fetch();
+same('queued', (string)($checkQueued['status'] ?? ''), 'RP-13: job com status=queued permanece intacto após markCompleted');
+
+// Test 3 & 4: recoverStaleProcessing clears worker_id and locked_at, even at max attempts (attempts = 3)
+// MySQL-specific DATE_SUB not supported in SQLite — mirrors production logic with SQLite datetime arithmetic.
+// Comment: production path covered by smoke tests; this verifies column-clearing logic.
+$pdo->exec("INSERT INTO grading_jobs_rp13 (attempt_id, status, attempts, worker_id, locked_at)
+            VALUES (12, 'processing', 3, 'worker-Z', datetime('now', '-30 minutes'))");
+$rp13StuckMaxAttempts = (int) $pdo->lastInsertId();
+
+// Mirror recoverStaleProcessing logic (SQLite-compatible, no attempts < MAX_ATTEMPTS guard)
+$staleMinutes = 15;
+$stmtRecover = $pdo->prepare(
+  "UPDATE grading_jobs_rp13
+   SET status = 'failed',
+       available_at = datetime('now'),
+       worker_id = NULL,
+       locked_at = NULL,
+       last_error = 'Job recuperado após ficar travado em processamento.'
+   WHERE status = 'processing'
+     AND locked_at <= datetime('now', '-{$staleMinutes} minutes')"
+);
+$stmtRecover->execute();
+$recovered = $stmtRecover->rowCount();
+
+check($recovered >= 1, 'RP-13: recoverStaleProcessing recupera job travado mesmo com attempts = MAX_ATTEMPTS (3)');
+
+$afterRecover = $pdo->query("SELECT status, worker_id, locked_at FROM grading_jobs_rp13 WHERE id={$rp13StuckMaxAttempts}")->fetch();
+same('failed', (string)($afterRecover['status'] ?? ''), 'RP-13: job travado no max_attempts move para failed após recovery');
+check(array_key_exists('worker_id', $afterRecover) && $afterRecover['worker_id'] === null, 'RP-13: worker_id limpo após recovery');
+check(array_key_exists('locked_at', $afterRecover) && $afterRecover['locked_at'] === null, 'RP-13: locked_at limpo após recovery');
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];

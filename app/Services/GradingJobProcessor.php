@@ -32,6 +32,13 @@ class GradingJobProcessor
         return true;
       }
 
+      // Renew lease immediately before slow operation to prevent stale recovery during grading.
+      if (!$jobs->renewLease($jobId, $workerId)) {
+        // Job was stolen by recovery between claimNext() and here. Abandon.
+        error_log("Grading job {$jobId}: lease lost before grading started, skipping.");
+        return true;
+      }
+
       $score = (new AttemptGradingService())->gradeSubmittedAttempt($attemptId);
       $jobs->markCompleted($jobId, $workerId);
       error_log("Grading job {$jobId} completed for attempt {$attemptId} with score {$score}.");
