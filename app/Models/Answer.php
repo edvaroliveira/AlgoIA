@@ -56,6 +56,7 @@ class Answer extends Model
                     q.order_index
              FROM attempts att
              JOIN questions q ON q.exercise_id = att.exercise_id
+                              AND q.admin_review_status <> 'blocked'
              LEFT JOIN answers ans ON ans.attempt_id = att.id AND ans.question_id = q.id
              WHERE att.id = ?
              ORDER BY q.order_index, q.id",

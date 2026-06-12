@@ -82,7 +82,7 @@ class AttemptSubmissionService
         throw new \RuntimeException('A publicação, matrícula ou moderação não permite mais o envio desta tentativa.');
       }
 
-      $questions = (new Question())->findByExercise((int) $attempt['exercise_id']);
+      $questions = (new Question())->findActiveByExercise((int) $attempt['exercise_id']);
       $answers   = new Answer();
 
       foreach ($questions as $q) {
