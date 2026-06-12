@@ -47,6 +47,24 @@ class AttemptSubmissionService
         throw new \RuntimeException('Tentativa inválida ou já enviada.');
       }
 
+      // Validate the publication window is still open inside the transaction.
+      if (!empty($attempt['turma_id'])) {
+        $pubOpen = $db->fetchOne(
+          "SELECT et.turma_id
+                 FROM exercise_turmas et
+                 WHERE et.exercise_id = ?
+                   AND et.turma_id = ?
+                   AND et.closes_at >= NOW()
+                 FOR UPDATE",
+          [(int) $attempt['exercise_id'], (int) $attempt['turma_id']]
+        );
+
+        if (!$pubOpen) {
+          $db->rollback();
+          throw new \RuntimeException('O prazo desta publicação encerrou. Não é possível enviar a tentativa.');
+        }
+      }
+
       $questions = (new Question())->findByExercise((int) $attempt['exercise_id']);
       $answers   = new Answer();
 

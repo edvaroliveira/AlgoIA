@@ -180,6 +180,13 @@ $validServiceResults = ['submitted', 'already_submitted'];
 check(!in_array('queued', $validServiceResults, true), 'RP-09: "queued" não é mais valor de retorno válido do serviço');
 check(!in_array('queue_unavailable', $validServiceResults, true), 'RP-09: "queue_unavailable" não é mais conceito do fluxo');
 
+// ── RP-10: nota sobre testes de concorrência de publicação ───────────────────
+// A revalidação da publicação dentro das transações (AttemptStartService e
+// AttemptSubmissionService) usa SELECT ... FOR UPDATE em exercise_turmas, que
+// requer um banco MySQL real com suporte a transações e gap locks.
+// O teste completo de race condition (admin fecha publicação entre pre-fetch e
+// commit) requer uma instância MySQL ao vivo e não é coberto por SQLite aqui.
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];

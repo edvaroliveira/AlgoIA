@@ -8,7 +8,7 @@ use Core\Database;
 
 class AttemptStartService
 {
-  public function start(int $studentId, int $exerciseId, int $turmaId, int $maxAttempts): int
+  public function start(int $studentId, int $exerciseId, int $turmaId): int
   {
     $db = Database::getInstance();
     $db->beginTransaction();
@@ -25,6 +25,29 @@ class AttemptStartService
         $db->commit();
         return (int) $inProgress['id'];
       }
+
+      // Lock and re-fetch the publication to get current max_attempts and validate the window.
+      $pub = $db->fetchOne(
+        "SELECT et.max_attempts, et.closes_at
+               FROM exercise_turmas et
+               JOIN student_turma st
+                 ON st.turma_id = et.turma_id
+                AND st.student_id = ?
+                AND st.status = 'active'
+               WHERE et.exercise_id = ?
+                 AND et.turma_id = ?
+                 AND et.opens_at <= NOW()
+                 AND et.closes_at >= NOW()
+               FOR UPDATE",
+        [$studentId, $exerciseId, $turmaId]
+      );
+
+      if (!$pub) {
+        $db->rollback();
+        throw new \RuntimeException('Publicação encerrada ou matrícula inativa.');
+      }
+
+      $maxAttempts = (int) $pub['max_attempts'];
 
       // FOR UPDATE here locks visited rows; primary protection against phantom inserts
       // comes from the gap lock acquired by the in-progress SELECT above (requires
