@@ -9,7 +9,6 @@ use App\Models\Question;
 use App\Models\Attempt;
 use App\Models\Answer;
 use App\Models\GradingJob;
-use App\Services\AttemptGradingService;
 use App\Services\AttemptStartService;
 use App\Services\AttemptSubmissionService;
 use App\Services\AuditService;
@@ -314,27 +313,27 @@ class AttemptController
     if (!$attempt || (string) ($attempt['status'] ?? '') !== 'submitted') {
       $session->flash('error', 'Tentativa pendente de correção não encontrada.');
       View::redirect($this->safeReturnPath($fallbackPath));
+      return;
     }
 
-    try {
-      $score = (new AttemptGradingService())->gradeSubmittedAttempt($attemptId);
-      (new GradingJob())->markCompletedForAttempt($attemptId);
-      AuditService::record($auditAction, 'attempt', $attemptId, [
+    $result = (new GradingJob())->adminRequeue($attemptId);
+
+    if ($result === 'already_processing') {
+      AuditService::record($auditAction . '.skipped', 'attempt', $attemptId, [
         'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
-        'student_id' => (int) ($attempt['student_id'] ?? 0),
-        'score' => $score,
+        'student_id'  => (int) ($attempt['student_id']  ?? 0),
+        'reason'      => 'worker_active',
       ]);
-      $session->flash('success', 'Tentativa reprocessada com sucesso.');
-    } catch (\Throwable $e) {
-      error_log("Attempt regrade failed for attempt {$attemptId}: " . $e->getMessage());
-      AuditService::record($auditAction . '.failed', 'attempt', $attemptId, [
-        'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
-        'student_id' => (int) ($attempt['student_id'] ?? 0),
-        'error' => $e->getMessage(),
-      ]);
-      $session->flash('error', 'Não foi possível reprocessar a tentativa. Ela permanece pendente.');
+      $session->flash('error', 'A correção já está em andamento. Aguarde a conclusão.');
+      View::redirect($this->safeReturnPath($fallbackPath));
+      return;
     }
 
+    AuditService::record($auditAction, 'attempt', $attemptId, [
+      'exercise_id' => (int) ($attempt['exercise_id'] ?? 0),
+      'student_id'  => (int) ($attempt['student_id']  ?? 0),
+    ]);
+    $session->flash('success', 'Tentativa colocada em reprocessamento. A correção será concluída em breve.');
     View::redirect($this->safeReturnPath($fallbackPath));
   }
 
