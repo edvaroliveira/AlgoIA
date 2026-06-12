@@ -152,6 +152,23 @@ check($exModel->canDelete(['id' => $rp01DraftId, 'status' => 'draft']), 'RP-01: 
 check(!$exModel->canDelete(['id' => $rp01ActiveId, 'status' => 'active']), 'RP-01: exercício ativo não pode ser excluído');
 check(!$exModel->canDelete(['id' => $rp01DraftWithAttemptId, 'status' => 'draft']), 'RP-01: rascunho com tentativa não pode ser excluído');
 
+// ── AP-02: bloqueio derivado por questão (models reais, SQLite) ──────────────
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS questions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    exercise_id INTEGER NOT NULL,
+    admin_review_status TEXT NOT NULL DEFAULT 'approved'
+  )
+");
+
+$questionModel = new \App\Models\Question();
+check(!$questionModel->hasBlockedByExercise($rp01DraftId), 'AP-02: exercício sem questão bloqueada permanece liberado');
+check($exModel->canPublish(['id' => $rp01DraftId, 'status' => 'ready']), 'AP-02: exercício ready sem bloqueio pode publicar');
+
+$pdo->exec("INSERT INTO questions (exercise_id, admin_review_status) VALUES ({$rp01DraftId}, 'blocked')");
+check($questionModel->hasBlockedByExercise($rp01DraftId), 'AP-02: detecta questão bloqueada pela implementação real');
+check(!$exModel->canPublish(['id' => $rp01DraftId, 'status' => 'ready']), 'AP-02: questão bloqueada impede publicação');
+
 // ── RP-05: worker_id protection (estado-máquina, sem MySQL FOR UPDATE) ────────
 $pdo->exec("
   CREATE TABLE IF NOT EXISTS grading_jobs_rp05 (
@@ -171,7 +188,7 @@ $jobId = (int) $pdo->lastInsertId();
 function markCompletedRp05(PDO $db, int $jobId, string $workerId): int {
   $stmt = $db->prepare(
     "UPDATE grading_jobs_rp05 SET status='completed', worker_id=NULL
-     WHERE id=? AND (worker_id IS NULL OR worker_id=?)"
+     WHERE id=? AND status='processing' AND worker_id=?"
   );
   $stmt->execute([$jobId, $workerId]);
   return $stmt->rowCount();
@@ -222,7 +239,7 @@ function markCompletedRp13(PDO $db, int $jobId, string $workerId): int {
   $stmt = $db->prepare(
     "UPDATE grading_jobs_rp13
      SET status = 'completed', completed_at = datetime('now'), last_error = NULL, worker_id = NULL
-     WHERE id = ? AND status = 'processing' AND (worker_id IS NULL OR worker_id = ?)"
+     WHERE id = ? AND status = 'processing' AND worker_id = ?"
   );
   $stmt->execute([$jobId, $workerId]);
   return $stmt->rowCount();
@@ -240,6 +257,23 @@ same(0, $rowsQueued, 'RP-13: markCompleted com status=queued retorna 0 — job n
 
 $checkQueued = $pdo->query("SELECT status FROM grading_jobs_rp13 WHERE id={$rp13JobQueued}")->fetch();
 same('queued', (string)($checkQueued['status'] ?? ''), 'RP-13: job com status=queued permanece intacto após markCompleted');
+
+// AP-03: worker atrasado nao pode falhar job sem ownership.
+$pdo->exec("INSERT INTO grading_jobs_rp13 (attempt_id, status, attempts, worker_id) VALUES (13, 'processing', 1, 'worker-current')");
+$ap03OwnedJob = (int) $pdo->lastInsertId();
+
+function markFailedAp03(PDO $db, int $jobId, string $workerId): int {
+  $stmt = $db->prepare(
+    "UPDATE grading_jobs_rp13
+     SET status = 'failed', worker_id = NULL, locked_at = NULL
+     WHERE id = ? AND status = 'processing' AND worker_id = ?"
+  );
+  $stmt->execute([$jobId, $workerId]);
+  return $stmt->rowCount();
+}
+
+same(0, markFailedAp03($pdo, $ap03OwnedJob, 'worker-old'), 'AP-03: worker antigo nao pode falhar job de outro worker');
+same(1, markFailedAp03($pdo, $ap03OwnedJob, 'worker-current'), 'AP-03: worker atual pode falhar o proprio job');
 
 // Test 3 & 4: recoverStaleProcessing clears worker_id and locked_at, even at max attempts (attempts = 3)
 // MySQL-specific DATE_SUB not supported in SQLite — mirrors production logic with SQLite datetime arithmetic.

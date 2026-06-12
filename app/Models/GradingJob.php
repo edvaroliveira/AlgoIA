@@ -90,8 +90,8 @@ class GradingJob extends Model
   {
     $rows = $this->db->execute(
       "UPDATE grading_jobs
-             SET status = ?, completed_at = NOW(), last_error = NULL, worker_id = NULL
-             WHERE id = ? AND status = ? AND (worker_id IS NULL OR worker_id = ?)",
+             SET status = ?, completed_at = NOW(), last_error = NULL, worker_id = NULL, locked_at = NULL
+             WHERE id = ? AND status = ? AND worker_id = ?",
       [self::STATUS_COMPLETED, $jobId, self::STATUS_PROCESSING, $workerId]
     );
 
@@ -110,7 +110,7 @@ class GradingJob extends Model
     );
   }
 
-  public function markFailed(int $jobId, string $error, int $delaySeconds = 300, string $workerId = ''): void
+  public function markFailed(int $jobId, string $error, int $delaySeconds, string $workerId): void
   {
     $safeDelay = max(60, $delaySeconds);
 
@@ -119,11 +119,10 @@ class GradingJob extends Model
              SET status      = ?,
                  available_at = DATE_ADD(NOW(), INTERVAL {$safeDelay} SECOND),
                  last_error  = ?,
-                 worker_id   = NULL
-             WHERE id = ? AND (worker_id IS NULL OR worker_id = ? OR ? = '')",
-             // OR ? = '' allows admin/manual callers (empty workerId) to fail any job;
-             // non-empty workerId callers are still guarded by the ownership check.
-      [self::STATUS_FAILED, mb_substr($error, 0, 2000), $jobId, $workerId, $workerId]
+                 worker_id   = NULL,
+                 locked_at   = NULL
+             WHERE id = ? AND status = ? AND worker_id = ?",
+      [self::STATUS_FAILED, mb_substr($error, 0, 2000), $jobId, self::STATUS_PROCESSING, $workerId]
     );
 
     if ($rows === 0) {

@@ -31,6 +31,25 @@ $checks = [
       'enqueueAttempt',
       'FOR UPDATE',
       'beginTransaction',
+      "st.status = 'active'",
+      "e.status = 'active'",
+      "blocked_q.admin_review_status = 'blocked'",
+    ],
+  ],
+  [
+    'file' => 'app/Models/Question.php',
+    'mustContain' => [
+      'updateAdminReviewAndProtectExercise',
+      'hasBlockedByExercise',
+      'UPDATE exercise_turmas',
+    ],
+  ],
+  [
+    'file' => 'app/Models/Exercise.php',
+    'mustContain' => [
+      'hasBlockedByExercise',
+      "blocked_q.admin_review_status = 'blocked'",
+      'Exercício não está liberado pela moderação para publicação.',
     ],
   ],
   [
@@ -50,6 +69,18 @@ $checks = [
       'markCompletedForAttempt',
       'statusesForAttempts',
       'adminRequeue',
+    ],
+    'mustNotContain' => [
+      'worker_id IS NULL OR worker_id',
+      "OR ? = ''",
+    ],
+  ],
+  [
+    'file' => 'app/Services/AttemptGradingService.php',
+    'mustContain' => [
+      'assertLease',
+      'Lease do job de correção foi perdido.',
+      'canonicalScore',
     ],
   ],
   [

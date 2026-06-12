@@ -59,7 +59,9 @@ class Exercise extends Model
 
   public function canPublish(array $exercise): bool
   {
-    return $this->isReady($exercise) && !$this->isBlockedForReview($exercise);
+    return $this->isReady($exercise)
+      && !$this->isBlockedForReview($exercise)
+      && !(new Question())->hasBlockedByExercise((int) ($exercise['id'] ?? 0));
   }
 
   public function isBlockedForReview(array $exercise): bool
@@ -358,6 +360,11 @@ class Exercise extends Model
              JOIN student_turma st ON st.turma_id = et.turma_id
              WHERE e.status = 'active'
                AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
+               AND NOT EXISTS (
+                 SELECT 1 FROM questions blocked_q
+                 WHERE blocked_q.exercise_id = e.id
+                   AND blocked_q.admin_review_status = 'blocked'
+               )
                AND st.student_id = ? AND st.status = 'active'
                AND et.opens_at <= NOW() AND et.closes_at >= NOW()
              GROUP BY e.id
@@ -384,6 +391,11 @@ class Exercise extends Model
              JOIN student_turma st ON st.turma_id = et.turma_id
              WHERE e.status = 'active'
                AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
+               AND NOT EXISTS (
+                 SELECT 1 FROM questions blocked_q
+                 WHERE blocked_q.exercise_id = e.id
+                   AND blocked_q.admin_review_status = 'blocked'
+               )
                AND st.student_id = ? AND st.status = 'active'
              GROUP BY e.id
              ORDER BY MAX(et.closes_at) DESC",
@@ -410,6 +422,11 @@ class Exercise extends Model
              WHERE e.id = ?
                AND e.status = 'active'
                AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
+               AND NOT EXISTS (
+                 SELECT 1 FROM questions blocked_q
+                 WHERE blocked_q.exercise_id = e.id
+                   AND blocked_q.admin_review_status = 'blocked'
+               )
                AND st.student_id = ?
                AND st.status = 'active'
              GROUP BY e.id",
@@ -428,6 +445,11 @@ class Exercise extends Model
              WHERE et.exercise_id = ?
                AND e.status = 'active'
                AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
+               AND NOT EXISTS (
+                 SELECT 1 FROM questions blocked_q
+                 WHERE blocked_q.exercise_id = e.id
+                   AND blocked_q.admin_review_status = 'blocked'
+               )
                AND st.student_id = ?
                AND st.status = 'active'
                AND et.opens_at <= NOW()
@@ -454,6 +476,11 @@ class Exercise extends Model
              WHERE et.exercise_id = ?
                AND e.status = 'active'
                AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
+               AND NOT EXISTS (
+                 SELECT 1 FROM questions blocked_q
+                 WHERE blocked_q.exercise_id = e.id
+                   AND blocked_q.admin_review_status = 'blocked'
+               )
                AND st.student_id = ?
                AND st.status = 'active'
              ORDER BY timing_rank ASC,
@@ -478,6 +505,11 @@ class Exercise extends Model
                AND et.turma_id = ?
                AND e.status = 'active'
                AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
+               AND NOT EXISTS (
+                 SELECT 1 FROM questions blocked_q
+                 WHERE blocked_q.exercise_id = e.id
+                   AND blocked_q.admin_review_status = 'blocked'
+               )
                AND st.student_id = ?
                AND st.status = 'active'
              LIMIT 1",
@@ -532,6 +564,26 @@ class Exercise extends Model
     $this->db->beginTransaction();
 
     try {
+      $publishable = $this->db->fetchOne(
+        "SELECT e.id
+               FROM exercises e
+               WHERE e.id = ?
+                 AND e.status = ?
+                 AND COALESCE(e.admin_review_status, 'approved') <> ?
+                 AND NOT EXISTS (
+                   SELECT 1 FROM questions blocked_q
+                   WHERE blocked_q.exercise_id = e.id
+                     AND blocked_q.admin_review_status = 'blocked'
+                 )
+               FOR UPDATE",
+        [$id, self::STATUS_READY, self::REVIEW_BLOCKED]
+      );
+
+      if (!$publishable) {
+        $this->db->rollback();
+        throw new \RuntimeException('Exercício não está liberado pela moderação para publicação.');
+      }
+
       $this->db->execute("DELETE FROM exercise_turmas WHERE exercise_id = ?", [$id]);
 
       foreach ($publicationConfigs as $turmaId => $config) {
@@ -586,6 +638,11 @@ class Exercise extends Model
              WHERE e.id = ?
                AND e.status = 'active'
                AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
+               AND NOT EXISTS (
+                 SELECT 1 FROM questions blocked_q
+                 WHERE blocked_q.exercise_id = e.id
+                   AND blocked_q.admin_review_status = 'blocked'
+               )
                AND st.student_id = ?
                AND st.status = 'active'
              LIMIT 1",
