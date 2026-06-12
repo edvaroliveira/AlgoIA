@@ -183,6 +183,19 @@ class AdminUserController extends AdminBaseController
       $errors[] = 'Não é possível alterar o último administrador ativo para um estado sem acesso administrativo ativo.';
     }
 
+    $currentRole = (string) ($user['role'] ?? '');
+    if ($currentRole !== $role) {
+      if ($currentRole === 'teacher' && $role !== 'teacher'
+          && $this->users->hasTeacherDependencies($userId)) {
+        $errors[] = 'Não é possível alterar o perfil: este professor possui turmas ou exercícios vinculados.';
+      }
+
+      if ($currentRole === 'student' && $role !== 'student'
+          && $this->users->hasStudentDependencies($userId)) {
+        $errors[] = 'Não é possível alterar o perfil: este aluno possui matrículas ou tentativas registradas.';
+      }
+    }
+
     if ($errors) {
       View::render('admin/users/edit', [
         'user'   => array_merge($user, [

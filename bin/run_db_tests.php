@@ -337,6 +337,86 @@ $rowRp12Case2 = $pdo->query("SELECT status, worker_id FROM grading_jobs_rp12 WHE
 same('processing', (string)($rowRp12Case2['status'] ?? ''), 'RP-12: job processing permanece inalterado');
 same('worker-active', (string)($rowRp12Case2['worker_id'] ?? ''), 'RP-12: worker_id não foi limpo');
 
+// ── RP-15: role change validation (hasTeacherDependencies / hasStudentDependencies) ─
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS turmas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    teacher_id INTEGER NOT NULL
+  )
+");
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS student_turma (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER NOT NULL
+  )
+");
+// Note: exercises and attempts tables were already created in the RP-01 block above.
+
+// Insert a teacher user (id will be captured) and a student user
+$pdo->exec("INSERT INTO users (name, email, avatar_path) VALUES ('Prof Silva', 'prof@school.com', NULL)");
+$rp15TeacherId = (int) $pdo->lastInsertId();
+
+$pdo->exec("INSERT INTO users (name, email, avatar_path) VALUES ('Aluno Joao', 'joao@school.com', NULL)");
+$rp15StudentId = (int) $pdo->lastInsertId();
+
+// Teacher WITH a turma
+$pdo->exec("INSERT INTO turmas (teacher_id) VALUES ({$rp15TeacherId})");
+
+// Student WITH an enrollment
+$pdo->exec("INSERT INTO student_turma (student_id) VALUES ({$rp15StudentId})");
+
+$rp15UserModel = new \App\Models\User();
+
+// Test 1: hasTeacherDependencies returns true when teacher has a turma
+check(
+  $rp15UserModel->hasTeacherDependencies($rp15TeacherId),
+  'RP-15: hasTeacherDependencies retorna true quando professor possui turma'
+);
+
+// Test 2: hasTeacherDependencies returns false for a user with no turmas/exercises
+$pdo->exec("INSERT INTO users (name, email, avatar_path) VALUES ('Prof Sem Turma', 'semturma@school.com', NULL)");
+$rp15TeacherNoDepsId = (int) $pdo->lastInsertId();
+
+check(
+  !$rp15UserModel->hasTeacherDependencies($rp15TeacherNoDepsId),
+  'RP-15: hasTeacherDependencies retorna false quando professor não possui turmas nem exercícios'
+);
+
+// Test 3: hasStudentDependencies returns true when student has an enrollment
+check(
+  $rp15UserModel->hasStudentDependencies($rp15StudentId),
+  'RP-15: hasStudentDependencies retorna true quando aluno possui matrícula'
+);
+
+// Test 4: hasStudentDependencies returns false for a user with no enrollments/attempts
+$pdo->exec("INSERT INTO users (name, email, avatar_path) VALUES ('Aluno Sem Matricula', 'semmatricula@school.com', NULL)");
+$rp15StudentNoDepsId = (int) $pdo->lastInsertId();
+
+check(
+  !$rp15UserModel->hasStudentDependencies($rp15StudentNoDepsId),
+  'RP-15: hasStudentDependencies retorna false quando aluno não possui matrículas nem tentativas'
+);
+
+// Test 5 (bonus): hasTeacherDependencies returns true when teacher has an exercise (not just turma)
+$pdo->exec("INSERT INTO users (name, email, avatar_path) VALUES ('Prof Com Exercicio', 'comexercicio@school.com', NULL)");
+$rp15TeacherWithExerciseId = (int) $pdo->lastInsertId();
+$pdo->exec("INSERT INTO exercises (teacher_id, title, status) VALUES ({$rp15TeacherWithExerciseId}, 'Exercicio RP15', 'draft')");
+
+check(
+  $rp15UserModel->hasTeacherDependencies($rp15TeacherWithExerciseId),
+  'RP-15: hasTeacherDependencies retorna true quando professor possui exercício (sem turma)'
+);
+
+// Test 6 (bonus): hasStudentDependencies returns true when student has an attempt (not just enrollment)
+$pdo->exec("INSERT INTO users (name, email, avatar_path) VALUES ('Aluno Com Tentativa', 'comtentativa@school.com', NULL)");
+$rp15StudentWithAttemptId = (int) $pdo->lastInsertId();
+$pdo->exec("INSERT INTO attempts (exercise_id, student_id, status) VALUES (1, {$rp15StudentWithAttemptId}, 'submitted')");
+
+check(
+  $rp15UserModel->hasStudentDependencies($rp15StudentWithAttemptId),
+  'RP-15: hasStudentDependencies retorna true quando aluno possui tentativa (sem matrícula)'
+);
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];
