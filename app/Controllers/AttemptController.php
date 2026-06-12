@@ -270,20 +270,20 @@ class AttemptController
     ));
   }
 
-  private function getStudentExercise(int $id, int $studentId): array
+  private function getStudentExercise(int $id, int $studentId, bool $json = false): array
   {
     $ex = $this->exercises->findForStudent($id, $studentId);
     if (!$ex) {
-      Auth::deny('Exercício não encontrado.', 404);
+      Auth::deny('Exercício não encontrado ou indisponível.', 404, $json);
     }
-    Auth::ensure($this->exercises->studentHasAccess($id, $studentId), 'Você não tem acesso a este exercício.');
+    Auth::ensure($this->exercises->studentHasAccess($id, $studentId), 'Você não tem acesso a este exercício.', 403, $json);
     return $ex;
   }
 
   private function ensureAttemptIsOpen(array $attempt, int $studentId, bool $json = false): array
   {
     $exerciseId = (int) ($attempt['exercise_id'] ?? 0);
-    $exercise = $this->getStudentExercise($exerciseId, $studentId);
+    $exercise = $this->getStudentExercise($exerciseId, $studentId, $json);
     $publication = !empty($attempt['turma_id'])
       ? $this->exercises->findPublicationForStudentTurma($exerciseId, $studentId, (int) $attempt['turma_id'])
       : $this->exercises->findOpenPublicationForStudent($exerciseId, $studentId);
