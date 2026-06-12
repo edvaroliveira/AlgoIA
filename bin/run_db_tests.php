@@ -190,21 +190,14 @@ $row = $pdo->query("SELECT status, worker_id FROM grading_jobs_rp05 WHERE id=$jo
 check((string)($row['status'] ?? '') === 'completed', 'RP-05: status é completed após conclusão');
 check($row['worker_id'] === null, 'RP-05: worker_id limpo após conclusão');
 
-// ── RP-06: csvCell sanitização ────────────────────────────────────────────────
-function csvCellRp06(string $value): string {
-  if ($value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
-    return "\t" . $value;
-  }
-  return $value;
-}
-
-check(csvCellRp06('=SUM(A1)') === "\t=SUM(A1)", 'RP-06: prefixo = é neutralizado');
-check(csvCellRp06('+1234') === "\t+1234", 'RP-06: prefixo + é neutralizado');
-check(csvCellRp06('-1') === "\t-1", 'RP-06: prefixo - é neutralizado');
-check(csvCellRp06('@foo') === "\t@foo", 'RP-06: prefixo @ é neutralizado');
-check(csvCellRp06('João Silva') === 'João Silva', 'RP-06: valor normal não é alterado');
-check(csvCellRp06('') === '', 'RP-06: string vazia não é alterada');
-check(csvCellRp06('42') === '42', 'RP-06: número normal não é alterado');
+// ── RP-06: csvCell sanitização (testa a implementação real) ──────────────────
+check(\App\Controllers\AdminBaseController::csvCell('=SUM(A1)') === "\t=SUM(A1)", 'RP-06: prefixo = é neutralizado');
+check(\App\Controllers\AdminBaseController::csvCell('+1234') === "\t+1234",        'RP-06: prefixo + é neutralizado');
+check(\App\Controllers\AdminBaseController::csvCell('-1') === "\t-1",              'RP-06: prefixo - é neutralizado');
+check(\App\Controllers\AdminBaseController::csvCell('@foo') === "\t@foo",          'RP-06: prefixo @ é neutralizado');
+check(\App\Controllers\AdminBaseController::csvCell('João Silva') === 'João Silva', 'RP-06: valor normal não é alterado');
+check(\App\Controllers\AdminBaseController::csvCell('') === '',                    'RP-06: string vazia não é alterada');
+check(\App\Controllers\AdminBaseController::csvCell('42') === '42',               'RP-06: número normal não é alterado');
 
 // ── RP-13: GradingJob state machine ──────────────────────────────────────────
 $pdo->exec("
