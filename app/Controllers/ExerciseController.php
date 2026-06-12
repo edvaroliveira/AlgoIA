@@ -272,7 +272,7 @@ class ExerciseController
 
     if ($attemptId > 0 && $inProgress && (int) $inProgress['id'] === $attemptId) {
       $answerModel = new Answer();
-      $attemptQuestions = $this->questions->findByExercise((int) $exercise['id']);
+      $attemptQuestions = $this->questions->findActiveByExercise((int) $exercise['id']);
       $savedAnswers = $answerModel->findMapByAttempt($attemptId);
     }
 

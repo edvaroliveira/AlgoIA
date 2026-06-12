@@ -169,6 +169,53 @@ $pdo->exec("INSERT INTO questions (exercise_id, admin_review_status) VALUES ({$r
 check($questionModel->hasBlockedByExercise($rp01DraftId), 'AP-02: detecta questão bloqueada pela implementação real');
 check(!$exModel->canPublish(['id' => $rp01DraftId, 'status' => 'ready']), 'AP-02: questão bloqueada impede publicação');
 
+// ── AP-NG-02: findActiveByExercise exclui questões bloqueadas ─────────────────
+$pdo->exec("ALTER TABLE questions ADD COLUMN text TEXT DEFAULT ''");
+$pdo->exec("ALTER TABLE questions ADD COLUMN expected_answer_hint TEXT DEFAULT ''");
+$pdo->exec("ALTER TABLE questions ADD COLUMN max_score REAL DEFAULT 1.0");
+$pdo->exec("ALTER TABLE questions ADD COLUMN order_index INTEGER DEFAULT 0");
+
+$apNg02ExId = $rp01ActiveId;
+$pdo->exec("INSERT INTO questions (exercise_id, admin_review_status, text, order_index) VALUES ({$apNg02ExId}, 'approved', 'Q aprovada', 1)");
+$pdo->exec("INSERT INTO questions (exercise_id, admin_review_status, text, order_index) VALUES ({$apNg02ExId}, 'blocked',  'Q bloqueada', 2)");
+
+$allQuestions    = $questionModel->findByExercise($apNg02ExId);
+$activeQuestions = $questionModel->findActiveByExercise($apNg02ExId);
+
+same(2, count($allQuestions),    'AP-NG-02: findByExercise retorna questões incluindo bloqueadas');
+same(1, count($activeQuestions), 'AP-NG-02: findActiveByExercise exclui questão bloqueada');
+same('Q aprovada', $activeQuestions[0]['text'] ?? '', 'AP-NG-02: apenas a questão aprovada é retornada');
+
+// ── AP-NG-01: findByAttempt exclui questões bloqueadas ────────────────────────
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS answers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    attempt_id INTEGER NOT NULL,
+    question_id INTEGER NOT NULL,
+    student_answer TEXT NOT NULL DEFAULT '',
+    ai_score REAL NULL,
+    ai_feedback TEXT NULL,
+    deduction_reasons_json TEXT NULL,
+    evaluated_at TEXT NULL
+  )
+");
+
+$apNg01ExId = $rp01ActiveId;
+$pdo->exec("INSERT INTO attempts (exercise_id, student_id, status) VALUES ({$apNg01ExId}, 1, 'in_progress')");
+$apNg01AttemptId = (int) $pdo->lastInsertId();
+
+$approvedQId = (int) $pdo->query("SELECT id FROM questions WHERE exercise_id = {$apNg01ExId} AND admin_review_status = 'approved' LIMIT 1")->fetchColumn();
+$blockedQId  = (int) $pdo->query("SELECT id FROM questions WHERE exercise_id = {$apNg01ExId} AND admin_review_status = 'blocked' LIMIT 1")->fetchColumn();
+
+$pdo->exec("INSERT INTO answers (attempt_id, question_id, student_answer) VALUES ({$apNg01AttemptId}, {$approvedQId}, 'Resposta A')");
+$pdo->exec("INSERT INTO answers (attempt_id, question_id, student_answer) VALUES ({$apNg01AttemptId}, {$blockedQId}, 'Resposta B')");
+
+$answerModel = new \App\Models\Answer();
+$answersForGrading = $answerModel->findByAttempt($apNg01AttemptId);
+
+same(1, count($answersForGrading), 'AP-NG-01: findByAttempt exclui questão bloqueada do resultado');
+same('Q aprovada', $answersForGrading[0]['question_text'] ?? '', 'AP-NG-01: apenas a questão aprovada entra no grading');
+
 // ── RP-05: worker_id protection (estado-máquina, sem MySQL FOR UPDATE) ────────
 $pdo->exec("
   CREATE TABLE IF NOT EXISTS grading_jobs_rp05 (
