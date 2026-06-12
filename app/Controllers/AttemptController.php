@@ -55,9 +55,12 @@ class AttemptController
 
     try {
       $attemptId = (new AttemptStartService())->start($studentId, (int) $id, $turmaId);
-    } catch (\RuntimeException) {
+    } catch (\RuntimeException $e) {
       global $session;
-      $session->flash('error', 'Você atingiu o número máximo de tentativas.');
+      $msg = str_contains($e->getMessage(), 'Publicação') || str_contains($e->getMessage(), 'matrícula')
+        ? 'Este exercício não está mais disponível para respostas.'
+        : 'Você atingiu o número máximo de tentativas.';
+      $session->flash('error', $msg);
       View::redirect("/student/exercises/{$id}");
       return;
     }
