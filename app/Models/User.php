@@ -381,6 +381,38 @@ class User extends Model
     }
   }
 
+  public function hasTeacherDependencies(int $userId): bool
+  {
+    $row = $this->db->fetchOne(
+      "SELECT 1
+             FROM users u
+             WHERE u.id = ?
+               AND (
+                 EXISTS (SELECT 1 FROM turmas WHERE teacher_id = u.id)
+                 OR EXISTS (SELECT 1 FROM exercises WHERE teacher_id = u.id)
+               )
+             LIMIT 1",
+      [$userId]
+    );
+    return $row !== false;
+  }
+
+  public function hasStudentDependencies(int $userId): bool
+  {
+    $row = $this->db->fetchOne(
+      "SELECT 1
+             FROM users u
+             WHERE u.id = ?
+               AND (
+                 EXISTS (SELECT 1 FROM student_turma WHERE student_id = u.id)
+                 OR EXISTS (SELECT 1 FROM attempts WHERE student_id = u.id)
+               )
+             LIMIT 1",
+      [$userId]
+    );
+    return $row !== false;
+  }
+
   public function emailExistsForOther(string $email, int $excludeId): bool
   {
     $row = $this->db->fetchOne(
