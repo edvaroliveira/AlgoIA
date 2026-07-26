@@ -36,7 +36,6 @@ class AttemptController
   /** POST /student/exercises/{id}/start */
   public function start(string $id): void
   {
-    Auth::requireStudent();
     Request::validateCsrf();
 
     $studentId   = Auth::id();
@@ -71,7 +70,6 @@ class AttemptController
   /** POST /student/attempts/{id}/answer — auto-save draft */
   public function saveAnswer(string $id): void
   {
-    Auth::requireStudent();
     Request::validateCsrf();
 
     $studentId = Auth::id();
@@ -109,7 +107,6 @@ class AttemptController
   /** POST /student/attempts/{id}/submit */
   public function submit(string $id): void
   {
-    Auth::requireStudent();
     Request::validateCsrf();
 
     $studentId = Auth::id();
@@ -156,7 +153,6 @@ class AttemptController
 
   public function regradeAdmin(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $this->regrade((int) $id, 'admin.attempt.regrade', '/admin/dashboard');
@@ -164,7 +160,6 @@ class AttemptController
 
   public function pendingAdmin(): void
   {
-    Auth::requireAdmin();
 
     $filters = $this->pendingFiltersFromRequest();
     $pagination = $this->pendingPagination('/admin/attempts/pending', $filters, $this->attempts->countPendingGradingFiltered($filters));
@@ -180,7 +175,6 @@ class AttemptController
 
   public function regradeTeacher(string $id): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
 
     Auth::ensure($this->attempts->belongsToTeacher((int) $id, (int) Auth::id()));
@@ -189,20 +183,17 @@ class AttemptController
 
   public function resultAdmin(string $id): void
   {
-    Auth::requireAdmin();
     $this->renderResult((int) $id, true, '/admin/exercises/');
   }
 
   public function resultTeacher(string $id): void
   {
-    Auth::requireTeacher();
     Auth::ensure($this->attempts->belongsToTeacher((int) $id, (int) Auth::id()));
     $this->renderResult((int) $id, true, '/teacher/exercises/');
   }
 
   public function pendingTeacher(): void
   {
-    Auth::requireTeacher();
 
     $teacherId = (int) Auth::id();
     $filters = $this->pendingFiltersFromRequest();
@@ -220,7 +211,6 @@ class AttemptController
   /** GET /student/attempts/{id}/result */
   public function result(string $id): void
   {
-    Auth::requireStudent();
 
     $studentId = Auth::id();
 
