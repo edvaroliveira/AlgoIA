@@ -108,7 +108,6 @@ class AuthController
 
   public function showChangePassword(): void
   {
-    Auth::requireAuth();
 
     if (!Auth::mustChangePassword()) {
       $this->redirectByRole();
@@ -119,7 +118,6 @@ class AuthController
 
   public function changePassword(): void
   {
-    Auth::requireAuth();
     Request::validateCsrf();
 
     if (!Auth::mustChangePassword()) {

@@ -6,26 +6,55 @@ namespace Core;
 
 class Router
 {
+  private const DEFAULT_MIDDLEWARE_MAP = [
+    'auth'    => \App\Middleware\AuthMiddleware::class,
+    'teacher' => \App\Middleware\TeacherMiddleware::class,
+    'admin'   => \App\Middleware\AdminMiddleware::class,
+    'student' => \App\Middleware\StudentMiddleware::class,
+  ];
+
   private array $routes = [];
+  private array $middlewareMap;
 
-  public function get(string $path, string $action): void
+  public function __construct(array $middlewareMap = [])
   {
-    $this->add('GET', $path, $action);
+    $this->middlewareMap = $middlewareMap + self::DEFAULT_MIDDLEWARE_MAP;
   }
 
-  public function post(string $path, string $action): void
+  public function get(string $path, string $action, array $middleware = []): void
   {
-    $this->add('POST', $path, $action);
+    $this->add('GET', $path, $action, $middleware);
   }
 
-  private function add(string $method, string $path, string $action): void
+  public function post(string $path, string $action, array $middleware = []): void
+  {
+    $this->add('POST', $path, $action, $middleware);
+  }
+
+  private function add(string $method, string $path, string $action, array $middleware = []): void
   {
     $this->routes[] = [
-      'method'  => $method,
-      'path'    => $path,
-      'action'  => $action,
-      'pattern' => $this->toPattern($path),
+      'method'     => $method,
+      'path'       => $path,
+      'action'     => $action,
+      'pattern'    => $this->toPattern($path),
+      'middleware' => $middleware,
     ];
+  }
+
+  /**
+   * Falha fechado: nome de middleware sem entrada no mapa aborta a
+   * requisição em vez de deixá-la passar sem checagem.
+   */
+  private function runMiddleware(array $names): void
+  {
+    foreach ($names as $name) {
+      $class = $this->middlewareMap[$name] ?? null;
+      if ($class === null) {
+        throw new \RuntimeException("Middleware desconhecido: {$name}");
+      }
+      $class::handle();
+    }
   }
 
   public function dispatch(): void
@@ -41,6 +70,8 @@ class Router
       if (!preg_match($route['pattern'], $uri, $matches)) {
         continue;
       }
+
+      $this->runMiddleware($route['middleware']);
 
       $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
 
