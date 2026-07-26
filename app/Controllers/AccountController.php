@@ -33,7 +33,6 @@ class AccountController
 
   public function show(): void
   {
-    Auth::requireAuth();
 
     $users = new User();
     $user  = $users->find((int) Auth::id()) ?: [];
@@ -46,7 +45,6 @@ class AccountController
 
   public function uploadAvatar(): void
   {
-    Auth::requireAuth();
     Request::validateCsrf();
 
     global $session;
@@ -88,7 +86,6 @@ class AccountController
 
   public function deleteAvatar(): void
   {
-    Auth::requireAuth();
     Request::validateCsrf();
 
     global $session;

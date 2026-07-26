@@ -13,7 +13,6 @@ class AdminUserController extends AdminBaseController
 {
   public function users(): void
   {
-    Auth::requireAdmin();
 
     $filters    = $this->getUserFiltersFromRequest();
     $pagination = $this->buildPagination('/admin/users', $filters, $this->users->countForAdmin($filters));
@@ -29,7 +28,6 @@ class AdminUserController extends AdminBaseController
 
   public function exportUsers(): void
   {
-    Auth::requireAdmin();
 
     $filters = $this->getUserFiltersFromRequest();
     $users   = $this->users->getAllForAdmin($filters, null, null);
@@ -53,7 +51,6 @@ class AdminUserController extends AdminBaseController
 
   public function exportUsersJson(): void
   {
-    Auth::requireAdmin();
 
     $filters = $this->getUserFiltersFromRequest();
     $users   = $this->users->getAllForAdmin($filters, null, null);
@@ -80,7 +77,6 @@ class AdminUserController extends AdminBaseController
 
   public function showUser(string $id): void
   {
-    Auth::requireAdmin();
 
     $userId = (int) $id;
     $user   = $this->users->findForAdmin($userId);
@@ -118,7 +114,6 @@ class AdminUserController extends AdminBaseController
 
   public function editUser(string $id): void
   {
-    Auth::requireAdmin();
 
     $user = $this->users->find((int) $id);
 
@@ -135,7 +130,6 @@ class AdminUserController extends AdminBaseController
 
   public function updateUser(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $userId = (int) $id;
@@ -231,7 +225,6 @@ class AdminUserController extends AdminBaseController
 
   public function updateUserStatus(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $userId       = (int) $id;
@@ -267,7 +260,6 @@ class AdminUserController extends AdminBaseController
 
   public function activateUsersBatch(): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $selectedUserIds = $this->extractSelectedIdsFromRequest('user_ids');
@@ -307,7 +299,6 @@ class AdminUserController extends AdminBaseController
 
   public function deactivateUsersBatch(): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $selectedUserIds = $this->extractSelectedIdsFromRequest('user_ids');
@@ -370,7 +361,6 @@ class AdminUserController extends AdminBaseController
 
   public function resetUserPassword(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $userId = (int) $id;

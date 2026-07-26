@@ -24,7 +24,6 @@ class QuestionController
 
   public function create(string $exerciseId): void
   {
-    Auth::requireTeacher();
     $exercise = $this->getOwnedExercise((int) $exerciseId);
     $this->ensureDraftExercise($exercise);
 
@@ -37,7 +36,6 @@ class QuestionController
 
   public function store(string $exerciseId): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
     $exercise = $this->getOwnedExercise((int) $exerciseId);
     $this->ensureDraftExercise($exercise);
@@ -78,7 +76,6 @@ class QuestionController
 
   public function destroy(string $id): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
 
     Auth::ensure($this->questions->belongsToTeacher((int) $id, Auth::id()));

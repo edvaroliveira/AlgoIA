@@ -15,7 +15,6 @@ class AdminDashboardController extends AdminBaseController
 {
   public function dashboard(): void
   {
-    Auth::requireAdmin();
 
     $userCounts             = $this->users->countByRole();
     $pendingTurmas          = $this->turmas->getPendingTurmasForAdmin();
@@ -55,7 +54,6 @@ class AdminDashboardController extends AdminBaseController
 
   public function saveFilterPreset(string $scope): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $config = $this->getFilterPresetConfig($scope);
@@ -100,7 +98,6 @@ class AdminDashboardController extends AdminBaseController
 
   public function deleteFilterPreset(string $scope): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $config = $this->getFilterPresetConfig($scope);
@@ -130,7 +127,6 @@ class AdminDashboardController extends AdminBaseController
 
   public function retryGradingJob(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $jobId   = (int) $id;
@@ -150,7 +146,6 @@ class AdminDashboardController extends AdminBaseController
 
   public function toggleTeacherRegistration(): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $settings = new SystemSetting();

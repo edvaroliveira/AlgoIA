@@ -69,6 +69,46 @@ check(preg_match($patProf, '/admin/turmas/3/approve/9', $m2) === 1, 'Router casa
 same('3', $m2['id'] ?? null, 'Router captura primeiro parâmetro');
 same('9', $m2['studentId'] ?? null, 'Router captura segundo parâmetro');
 
+// ── Core\Router: pipeline de middleware por rota ─────────────────────────────
+class __TestMiddlewareOne
+{
+  public static array $calls = [];
+  public static function handle(): void
+  {
+    self::$calls[] = 'one';
+  }
+}
+class __TestMiddlewareTwo
+{
+  public static array $calls = [];
+  public static function handle(): void
+  {
+    self::$calls[] = 'two';
+  }
+}
+
+$mwRouter = new \Core\Router([
+  'one' => __TestMiddlewareOne::class,
+  'two' => __TestMiddlewareTwo::class,
+]);
+$runMw = new ReflectionMethod(\Core\Router::class, 'runMiddleware');
+$runMw->invoke($mwRouter, ['one', 'two']);
+same(['one'], __TestMiddlewareOne::$calls, 'Router::runMiddleware executa middleware "one" na ordem declarada');
+same(['two'], __TestMiddlewareTwo::$calls, 'Router::runMiddleware executa middleware "two" na ordem declarada');
+
+$unknownThrown = false;
+try {
+  $runMw->invoke($mwRouter, ['inexistente']);
+} catch (\RuntimeException $e) {
+  $unknownThrown = true;
+}
+check($unknownThrown, 'Router::runMiddleware falha fechado (RuntimeException) para nome de middleware desconhecido');
+
+$mwRouter->get('/mw-teste/{id}', 'FooController@bar', ['one', 'two']);
+$routesProp = new ReflectionProperty(\Core\Router::class, 'routes');
+$storedRoutes = $routesProp->getValue($mwRouter);
+same(['one', 'two'], $storedRoutes[0]['middleware'] ?? null, 'Router::get armazena o middleware declarado na rota');
+
 // ── Core\View: allowlist de template (anti path-traversal/LFI) ───────────────
 $traversalBlocked = false;
 try {

@@ -16,7 +16,6 @@ class DashboardController
 {
   public function teacher(): void
   {
-    Auth::requireTeacher();
 
     $teacherId = Auth::id();
     $exercises = new Exercise();
@@ -54,7 +53,6 @@ class DashboardController
 
   public function student(): void
   {
-    Auth::requireStudent();
 
     $studentId = Auth::id();
     $exModel   = new Exercise();
