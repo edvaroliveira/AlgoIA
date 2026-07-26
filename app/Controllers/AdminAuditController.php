@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use Core\Auth;
 use Core\View;
 
 class AdminAuditController extends AdminBaseController
 {
   public function audit(): void
   {
-    Auth::requireAdmin();
 
     $filters    = $this->getAuditFiltersFromRequest();
     $pagination = $this->buildPagination('/admin/audit', $filters, $this->auditLogs->countForAdmin($filters));
@@ -27,7 +25,6 @@ class AdminAuditController extends AdminBaseController
 
   public function exportAudit(): void
   {
-    Auth::requireAdmin();
 
     $filters  = $this->getAuditFiltersFromRequest();
     $logs     = $this->auditLogs->getAllForAdmin($filters, null, null);
@@ -66,7 +63,6 @@ class AdminAuditController extends AdminBaseController
 
   public function exportAuditJson(): void
   {
-    Auth::requireAdmin();
 
     $filters = $this->getAuditFiltersFromRequest();
     $logs    = $this->auditLogs->getAllForAdmin($filters, null, null);

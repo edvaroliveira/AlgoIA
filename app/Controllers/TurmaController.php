@@ -23,7 +23,6 @@ class TurmaController
 
   public function index(): void
   {
-    Auth::requireTeacher();
     View::render('teacher/turmas/index', [
       'turmas' => $this->turmas->findByTeacher(Auth::id()),
     ]);
@@ -31,13 +30,11 @@ class TurmaController
 
   public function create(): void
   {
-    Auth::requireTeacher();
     View::render('teacher/turmas/create');
   }
 
   public function store(): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
 
     $name = Request::str('name');
@@ -56,7 +53,6 @@ class TurmaController
 
   public function show(string $id): void
   {
-    Auth::requireTeacher();
     $turma = $this->getOwnedTurma((int) $id);
 
     View::render('teacher/turmas/show', [
@@ -68,7 +64,6 @@ class TurmaController
 
   public function regenerateKey(string $id): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
     $this->getOwnedTurma((int) $id);
 
@@ -82,7 +77,6 @@ class TurmaController
 
   public function approveStudent(string $id, string $studentId): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
     $this->getOwnedTurma((int) $id);
 
@@ -101,7 +95,6 @@ class TurmaController
 
   public function rejectStudent(string $id, string $studentId): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
     $this->getOwnedTurma((int) $id);
 
@@ -114,7 +107,6 @@ class TurmaController
 
   public function join(): void
   {
-    Auth::requireStudent();
     Request::validateCsrf();
 
     $key   = strtoupper(trim(Request::str('turma_key')));

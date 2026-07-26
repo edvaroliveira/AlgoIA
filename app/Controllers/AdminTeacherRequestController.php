@@ -14,7 +14,6 @@ class AdminTeacherRequestController extends AdminBaseController
 {
   public function teacherRequests(): void
   {
-    Auth::requireAdmin();
 
     $perPage    = self::ADMIN_PER_PAGE;
     $page       = max(1, (int) Request::get('page', 1));
@@ -42,7 +41,6 @@ class AdminTeacherRequestController extends AdminBaseController
 
   public function teacherRequestHistory(): void
   {
-    Auth::requireAdmin();
 
     $perPage    = self::ADMIN_PER_PAGE;
     $page       = max(1, (int) Request::get('page', 1));
@@ -67,7 +65,6 @@ class AdminTeacherRequestController extends AdminBaseController
 
   public function approveTeacherRequest(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $userId = (int) $id;
@@ -91,7 +88,6 @@ class AdminTeacherRequestController extends AdminBaseController
 
   public function rejectTeacherRequest(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $userId = (int) $id;

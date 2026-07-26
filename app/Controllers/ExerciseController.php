@@ -31,7 +31,6 @@ class ExerciseController
 
   public function index(): void
   {
-    Auth::requireTeacher();
     View::render('teacher/exercises/index', [
       'exercises' => $this->exercises->findByTeacher(Auth::id()),
     ]);
@@ -39,13 +38,11 @@ class ExerciseController
 
   public function create(): void
   {
-    Auth::requireTeacher();
     View::render('teacher/exercises/create');
   }
 
   public function store(): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
 
     $title       = Request::str('title');
@@ -74,7 +71,6 @@ class ExerciseController
 
   public function show(string $id): void
   {
-    Auth::requireTeacher();
     $exercise = $this->getOwnedExercise((int) $id);
 
     View::render('teacher/exercises/show', [
@@ -89,7 +85,6 @@ class ExerciseController
 
   public function edit(string $id): void
   {
-    Auth::requireTeacher();
     $exercise = $this->getOwnedExercise((int) $id);
     $this->ensureDraftExercise($exercise);
 
@@ -98,7 +93,6 @@ class ExerciseController
 
   public function update(string $id): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
     $exercise = $this->getOwnedExercise((int) $id);
     $this->ensureDraftExercise($exercise);
@@ -130,7 +124,6 @@ class ExerciseController
 
   public function complete(string $id): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
 
     $exercise = $this->getOwnedExercise((int) $id);
@@ -156,7 +149,6 @@ class ExerciseController
 
   public function activate(string $id): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
 
     $exercise = $this->getOwnedExercise((int) $id);
@@ -203,7 +195,6 @@ class ExerciseController
 
   public function destroy(string $id): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
     $exercise = $this->getOwnedExercise((int) $id);
 
@@ -230,7 +221,6 @@ class ExerciseController
 
   public function studentIndex(): void
   {
-    Auth::requireStudent();
     $studentId = Auth::id();
     $attModel  = new Attempt();
 
@@ -251,7 +241,6 @@ class ExerciseController
 
   public function studentShow(string $id): void
   {
-    Auth::requireStudent();
     $studentId = Auth::id();
     $exercise  = $this->getStudentExercise((int) $id, $studentId);
     $attModel  = new Attempt();

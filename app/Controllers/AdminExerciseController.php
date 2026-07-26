@@ -14,7 +14,6 @@ class AdminExerciseController extends AdminBaseController
 {
   public function exercises(): void
   {
-    Auth::requireAdmin();
 
     $filters    = $this->getExerciseFiltersFromRequest();
     $pagination = $this->buildPagination('/admin/exercises', $filters, $this->exercises->countForAdmin($filters));
@@ -30,7 +29,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function exportExercises(): void
   {
-    Auth::requireAdmin();
 
     $exercises = $this->exercises->getAllForAdmin($this->getExerciseFiltersFromRequest(), null, null);
 
@@ -54,7 +52,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function exportExercisesJson(): void
   {
-    Auth::requireAdmin();
 
     $filters   = $this->getExerciseFiltersFromRequest();
     $exercises = $this->exercises->getAllForAdmin($filters, null, null);
@@ -83,7 +80,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function showExercise(string $id): void
   {
-    Auth::requireAdmin();
 
     $exercise = $this->exercises->findForAdmin((int) $id);
     global $session;
@@ -104,7 +100,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function moderateExercise(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $exerciseId = (int) $id;
@@ -140,7 +135,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function moderateQuestion(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $questionId = (int) $id;
@@ -189,7 +183,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function closeExercise(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $exerciseId = (int) $id;
@@ -218,7 +211,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function reopenExercise(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $exerciseId = (int) $id;
@@ -261,7 +253,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function closeExercisesBatch(): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $selectedExerciseIds = $this->extractSelectedIdsFromRequest('exercise_ids');
@@ -305,7 +296,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function reopenExercisesBatch(): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $selectedExerciseIds = $this->extractSelectedIdsFromRequest('exercise_ids');
@@ -363,7 +353,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function closeExercisePublication(string $id, string $turmaId): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $exerciseId    = (int) $id;
@@ -397,7 +386,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function reopenExercisePublication(string $id, string $turmaId): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $exerciseId    = (int) $id;
@@ -445,7 +433,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function closeExercisePublicationsBatch(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $exerciseId = (int) $id;
@@ -496,7 +483,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function reopenExercisePublicationsBatch(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $exerciseId = (int) $id;
@@ -561,7 +547,6 @@ class AdminExerciseController extends AdminBaseController
 
   public function updateExercisePublication(string $id, string $turmaId): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $exerciseId    = (int) $id;

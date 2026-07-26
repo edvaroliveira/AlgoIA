@@ -14,7 +14,6 @@ class StudentController
 {
   public function index(): void
   {
-    Auth::requireTeacher();
     $users = new User();
     View::render('teacher/students/index', [
       'students' => $users->getStudentsByTeacher((int) Auth::id()),
@@ -23,7 +22,6 @@ class StudentController
 
   public function destroy(string $id): void
   {
-    Auth::requireTeacher();
     Request::validateCsrf();
 
     $users = new User();

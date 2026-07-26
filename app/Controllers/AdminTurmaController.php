@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Services\AuditService;
-use Core\Auth;
 use Core\Request;
 use Core\View;
 
@@ -13,7 +12,6 @@ class AdminTurmaController extends AdminBaseController
 {
   public function turmas(): void
   {
-    Auth::requireAdmin();
 
     $filters    = $this->getTurmaFiltersFromRequest();
     $pagination = $this->buildPagination('/admin/turmas', $filters, $this->turmas->countForAdmin($filters));
@@ -29,7 +27,6 @@ class AdminTurmaController extends AdminBaseController
 
   public function exportTurmas(): void
   {
-    Auth::requireAdmin();
 
     $turmas = $this->turmas->getAllForAdmin($this->getTurmaFiltersFromRequest(), null, null);
 
@@ -53,7 +50,6 @@ class AdminTurmaController extends AdminBaseController
 
   public function exportTurmasJson(): void
   {
-    Auth::requireAdmin();
 
     $filters = $this->getTurmaFiltersFromRequest();
     $turmas  = $this->turmas->getAllForAdmin($filters, null, null);
@@ -82,7 +78,6 @@ class AdminTurmaController extends AdminBaseController
 
   public function showTurma(string $id): void
   {
-    Auth::requireAdmin();
 
     $turma = $this->turmas->findForAdmin((int) $id);
     global $session;
@@ -103,7 +98,6 @@ class AdminTurmaController extends AdminBaseController
 
   public function deactivateTurma(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $turmaId = (int) $id;
@@ -132,7 +126,6 @@ class AdminTurmaController extends AdminBaseController
 
   public function reactivateTurma(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $turmaId = (int) $id;
@@ -161,7 +154,6 @@ class AdminTurmaController extends AdminBaseController
 
   public function deactivateTurmasBatch(): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $selectedTurmaIds = $this->extractSelectedIdsFromRequest('turma_ids');
@@ -205,7 +197,6 @@ class AdminTurmaController extends AdminBaseController
 
   public function reactivateTurmasBatch(): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $selectedTurmaIds = $this->extractSelectedIdsFromRequest('turma_ids');
@@ -249,7 +240,6 @@ class AdminTurmaController extends AdminBaseController
 
   public function closeTurmaPublicationsBatch(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $turmaId = (int) $id;
@@ -298,7 +288,6 @@ class AdminTurmaController extends AdminBaseController
 
   public function reopenTurmaPublicationsBatch(string $id): void
   {
-    Auth::requireAdmin();
     Request::validateCsrf();
 
     $turmaId = (int) $id;
