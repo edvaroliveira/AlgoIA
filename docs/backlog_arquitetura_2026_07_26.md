@@ -127,7 +127,7 @@ Critérios de aceite:
 
 ## Epic A3 — Avaliar Composer para bibliotecas de segurança maduras
 
-### Prioridade: P3 — 📋 PENDENTE
+### Prioridade: P3 — ✅ AVALIADO (2026-07-26)
 
 App é "zero dependência" por design (`autoload.php`, README). Isso evita risco
 de supply-chain, mas também significa reimplementar mecanismos de segurança
@@ -142,6 +142,40 @@ Critérios de aceite:
 - Decisão registrada (adotar Composer restrito a essas libs, ou manter
   zero-dependência) com justificativa — este item é avaliação, não execução
   automática.
+
+**Levantamento — cliente HTTP** (substitui `curl_init` em
+`OpenAIService.php:203`, único ponto de chamada HTTP externo do app, para a
+API da OpenAI):
+
+| Candidato | Maturidade | Risco supply-chain |
+|---|---|---|
+| `guzzlehttp/guzzle` | Muito madura, PSR-18, facilita mock em teste | Puxa `guzzlehttp/psr7` + `psr/http-*` como transitivas |
+| `symfony/http-client` | Madura, mantida pela Symfony, HTTP/2 nativo | Puxa `symfony/*-contracts`; menor superfície que Guzzle |
+| `php-http/curl-client` | Fina (wrapper de curl), poucas features | Menor superfície, mas ecossistema PSR menos difundido |
+
+**Levantamento — rate limiting:** não há lacuna real hoje. O throttle
+existente (`App\Models\LoginAttempt::isActionRateLimited`,
+`AuthController::isActionThrottled`, `AccountController::isUploadThrottled`)
+é regra de negócio específica (por IP/e-mail/sessão, com janela e persistência
+em tabela própria) — uma lib genérica como `symfony/rate-limiter` adicionaria
+uma camada de abstração (storage adapter, policy config) sem reduzir código
+de forma proporcional, já que a lógica de domínio (escopo, chave, janela)
+continuaria custom de qualquer forma.
+
+**Decisão: manter zero-dependência — não adotar Composer agora.**
+
+Justificativa: `OpenAIService::callOpenAI` é a única chamada HTTP externa do
+app (um endpoint, uma responsabilidade), já cobre os pontos que uma lib madura
+cobriria — timeout configurável, `CURLOPT_SSL_VERIFYPEER`, retry com backoff
+exponencial em 429/5xx — em ~45 linhas revisáveis por completo em uma leitura.
+Trocar por Guzzle/Symfony HttpClient trocaria uma dependência zero por uma
+árvore de pacotes transitivos (PSR contracts, contracts do framework) para
+resolver um problema que já não existe em produção. Reavaliar apenas se o app
+passar a integrar múltiplos serviços HTTP externos — aí a duplicação de
+retry/timeout/backoff por integração justificaria a dependência. Rate
+limiting genérico fica descartado: o throttle atual é acoplado a regra de
+negócio própria, não a uma preocupação transversal que uma lib resolveria
+melhor.
 
 ---
 
