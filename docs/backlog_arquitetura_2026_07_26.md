@@ -88,12 +88,24 @@ Critérios de aceite:
 
 ## Epic A2 — Injeção de dependência para `Database`
 
-### Prioridade: P2 — 📋 PENDENTE
+### Prioridade: P2 — ✅ IMPLEMENTADO (2026-07-26)
 
 `Core\Database::getInstance()` é singleton estático (`core/Database.php:33`),
 acoplado direto nas Models. Isola mal em teste unitário puro — hoje só é
 possível testar contra banco real (`bin/run_db_tests.php`), o que esconde bug
 de regra de negócio que não deveria depender de I/O.
+
+**Entregue:** `App\Models\Model::__construct(?Database $db = null)`,
+`AttemptStartService`, `AttemptSubmissionService` e `OpenAIService` passam a
+aceitar `Database` injetada no construtor, usando `Database::getInstance()`
+só como default (`OpenAIService` resolve sob demanda em `db()` — evita exigir
+banco real em construções que nunca chegam a logar). Sem mudança de
+comportamento em produção: todo call site existente instancia sem argumento e
+continua usando o singleton por trás. Novo teste em `bin/run_tests.php`
+(A2-H2) prova a regra de negócio "máximo de tentativas atingido" de
+`AttemptStartService::start()` com uma `Database` stub (sem PDO/SQLite/MySQL).
+`php bin/run_tests.php` (55 testes), `php bin/run_db_tests.php` (58 testes),
+`php bin/smoke_static.php` e `php -l` continuam passando.
 
 ### A2-H1 Injetar `Database` no construtor de `Model` e `Service`s que usam banco
 

@@ -11,9 +11,9 @@ abstract class Model
   protected Database $db;
   protected string $table;
 
-  public function __construct()
+  public function __construct(?Database $db = null)
   {
-    $this->db = Database::getInstance();
+    $this->db = $db ?? Database::getInstance();
   }
 
   public function find(int $id): array|false
