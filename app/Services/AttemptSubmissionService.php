@@ -11,6 +11,13 @@ use Core\Database;
 
 class AttemptSubmissionService
 {
+  private Database $db;
+
+  public function __construct(?Database $db = null)
+  {
+    $this->db = $db ?? Database::getInstance();
+  }
+
   /**
    * Submits an attempt atomically.
    *
@@ -20,7 +27,7 @@ class AttemptSubmissionService
    */
   public function submit(int $attemptId, int $studentId, array $postData): string
   {
-    $db = Database::getInstance();
+    $db = $this->db;
     $db->beginTransaction();
 
     try {

@@ -8,9 +8,16 @@ use Core\Database;
 
 class AttemptStartService
 {
+  private Database $db;
+
+  public function __construct(?Database $db = null)
+  {
+    $this->db = $db ?? Database::getInstance();
+  }
+
   public function start(int $studentId, int $exerciseId, int $turmaId): int
   {
-    $db = Database::getInstance();
+    $db = $this->db;
     $db->beginTransaction();
 
     try {
