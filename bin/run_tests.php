@@ -228,6 +228,51 @@ $validServiceResults = ['submitted', 'already_submitted'];
 check(!in_array('queued', $validServiceResults, true), 'RP-09: "queued" não é mais valor de retorno válido do serviço');
 check(!in_array('queue_unavailable', $validServiceResults, true), 'RP-09: "queue_unavailable" não é mais conceito do fluxo');
 
+// ── A2-H2: AttemptStartService — regra de máx. tentativas via stub de Database ─
+// Prova que a regra de negócio (RuntimeException ao atingir max_attempts) roda
+// sem PDO/SQLite/MySQL real, usando Database injetada no construtor (A2-H1).
+class __FakeDbMaxAttempts extends \Core\Database
+{
+  private array $fetchOneQueue;
+  public function __construct(array $fetchOneQueue)
+  {
+    $this->fetchOneQueue = $fetchOneQueue;
+  }
+  public function fetchOne(string $sql, array $params = []): array|false
+  {
+    return array_shift($this->fetchOneQueue) ?? false;
+  }
+  public function beginTransaction(): void {}
+  public function commit(): void {}
+  public function rollback(): void {}
+  public function inTransaction(): bool
+  {
+    return false;
+  }
+  public function insert(string $sql, array $params = []): int
+  {
+    throw new \LogicException('insert não deveria ser chamado quando max_attempts já foi atingido');
+  }
+}
+
+$fakeDbMax = new __FakeDbMaxAttempts([
+  false,                                              // sem tentativa in_progress
+  ['max_attempts' => 2, 'closes_at' => '2999-01-01'], // publicação aberta
+  ['c' => 2],                                         // já usou as 2 tentativas permitidas
+]);
+$startServiceStub = new \App\Services\AttemptStartService($fakeDbMax);
+$maxAttemptsThrown = null;
+try {
+  $startServiceStub->start(1, 2, 3);
+} catch (\RuntimeException $e) {
+  $maxAttemptsThrown = $e->getMessage();
+}
+same(
+  'Número máximo de tentativas atingido.',
+  $maxAttemptsThrown,
+  'A2-H2: AttemptStartService::start lança RuntimeException real ao atingir max_attempts (sem banco)'
+);
+
 // ── RP-10: nota sobre testes de concorrência de publicação ───────────────────
 // A revalidação da publicação dentro das transações (AttemptStartService e
 // AttemptSubmissionService) usa SELECT ... FOR UPDATE em exercise_turmas, que

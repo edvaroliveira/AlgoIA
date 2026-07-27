@@ -11,6 +11,7 @@ class OpenAIService
   private string $apiKey;
   private string $model;
   private int    $timeout;
+  private ?Database $db;
 
   /** Patterns that indicate a prompt injection attempt. */
   private const INJECTION_PATTERNS = [
@@ -31,12 +32,19 @@ class OpenAIService
     '\\n\\nsystem',
   ];
 
-  public function __construct()
+  public function __construct(?Database $db = null)
   {
     $cfg = require ROOT_PATH . '/config/openai.php';
     $this->apiKey  = $cfg['api_key'];
     $this->model   = $cfg['model'];
     $this->timeout = $cfg['timeout'];
+    $this->db      = $db; // resolvido sob demanda em db(); Database::getInstance() não é obrigatório
+  }
+
+  /** Resolve a conexão sob demanda — evita exigir banco real em serviços que nunca chegam a logar. */
+  private function db(): Database
+  {
+    return $this->db ??= Database::getInstance();
   }
 
   /**
@@ -154,7 +162,7 @@ PROMPT;
     foreach (self::INJECTION_PATTERNS as $pattern) {
       if (str_contains($lower, $pattern)) {
         try {
-          Database::getInstance()->execute(
+          $this->db()->execute(
             "INSERT INTO injection_logs (answer_id, student_id, flagged_pattern, student_answer)
                          VALUES (?, ?, ?, ?)",
             [$answerId, $studentId, $pattern, $this->buildInjectionLogSummary($studentAnswer)]
