@@ -42,7 +42,7 @@ global $session;
             <p class="question-text"><?= nl2br(\Core\View::e($q['text'])) ?></p>
             <form method="POST" action="<?= \Core\app_url('/teacher/questions/' . $q['id'] . '/delete') ?>"
               class="inline-form"
-              onsubmit="return confirm('Excluir esta questão?');">
+              data-confirm="Excluir esta questão?">
               <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
               <button class="btn btn--danger btn--sm">Excluir</button>
             </form>

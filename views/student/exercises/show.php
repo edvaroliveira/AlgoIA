@@ -166,7 +166,7 @@ if ($successFlash):
 
       <div class="form-actions">
         <button type="submit" class="btn btn--primary btn--lg"
-          onclick="return confirm('Submeter o exercício? Esta ação não pode ser desfeita.');">
+          data-confirm="Submeter o exercício? Esta ação não pode ser desfeita.">
           Submeter exercício
         </button>
       </div>

@@ -366,7 +366,7 @@ class GradingJob extends Model
              FROM grading_jobs gj
              {$teacherJoin}
              WHERE (
-               (gj.status = 'queued' AND gj.available_at <= DATE_SUB(NOW(), INTERVAL 15 MINUTE))
+               (gj.status = 'queued' AND gj.available_at <= DATE_SUB(NOW(), INTERVAL " . self::STALE_PROCESSING_MINUTES . " MINUTE))
                OR (gj.status = 'processing' AND gj.locked_at <= DATE_SUB(NOW(), INTERVAL " . self::STALE_PROCESSING_MINUTES . " MINUTE))
              )
              {$teacherWhere}",

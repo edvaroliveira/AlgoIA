@@ -2,7 +2,7 @@
 
 <div class="auth-eyebrow">Troca obrigatória</div>
 <h2 class="auth-title">Defina uma nova senha</h2>
-<p class="auth-copy">Sua senha foi redefinida pela administração. Escolha uma senha definitiva para continuar.</p>
+<p class="auth-copy">A administração solicitou a troca da sua senha. Informe a senha que você usa hoje e escolha uma nova para continuar.</p>
 
 <?php if (!empty($errors)): ?>
   <div class="alert alert--error">
@@ -16,7 +16,7 @@
   <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
 
   <div class="form-group">
-    <label class="form-label" for="current_password">Senha temporária</label>
+    <label class="form-label" for="current_password">Senha atual</label>
     <input class="form-input" type="password" id="current_password" name="current_password"
       required autofocus autocomplete="current-password">
   </div>

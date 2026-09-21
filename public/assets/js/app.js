@@ -5,6 +5,40 @@
 (function () {
   "use strict";
 
+  // ── Confirmação de ações destrutivas ────────────────────────────────────────
+  // Handler inline (onclick/onsubmit) e bloqueado pela CSP: o nonce nao libera
+  // atributo de evento. Declaramos a mensagem em data-confirm e confirmamos aqui.
+  // Registrado antes de tudo para nao depender de blocos posteriores desta pagina.
+  document.addEventListener(
+    "click",
+    function (event) {
+      const trigger = event.target.closest("[data-confirm]");
+      if (!trigger || trigger.tagName === "FORM") {
+        return;
+      }
+      if (!window.confirm(trigger.dataset.confirm)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    "submit",
+    function (event) {
+      const form = event.target;
+      if (!form.matches("form[data-confirm]")) {
+        return;
+      }
+      if (!window.confirm(form.dataset.confirm)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    },
+    true
+  );
+
   // ── Avatar: refletir nome do arquivo escolhido ───────────────────────────────
   // Primeiro de tudo, para nao depender de blocos anteriores nesta pagina.
   const avatarInput = document.getElementById("avatar");

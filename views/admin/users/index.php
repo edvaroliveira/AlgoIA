@@ -223,7 +223,7 @@ global $session;
                 </form>
                 <form method="POST" action="<?= \Core\app_url('/admin/users/' . $user['id'] . '/reset-password') ?>">
                   <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                  <button type="submit" class="btn btn--sm btn--ghost" onclick="return confirm('Gerar link de redefinição válido por 60 minutos?');">Resetar senha</button>
+                  <button type="submit" class="btn btn--sm btn--ghost" data-confirm="Gerar link de redefinição válido por 60 minutos?">Resetar senha</button>
                 </form>
               </td>
             </tr>
@@ -238,7 +238,7 @@ global $session;
             <span class="selection-summary" data-selection-breakdown="admin-users-list"></span>
             <span class="selection-summary" data-selection-compatibility="admin-users-list"></span>
             <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-activate') ?>" class="btn btn--primary" data-requires-selection="admin-users-list" data-allowed-states="inactive,pending" disabled>Ativar selecionados</button>
-            <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-users-list" data-allowed-states="active" onclick="return confirm('Inativar os usuários selecionados?');" disabled>Inativar selecionados</button>
+            <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-users-list" data-allowed-states="active" data-confirm="Inativar os usuários selecionados?" disabled>Inativar selecionados</button>
           </div>
         </div>
       </div>

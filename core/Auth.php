@@ -16,14 +16,27 @@ class Auth
   public static function login(array $user): void
   {
     self::$session->regenerate();
-    self::$session->set('user', [
+    self::$session->set('user', self::sessionPayload($user));
+    self::$session->set('_user_refreshed_at', time());
+  }
+
+  /**
+   * Dados do usuário guardados na sessão.
+   *
+   * password_changed_at é a marca de versão da senha: o refresh compara o valor
+   * da sessão com o do banco e encerra sessões emitidas antes de uma troca.
+   */
+  private static function sessionPayload(array $user): array
+  {
+    return [
       'id'   => (int) $user['id'],
       'name' => $user['name'],
       'email' => $user['email'],
       'role' => $user['role'],
       'avatar_path' => $user['avatar_path'] ?? null,
       'must_change_password' => !empty($user['must_change_password']),
-    ]);
+      'password_changed_at' => $user['password_changed_at'] ?? null,
+    ];
   }
 
   public static function logout(): void
@@ -90,15 +103,30 @@ class Auth
     self::$session->set('user', $u);
   }
 
-  public static function clearMustChangePassword(): void
+  /**
+   * Fecha a troca de senha feita pelo próprio usuário logado.
+   *
+   * Regenera o id da sessão (a antiga não serve mais) e recarrega o payload do
+   * banco, incluindo a nova password_changed_at — sem isso a sessão que acabou
+   * de trocar a senha seria derrubada pelo próprio refresh.
+   */
+  public static function refreshAfterPasswordChange(): void
   {
-    $u = self::user();
-    if (!$u) {
+    $sessionUser = self::user();
+    if (!$sessionUser || empty($sessionUser['id'])) {
       return;
     }
 
-    $u['must_change_password'] = false;
-    self::$session->set('user', $u);
+    self::$session->regenerate();
+
+    $user = (new \App\Models\User())->find((int) $sessionUser['id']);
+    if (!$user) {
+      self::logout();
+      View::redirect('/login');
+    }
+
+    self::$session->set('user', self::sessionPayload($user));
+    self::$session->set('_user_refreshed_at', time());
   }
 
   public static function requireAuth(): void
@@ -145,14 +173,13 @@ class Auth
       View::redirect('/login');
     }
 
-    self::$session->set('user', [
-      'id' => (int) $user['id'],
-      'name' => $user['name'],
-      'email' => $user['email'],
-      'role' => $user['role'],
-      'avatar_path' => $user['avatar_path'] ?? null,
-      'must_change_password' => !empty($user['must_change_password']),
-    ]);
+    // Senha trocada depois da emissão desta sessão: derruba o acesso.
+    if (($user['password_changed_at'] ?? null) !== ($sessionUser['password_changed_at'] ?? null)) {
+      self::logout();
+      View::redirect('/login');
+    }
+
+    self::$session->set('user', self::sessionPayload($user));
     self::$session->set('_user_refreshed_at', time());
   }
 
