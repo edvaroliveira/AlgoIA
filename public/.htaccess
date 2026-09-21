@@ -1,7 +1,10 @@
 Options -Indexes
 
-# Force HTTPS — uncomment in production on Hostgator
+# Force HTTPS — descomente em producao (fica comentado para nao quebrar
+# ambiente local em http). A segunda condicao cobre deploy atras de proxy/CDN,
+# onde %{HTTPS} chega como "off" mesmo com TLS no cliente.
 # RewriteCond %{HTTPS} off
+# RewriteCond %{HTTP:X-Forwarded-Proto} !=https
 # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 RewriteEngine On
@@ -10,7 +13,17 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L]
 
 # Block access to hidden files
-<FilesMatch "^\.">
-    Order allow,deny
-    Deny from all
-</FilesMatch>
+# Apache 2.4+
+<IfModule mod_authz_core.c>
+    <FilesMatch "^\.">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+# Apache 2.2 (sem mod_authz_core; "Order allow,deny" derruba o 2.4 com 500)
+<IfModule !mod_authz_core.c>
+    <FilesMatch "^\.">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>

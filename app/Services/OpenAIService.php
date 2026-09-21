@@ -60,6 +60,12 @@ class OpenAIService
     int    $answerId,
     int    $studentId
   ): array {
+    // Falha rápida: sem chave, os 3 retries só queimariam tempo e acabariam
+    // num "Erro ao processar avaliação" que não diz o que está errado.
+    if (trim($this->apiKey) === '') {
+      throw new \RuntimeException('OPENAI_API_KEY não configurada: correção automática indisponível.');
+    }
+
     // Layer 1 — detect & log injection attempts
     $this->detectInjection($studentAnswer, $answerId, $studentId);
 

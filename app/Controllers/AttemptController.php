@@ -331,13 +331,7 @@ class AttemptController
 
   private function safeReturnPath(string $fallbackPath): string
   {
-    $returnTo = trim((string) Request::post('return_to', ''));
-
-    if ($returnTo !== '' && str_starts_with($returnTo, '/') && strpos($returnTo, '://') === false) {
-      return $returnTo;
-    }
-
-    return $fallbackPath;
+    return \Core\app_safe_path((string) Request::post('return_to', ''), $fallbackPath);
   }
 
   private function attachGradingJobStatuses(array $attempts): array

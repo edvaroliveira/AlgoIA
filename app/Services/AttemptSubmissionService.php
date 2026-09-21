@@ -89,8 +89,11 @@ class AttemptSubmissionService
         throw new \RuntimeException('A publicação, matrícula ou moderação não permite mais o envio desta tentativa.');
       }
 
-      $questions = (new Question())->findActiveByExercise((int) $attempt['exercise_id']);
-      $answers   = new Answer();
+      // Models recebem a mesma conexão do serviço: com o singleton isso é
+      // indiferente, mas garante que o enfileiramento abaixo participe desta
+      // transação mesmo quando outra conexão for injetada (testes, worker).
+      $questions = (new Question($db))->findActiveByExercise((int) $attempt['exercise_id']);
+      $answers   = new Answer($db);
 
       foreach ($questions as $q) {
         $text = trim((string) ($postData["answer_{$q['id']}"] ?? ''));
@@ -104,7 +107,7 @@ class AttemptSubmissionService
         [$attemptId]
       );
 
-      (new GradingJob())->enqueueAttempt($attemptId);
+      (new GradingJob($db))->enqueueAttempt($attemptId);
 
       $db->commit();
       return 'submitted';

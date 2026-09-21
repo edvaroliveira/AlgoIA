@@ -131,7 +131,7 @@ class AuthController
     $errors = [];
 
     if (!$user || !$this->users->verifyPassword($currentPassword, $user['password_hash'])) {
-      $errors[] = 'Senha temporária incorreta.';
+      $errors[] = 'Senha atual incorreta.';
     }
     if (!$this->isStrongPassword($password)) {
       $errors[] = 'Nova senha deve ter de 10 a 72 caracteres, com letra maiúscula, minúscula e número.';
@@ -140,7 +140,7 @@ class AuthController
       $errors[] = 'As senhas não coincidem.';
     }
     if ($currentPassword !== '' && $password !== '' && $currentPassword === $password) {
-      $errors[] = 'A nova senha deve ser diferente da senha temporária.';
+      $errors[] = 'A nova senha deve ser diferente da senha atual.';
     }
 
     if ($errors) {
@@ -148,10 +148,11 @@ class AuthController
       return;
     }
 
-    $this->users->updatePassword((int) Auth::id(), $password);
-    Auth::clearMustChangePassword();
+    $userId = (int) Auth::id();
+    $this->users->updatePassword($userId, $password);
+    Auth::refreshAfterPasswordChange();
 
-    \App\Services\AuditService::record('auth.password_change_required_completed', 'user', (int) Auth::id());
+    \App\Services\AuditService::record('auth.password_change_required_completed', 'user', $userId);
 
     global $session;
     $session->flash('success', 'Senha atualizada com sucesso.');

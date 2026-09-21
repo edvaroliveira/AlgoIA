@@ -318,7 +318,7 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
             <?php if ($isDraft): ?>
               <form method="POST" action="<?= \Core\app_url('/teacher/questions/' . $q['id'] . '/delete') ?>"
                 class="inline-form"
-                onsubmit="return confirm('Excluir esta questão?');">
+                data-confirm="Excluir esta questão?">
                 <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                 <button class="btn btn--danger btn--sm">Excluir questão</button>
               </form>
@@ -388,7 +388,7 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
       <p class="danger-zone__copy">A exclusão remove o exercício, as questões e os registros relacionados de tentativas e respostas.</p>
     </div>
     <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/delete') ?>"
-      onsubmit="return confirm('Excluir este exercício e todos os seus dados?');">
+      data-confirm="Excluir este exercício e todos os seus dados?">
       <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
       <button type="submit" class="btn btn--danger">Excluir exercício</button>
     </form>
