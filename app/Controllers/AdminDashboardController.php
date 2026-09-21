@@ -13,6 +13,9 @@ use Core\View;
 
 class AdminDashboardController extends AdminBaseController
 {
+  /** Presets ficam na sessão; sem teto a sessão cresce sem limite. */
+  private const MAX_FILTER_PRESETS = 10;
+
   public function dashboard(): void
   {
 
@@ -89,6 +92,16 @@ class AdminDashboardController extends AdminBaseController
       'filters'    => $filters,
       'updated_at' => date('c'),
     ];
+
+    // Teto por escopo: a sessão é o armazenamento, então a lista não pode
+    // crescer sem limite. Descarta os presets mais antigos por updated_at.
+    if (count($scopePresets) > self::MAX_FILTER_PRESETS) {
+      uasort($scopePresets, static fn(array $left, array $right): int => strcmp(
+        (string) ($right['updated_at'] ?? ''),
+        (string) ($left['updated_at'] ?? '')
+      ));
+      $scopePresets = array_slice($scopePresets, 0, self::MAX_FILTER_PRESETS, true);
+    }
 
     $presets[$scope] = $scopePresets;
     $session->set('admin_filter_presets', $presets);

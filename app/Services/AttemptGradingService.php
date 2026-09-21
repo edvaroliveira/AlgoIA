@@ -8,18 +8,21 @@ use App\Models\Answer;
 use App\Models\Attempt;
 use App\Models\Exercise;
 use App\Models\Question;
+use Core\Database;
 
 class AttemptGradingService
 {
+  private ?Database $db;
   private Attempt $attempts;
   private Answer $answers;
   private OpenAIService $ai;
 
-  public function __construct()
+  public function __construct(?Database $db = null)
   {
-    $this->attempts = new Attempt();
-    $this->answers = new Answer();
-    $this->ai = new OpenAIService();
+    $this->db = $db;
+    $this->attempts = new Attempt($db);
+    $this->answers = new Answer($db);
+    $this->ai = new OpenAIService($db);
   }
 
   public function gradeSubmittedAttempt(int $attemptId, ?callable $heartbeat = null): float
@@ -31,12 +34,12 @@ class AttemptGradingService
       throw new \RuntimeException('Tentativa não está pendente de correção.');
     }
 
-    $exercises = new Exercise();
+    $exercises = new Exercise($this->db);
     $exercise = $exercises->find((int) $attempt['exercise_id']);
     if (
       !$exercise
       || $exercises->isBlockedForReview($exercise)
-      || (new Question())->hasBlockedByExercise((int) $attempt['exercise_id'])
+      || (new Question($this->db))->hasBlockedByExercise((int) $attempt['exercise_id'])
     ) {
       throw new \RuntimeException('Exercício bloqueado pela moderação. Correção suspensa.');
     }

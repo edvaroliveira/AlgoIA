@@ -10,7 +10,7 @@ Para um ambiente novo, use o schema consolidado:
 
 1. Criar o banco vazio com charset `utf8mb4`.
 2. Executar `database/migrations/001_create_tables.sql`.
-3. Nao executar as migrations incrementais `002` a `014` em seguida, pois elas existem para atualizar bases antigas.
+3. Nao executar as migrations incrementais `002` a `019` em seguida, pois elas existem para atualizar bases antigas.
 
 O arquivo `001_create_tables.sql` contem o schema atual consolidado, incluindo auditoria, configuracoes, cadastro docente, contexto de turma em tentativas, reset por token e motivos de desconto da IA.
 
@@ -36,8 +36,11 @@ Para um ambiente que ja foi criado com schema antigo, nao reexecute `001_create_
 16. `016_user_avatar.sql`
 17. `017_grading_jobs_worker_id.sql`
 18. `018_attempts_start_index.sql`
+19. `019_users_password_changed_at.sql`
 
 Observacao: existem dois arquivos iniciados por `002` por historico do projeto. A ordem acima e a referencia oficial.
+
+A migration `019` e **pre-requisito do deploy do codigo**, nao opcional: sem a coluna `users.password_changed_at` toda troca de senha falha com "Unknown column". Aplique a migration antes de publicar os arquivos. Ela tambem preenche a coluna com `created_at` nas linhas existentes, para que o primeiro deploy nao derrube todas as sessoes de uma vez.
 
 A migration `015` recria a FK `fk_ex_turma` com `ON DELETE SET NULL`, permitindo excluir turma com exercicio referenciado sem erro. Esse comportamento ja vem no schema consolidado `001` para instalacoes limpas; a `015` corrige apenas bases criadas com a versao antiga da `001`.
 
@@ -67,8 +70,11 @@ Configurar no `.env`:
 - `DB_PASSWORD`
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
+- `TRUSTED_PROXIES`
 
 `OPENAI_MODEL` tem fallback em `config/openai.php`, mas deve ser definido no ambiente para facilitar troca sem edicao de codigo.
+
+`TRUSTED_PROXIES` e a lista (separada por virgula) de IPs ou blocos CIDR dos proxies/CDN na frente da aplicacao. Vazio e o padrao seguro: os cabecalhos `X-Forwarded-For` e `CF-Connecting-IP` sao ignorados e `audit_logs.ip_address` usa apenas `REMOTE_ADDR`. So preencha com os IPs do seu proxy — qualquer cliente pode forjar esses cabecalhos.
 
 ## Cadastro Publico de Docentes
 
@@ -99,6 +105,8 @@ php bin/process_grading_jobs.php 10
 ```
 
 O argumento numerico define o maximo de jobs processados por execucao. Jobs com falha ficam recuperaveis para nova tentativa automatica ou reprocessamento manual.
+
+O worker sai com codigo `1` quando algum job do lote falhou (`0` quando o lote correu limpo). Use esse codigo para alarme no cron — ate a revisao de 2026-09-21 o script saia sempre com `0` e a degradacao da fila passava despercebida.
 Jobs que ficarem travados como `processing` por mais de 15 minutos sao recuperados pelo proprio worker e voltam ao ciclo de tentativa. Quando uma tentativa e corrigida manualmente, o job correspondente e marcado como concluido para evitar alerta falso.
 
 Para validar a fila sem chamar a OpenAI, use:

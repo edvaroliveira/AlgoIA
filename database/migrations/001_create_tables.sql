@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_reset_at DATETIME NULL,
     password_reset_token_hash VARCHAR(255) NULL,
     password_reset_expires_at DATETIME NULL,
+    password_changed_at DATETIME NULL,
     role          ENUM('admin','teacher','student') NOT NULL DEFAULT 'student',
     status        ENUM('pending','active','inactive','rejected') NOT NULL DEFAULT 'pending',
     registration_note TEXT NULL,

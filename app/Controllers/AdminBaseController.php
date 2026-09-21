@@ -114,7 +114,7 @@ abstract class AdminBaseController
   protected function buildReturnPathFromRequest(string $basePath): string
   {
     $returnTo = trim((string) Request::get('return_to', ''));
-    if ($returnTo !== '' && str_starts_with($returnTo, '/') && strpos($returnTo, '://') === false) {
+    if ($returnTo !== '' && \Core\app_safe_path($returnTo, '') !== '') {
       return $returnTo;
     }
 

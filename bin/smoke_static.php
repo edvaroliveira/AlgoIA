@@ -106,6 +106,55 @@ $checks = [
     ],
   ],
   [
+    // RS-01: a confirmação de ação destrutiva depende deste listener — sem ele
+    // os data-confirm das views viram decoração e a ação passa direto.
+    'file' => 'public/assets/js/app.js',
+    'mustContain' => [
+      'data-confirm',
+      'form[data-confirm]',
+    ],
+  ],
+  [
+    // RS-02: cabeçalho de proxy só vale vindo de proxy declarado.
+    'file' => 'app/Services/AuditService.php',
+    'mustContain' => [
+      'isTrustedProxy',
+      'TRUSTED_PROXIES',
+      "REMOTE_ADDR",
+    ],
+  ],
+  [
+    // RS-04: sessão versionada pela senha; sem isso o reset não derruba
+    // sessões abertas em outros dispositivos.
+    'file' => 'core/Auth.php',
+    'mustContain' => [
+      'password_changed_at',
+      'refreshAfterPasswordChange',
+      'sessionPayload',
+    ],
+  ],
+  [
+    'file' => 'app/Models/User.php',
+    'mustContain' => [
+      'password_changed_at = NOW()',
+    ],
+  ],
+  [
+    // RS-10: cron precisa enxergar degradação da fila pelo exit code.
+    'file' => 'bin/process_grading_jobs.php',
+    'mustContain' => [
+      'failedCount',
+      'exit($failed > 0 ? 1 : 0);',
+    ],
+  ],
+  [
+    'file' => 'database/migrations/019_users_password_changed_at.sql',
+    'mustContain' => [
+      'password_changed_at',
+      'information_schema.COLUMNS',
+    ],
+  ],
+  [
     'file' => 'database/migrations/013_login_attempts.sql',
     'mustContain' => [
       'CREATE TABLE IF NOT EXISTS login_attempts',

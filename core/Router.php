@@ -59,7 +59,10 @@ class Router
 
   public function dispatch(): void
   {
-    $method = $_SERVER['REQUEST_METHOD'];
+    $requestMethod = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET');
+    // HEAD é um GET sem corpo: PHP descarta a saída sozinho. Sem esse mapeamento
+    // toda rota GET responde 404 para health check e crawler.
+    $method = $requestMethod === 'HEAD' ? 'GET' : $requestMethod;
     $uri    = app_request_path();
 
     foreach ($this->routes as $route) {
@@ -113,6 +116,11 @@ class Router
       $message = 'Erro interno. Tente novamente mais tarde.';
     }
 
-    echo "<h1>{$code}</h1><p>" . htmlspecialchars($message) . "</p>";
+    if (!headers_sent()) {
+      header('Content-Type: text/html; charset=UTF-8');
+    }
+
+    echo '<!doctype html><meta charset="utf-8">'
+      . "<h1>{$code}</h1><p>" . htmlspecialchars($message, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</p>';
   }
 }

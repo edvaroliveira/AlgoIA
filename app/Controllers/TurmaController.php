@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Models\LoginAttempt;
 use App\Models\Turma;
 use App\Services\AuditService;
 use Core\Auth;
@@ -109,10 +110,18 @@ class TurmaController
   {
     Request::validateCsrf();
 
+    global $session;
+
+    // Chave de turma tem 6 caracteres: sem limite, um aluno logado consegue
+    // varrer o espaço de chaves e se inscrever em turmas que não são dele.
+    if ($this->isJoinThrottled()) {
+      $session->flash('error', 'Muitas tentativas de entrada em turma. Aguarde alguns minutos e tente novamente.');
+      View::redirect('/student/dashboard');
+    }
+    $this->recordJoinAttempt();
+
     $key   = strtoupper(trim(Request::str('turma_key')));
     $turma = $this->turmas->findByKey($key);
-
-    global $session;
 
     if (!$turma) {
       $session->flash('error', 'Chave de turma inválida ou inativa.');
@@ -131,5 +140,33 @@ class TurmaController
     $turma = $this->turmas->find($id);
     Auth::ensure($turma && (int) $turma['teacher_id'] === Auth::id());
     return $turma;
+  }
+
+  private function isJoinThrottled(): bool
+  {
+    try {
+      return (new LoginAttempt())->isActionRateLimited('turma_join', $this->clientIp());
+    } catch (\Throwable $e) {
+      error_log('Turma join throttle unavailable: ' . $e->getMessage());
+      return false;
+    }
+  }
+
+  private function recordJoinAttempt(): void
+  {
+    try {
+      (new LoginAttempt())->recordAction(
+        'turma_join',
+        $this->clientIp(),
+        (string) ($_SERVER['HTTP_USER_AGENT'] ?? '')
+      );
+    } catch (\Throwable $e) {
+      error_log('Turma join throttle record unavailable: ' . $e->getMessage());
+    }
+  }
+
+  private function clientIp(): string
+  {
+    return mb_substr((string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'), 0, 45);
   }
 }
