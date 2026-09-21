@@ -42,7 +42,7 @@ global $session;
   <div class="surface-block__body surface-block__body--stack">
     <div class="big-key"><?= \Core\View::e($turma['access_key'] ?? '') ?></div>
     <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/key') ?>"
-      onsubmit="return confirm('Gerar nova chave? A chave atual deixará de funcionar para novos cadastros.');">
+      data-confirm="Gerar nova chave? A chave atual deixará de funcionar para novos cadastros.">
       <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
       <button type="submit" class="btn btn--ghost btn--sm">↻ Gerar nova chave</button>
     </form>
@@ -82,7 +82,7 @@ global $session;
                   </form>
                   <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/reject/' . $s['id']) ?>"
                     class="inline-form"
-                    onsubmit="return confirm('Rejeitar este aluno?');">
+                    data-confirm="Rejeitar este aluno?">
                     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                     <button class="btn btn--danger btn--sm">Rejeitar</button>
                   </form>
@@ -126,7 +126,7 @@ global $session;
                 <td><?= date('d/m/Y', strtotime($s['joined_at'])) ?></td>
                 <td>
                   <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/reject/' . $s['id']) ?>"
-                    onsubmit="return confirm('Remover este aluno da turma?');">
+                    data-confirm="Remover este aluno da turma?">
                     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                     <button class="btn btn--danger btn--sm">Remover</button>
                   </form>

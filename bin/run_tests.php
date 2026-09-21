@@ -280,6 +280,32 @@ same(
 // O teste completo de race condition (admin fecha publicação entre pre-fetch e
 // commit) requer uma instância MySQL ao vivo e não é coberto por SQLite aqui.
 
+// ── RS-03: app_safe_path recusa redirect para fora do domínio ────────────────
+// "//host" e "/\host" viram URL protocol-relative depois que o navegador
+// normaliza a barra invertida — ambos precisam cair no fallback.
+same('/admin/users', \Core\app_safe_path('//evil.com', '/admin/users'), 'RS-03: "//host" cai no fallback');
+same('/admin/users', \Core\app_safe_path('/\\evil.com', '/admin/users'), 'RS-03: "/\\host" cai no fallback');
+same('/admin/users', \Core\app_safe_path('https://evil.com', '/admin/users'), 'RS-03: URL absoluta cai no fallback');
+same('/admin/users', \Core\app_safe_path('', '/admin/users'), 'RS-03: string vazia cai no fallback');
+same('/admin/users', \Core\app_safe_path('admin/users', '/admin/users'), 'RS-03: caminho relativo cai no fallback');
+same('/teacher/dashboard', \Core\app_safe_path('/teacher/dashboard', '/x'), 'RS-03: caminho interno é preservado');
+same('/admin/users?page=2', \Core\app_safe_path('  /admin/users?page=2  ', '/x'), 'RS-03: query é preservada após trim');
+
+// ── RS-01: nenhuma view pode usar handler inline (bloqueado pela CSP) ────────
+// script-src usa nonce, e nonce não libera atributo de evento: onclick/onsubmit
+// viram no-op silencioso. Confirmação de ação destrutiva mora em data-confirm.
+$inlineHandlerViews = [];
+$viewIterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(ROOT_PATH . '/views'));
+foreach ($viewIterator as $viewFile) {
+  if (!$viewFile->isFile() || $viewFile->getExtension() !== 'php') {
+    continue;
+  }
+  if (preg_match('/\son(?:click|submit|change|input|load|error)\s*=/i', (string) file_get_contents($viewFile->getPathname()))) {
+    $inlineHandlerViews[] = str_replace(ROOT_PATH . '/', '', $viewFile->getPathname());
+  }
+}
+same([], $inlineHandlerViews, 'RS-01: nenhuma view usa handler inline (CSP bloqueia; use data-confirm)');
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];

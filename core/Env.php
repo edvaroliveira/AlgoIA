@@ -107,6 +107,20 @@ function app_url(string $path = ''): string
 }
 
 /**
+ * Valida um caminho de retorno vindo da requisição.
+ *
+ * Aceita só caminho interno ("/algo"). Recusa "//host" e "/\host": o parser de
+ * URL do navegador converte a barra invertida em barra, então os dois viram
+ * URL protocol-relative e o redirect sai do domínio.
+ */
+function app_safe_path(string $candidate, string $fallback): string
+{
+    $candidate = trim($candidate);
+
+    return preg_match('#^/(?![/\\\\])#', $candidate) === 1 ? $candidate : $fallback;
+}
+
+/**
  * URL de asset estático com cache-busting por mtime (?v=...).
  * Garante que CSS/JS atualizados sejam recarregados pelo navegador.
  */

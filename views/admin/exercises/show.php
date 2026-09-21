@@ -30,7 +30,7 @@ global $session;
   <div class="td-actions">
     <a href="<?= \Core\app_url($returnPath) ?>" class="btn btn--ghost">Voltar</a>
     <?php if (($exercise['status'] ?? '') === 'active' && !empty($exercise['publication_settings'])): ?>
-      <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/close') ?>" onsubmit="return confirm('Encerrar administrativamente as publicações deste exercício?');">
+      <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/close') ?>" data-confirm="Encerrar administrativamente as publicações deste exercício?">
         <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
         <button type="submit" class="btn btn--danger">Encerrar publicações</button>
       </form>
@@ -209,7 +209,7 @@ global $session;
                   <span class="selection-summary" data-selection-count="exercise-publications">0 selecionadas</span>
                   <span class="selection-summary" data-selection-breakdown="exercise-publications"></span>
                   <span class="selection-summary" data-selection-compatibility="exercise-publications"></span>
-                  <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="exercise-publications" data-allowed-states="open,scheduled" onclick="return confirm('Encerrar todas as publicações selecionadas?');" disabled>Encerrar selecionadas</button>
+                  <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="exercise-publications" data-allowed-states="open,scheduled" data-confirm="Encerrar todas as publicações selecionadas?" disabled>Encerrar selecionadas</button>
                   <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="exercise-publications" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
                 </div>
               </div>
@@ -274,7 +274,7 @@ global $session;
               </div>
             </form>
             <div class="td-actions">
-              <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/' . ($publication['turma_id'] ?? 0) . '/close') ?>" onsubmit="return confirm('Encerrar administrativamente apenas esta publicação?');">
+              <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/' . ($publication['turma_id'] ?? 0) . '/close') ?>" data-confirm="Encerrar administrativamente apenas esta publicação?">
                 <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                 <button type="submit" class="btn btn--sm btn--ghost">Encerrar esta publicação</button>
               </form>

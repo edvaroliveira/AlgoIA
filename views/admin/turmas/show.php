@@ -18,12 +18,12 @@ global $session;
   <div class="td-actions">
     <a href="<?= \Core\app_url($returnPath) ?>" class="btn btn--ghost">Voltar</a>
     <?php if ((bool) ($turma['active'] ?? false)): ?>
-      <form method="POST" action="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/deactivate') ?>" onsubmit="return confirm('Inativar esta turma para novas entradas?');">
+      <form method="POST" action="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/deactivate') ?>" data-confirm="Inativar esta turma para novas entradas?">
         <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
         <button type="submit" class="btn btn--danger">Inativar turma</button>
       </form>
     <?php else: ?>
-      <form method="POST" action="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/reactivate') ?>" onsubmit="return confirm('Reativar esta turma para novas entradas?');">
+      <form method="POST" action="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/reactivate') ?>" data-confirm="Reativar esta turma para novas entradas?">
         <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
         <button type="submit" class="btn btn--primary">Reativar turma</button>
       </form>
@@ -117,7 +117,7 @@ global $session;
                 <span class="selection-summary" data-selection-count="turma-publications">0 selecionados</span>
                 <span class="selection-summary" data-selection-breakdown="turma-publications"></span>
                 <span class="selection-summary" data-selection-compatibility="turma-publications"></span>
-                <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="turma-publications" data-allowed-states="open,scheduled" onclick="return confirm('Encerrar as publicações selecionadas desta turma?');" disabled>Encerrar selecionadas</button>
+                <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="turma-publications" data-allowed-states="open,scheduled" data-confirm="Encerrar as publicações selecionadas desta turma?" disabled>Encerrar selecionadas</button>
                 <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="turma-publications" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
               </div>
             </div>

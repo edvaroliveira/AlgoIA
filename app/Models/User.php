@@ -61,7 +61,8 @@ class User extends Model
                  must_change_password = 0,
                  password_reset_at = NULL,
                  password_reset_token_hash = NULL,
-                 password_reset_expires_at = NULL
+                 password_reset_expires_at = NULL,
+                 password_changed_at = NOW()
              WHERE id = ?",
       [password_hash($newPassword, PASSWORD_BCRYPT), $id]
     );
