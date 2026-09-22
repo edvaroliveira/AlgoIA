@@ -53,6 +53,21 @@ class User extends Model
     return (int) ($row['total'] ?? 0);
   }
 
+  /**
+   * Mesma contagem, mas com FOR UPDATE: só usar dentro de uma transação
+   * (beginTransaction/commit do proxy em Model). O lock nas linhas de admin
+   * ativo serializa requests concorrentes que tentem remover o último admin,
+   * fechando a janela de corrida que existe entre contar e escrever.
+   */
+  public function countActiveAdminsForUpdate(): int
+  {
+    $row = $this->db->fetchOne(
+      "SELECT COUNT(*) AS total FROM users WHERE role = 'admin' AND status = 'active' FOR UPDATE"
+    );
+
+    return (int) ($row['total'] ?? 0);
+  }
+
   public function updatePassword(int $id, string $newPassword): void
   {
     $this->db->execute(
@@ -98,6 +113,39 @@ class User extends Model
              LIMIT 1",
       [hash('sha256', $token)]
     );
+  }
+
+  /**
+   * Consome o token de reset em uma única instrução atômica: o UPDATE só
+   * atinge linha se o hash do token ainda casar e não estiver expirado, e já
+   * limpa o próprio hash. Duas requisições concorrentes com o mesmo token
+   * disputam a mesma linha — a primeira consome (limpa o hash), a segunda
+   * casa zero linhas e recebe false. Sem isso, findByValidPasswordResetToken
+   * (SELECT) seguido de updatePassword (UPDATE por id) deixava as duas
+   * passarem antes de qualquer escrita.
+   */
+  public function consumePasswordResetToken(int $id, string $token, string $newPassword): bool
+  {
+    if ($token === '') {
+      return false;
+    }
+
+    $affected = $this->db->execute(
+      "UPDATE users
+             SET password_hash = ?,
+                 must_change_password = 0,
+                 password_reset_at = NULL,
+                 password_reset_token_hash = NULL,
+                 password_reset_expires_at = NULL,
+                 password_changed_at = NOW()
+             WHERE id = ?
+               AND password_reset_token_hash = ?
+               AND password_reset_expires_at IS NOT NULL
+               AND password_reset_expires_at >= NOW()",
+      [password_hash($newPassword, PASSWORD_BCRYPT), $id, hash('sha256', $token)]
+    );
+
+    return $affected > 0;
   }
 
   public function updateProfile(int $id, string $name, string $email): void

@@ -17,6 +17,13 @@ As suites verdes confirmam as invariantes atualmente testadas, mas nao exercitam
 concorrencia MySQL real, requests completos, integracao com a OpenAI nem os
 efeitos ponta a ponta da moderacao.
 
+**Atualização 2026-09-21:** AP-05, AP-06, AP-07, AP-09 e AP-10 implementados;
+AP-12 parcial. Reverificado contra o código atual antes de implementar —
+`php bin/smoke_static.php`, `php bin/run_tests.php` (63 testes) e
+`php bin/run_db_tests.php` (58 testes) passam após as mudanças. AP-08 (teste
+real MySQL/HTTP) segue pendente — é o item que fecharia a lacuna de cobertura
+concorrente citada em AP-05, AP-06 e AP-07 acima.
+
 ## Modelo de Prioridade
 
 - **P0:** risco direto para integridade da avaliacao ou regra administrativa.
@@ -32,14 +39,14 @@ efeitos ponta a ponta da moderacao.
 | AP-02 | Tornar bloqueio de questao efetivo em todo o fluxo | P0 | M | Implementado; falta teste ponta a ponta MySQL/HTTP |
 | AP-03 | Garantir lease continuo e propriedade estrita do worker | P1 | M | Implementado; falta teste concorrente MySQL |
 | AP-04 | Unificar arredondamento da nota por resposta e total | P1 | P | Implementado e testado |
-| AP-05 | Consumir token de redefinicao de senha atomicamente | P1 | M | Pendente |
-| AP-06 | Proteger ultimo admin e mudancas de papel contra concorrencia | P1 | M | Pendente |
-| AP-07 | Tornar cadastros publicos atomicos e concorrentes | P1 | M | Pendente |
+| AP-05 | Consumir token de redefinicao de senha atomicamente | P1 | M | Implementado em 2026-09-21; falta teste concorrente MySQL |
+| AP-06 | Proteger ultimo admin e mudancas de papel contra concorrencia | P1 | M | Implementado em 2026-09-21; falta teste concorrente MySQL |
+| AP-07 | Tornar cadastros publicos atomicos e concorrentes | P1 | M | Implementado em 2026-09-21; falta teste concorrente |
 | AP-08 | Criar testes reais dos fluxos criticos em MySQL e HTTP | P1 | G | Pendente |
-| AP-09 | Eliminar divergencia entre schemas limpos e ampliar smoke | P2 | M | Pendente |
-| AP-10 | Configurar confianca explicita em proxy reverso | P2 | M | Pendente |
+| AP-09 | Eliminar divergencia entre schemas limpos e ampliar smoke | P2 | M | Implementado em 2026-09-21 |
+| AP-10 | Configurar confianca explicita em proxy reverso | P2 | M | Implementado em 2026-09-21 |
 | AP-11 | Revalidar tentativa em andamento antes de reutiliza-la | P2 | P | Implementado junto ao AP-01 |
-| AP-12 | Definir limites de entrada e guardrails operacionais | P2 | M | Pendente |
+| AP-12 | Definir limites de entrada e guardrails operacionais | P2 | M | Parcial em 2026-09-21; ver nota |
 
 ---
 
@@ -236,6 +243,12 @@ a resposta e inconsistente e tentativas orfas permanecem abertas.
 **Prioridade:** P1  
 **Esforco:** M
 
+**Situacao:** implementado em 2026-09-21. `User::consumePasswordResetToken()`
+faz um único `UPDATE` cuja `WHERE` casa o hash do token e a expiração e já
+limpa o próprio hash na mesma instrução — a segunda de duas requisições
+concorrentes com o mesmo token casa zero linhas e recebe `false`. O teste
+concorrente MySQL permanece pendente no AP-08.
+
 **Achado:** o reset consulta o token valido e depois atualiza a senha em outra
 operacao. Dois requests concorrentes com o mesmo token podem ambos passar na
 consulta e trocar a senha; o ultimo commit vence.
@@ -264,6 +277,12 @@ consulta e trocar a senha; o ultimo commit vence.
 **Prioridade:** P1  
 **Esforco:** M
 
+**Situacao:** implementado em 2026-09-21. `updateUserStatus`, `deactivateUsersBatch`
+e `updateUser` (troca de papel/status) agora abrem uma transação, contam admins
+ativos com `User::countActiveAdminsForUpdate()` (`SELECT ... FOR UPDATE`) e só
+então decidem e escrevem — o lock nas linhas de admin ativo serializa requests
+concorrentes. O teste concorrente MySQL permanece pendente no AP-08.
+
 **Achado:** contagem do ultimo admin, verificacao de dependencias e atualizacao
 do usuario ocorrem em queries separadas, sem lock ou transacao.
 
@@ -288,6 +307,13 @@ acessos administrativos ou alterar papel enquanto novas dependencias surgem.
 
 **Prioridade:** P1  
 **Esforco:** M
+
+**Situacao:** implementado em 2026-09-21. Cadastro de aluno passou a criar
+usuário e matrícula na mesma transação (commit/rollback juntos). Nos dois
+fluxos (aluno e docente), a violação da constraint única de e-mail
+(`SQLSTATE 23000`) é capturada e convertida em erro de formulário controlado
+em vez de propagar como exceção não tratada. Teste de concorrência real
+(duas conexões disputando o mesmo e-mail) permanece pendente no AP-08.
 
 **Achado:** cadastro de aluno cria o usuario e depois cria a matricula, sem
 transacao. O teste de e-mail existente tambem ocorre antes do insert, permitindo
@@ -315,6 +341,14 @@ concorrentes do mesmo e-mail podem gerar erro 500 em vez de resposta controlada.
 
 **Prioridade:** P2  
 **Esforco:** M
+
+**Situacao:** implementado em 2026-09-21 (IP de auditoria já vinha resolvido
+desde a revisão do mesmo dia registrada em
+`docs/backlog_revisao_sistema_2026_09_21.md` RS-02; faltava a parte de
+HTTPS). `Core\is_trusted_proxy()` e `Core\request_is_https()` (novos, em
+`core/Env.php`) centralizam a regra e são usados por `AuditService`,
+`public/index.php` e `core/Session.php`: sem `TRUSTED_PROXIES` configurado,
+`X-Forwarded-Proto`/`X-Forwarded-For`/`CF-Connecting-IP` são ignorados.
 
 **Achado:** HTTPS e IP de auditoria confiam em headers encaminhados sem
 configuracao de proxies confiaveis.
@@ -373,6 +407,15 @@ nao valida concorrencia, requests completos, headers ou schema limpo MySQL.
 **Prioridade:** P2  
 **Esforco:** M
 
+**Situacao:** implementado em 2026-09-21 para a divergência confirmada
+(as duas FKs de `admin_reviewed_by`). `001_create_tables.sql` ganhou
+`fk_ex_admin_reviewed_by` e `fk_q_admin_reviewed_by`; migration incremental
+`020_admin_reviewed_by_fk.sql` (idempotente) cobre bases já existentes.
+`bin/smoke_schema.php` passou a validar as duas FKs via
+`INFORMATION_SCHEMA.KEY_COLUMN_USAGE`. Não foi feita uma auditoria exaustiva
+de todos os índices dos scripts `000_reset_test_*`; apenas a divergência de FK
+identificada nesta revisão foi fechada.
+
 **Achado:** `001_create_tables.sql` e os scripts de reset nao sao equivalentes.
 O schema `001` omite FKs de `admin_reviewed_by` e diversos indices usados pelos
 scripts de teste. O smoke valida apenas dois indices e nao valida FKs.
@@ -397,6 +440,13 @@ integridade referencial e desempenho diferentes sem alerta automatizado.
 
 **Prioridade:** P2  
 **Esforco:** M
+
+**Situacao:** parcial em 2026-09-21. Resposta de tentativa
+(`AttemptController::MAX_ANSWER_LENGTH`) e enunciado/gabarito de questão
+(`QuestionController::MAX_TEXT_LENGTH`) agora rejeitam payload acima de 10000
+caracteres com erro controlado, antes de chegar ao banco ou à OpenAI. Não
+foram tratados: timeout/retries fixos da OpenAI, lote/lease do worker fixos em
+`GradingJob`, nem alertas operacionais de fila parada — ficam pendentes.
 
 **Achado:** respostas, enunciados, descricoes e alguns filtros nao possuem
 limites de tamanho explicitos na aplicacao. Configuracoes criticas da fila e da
