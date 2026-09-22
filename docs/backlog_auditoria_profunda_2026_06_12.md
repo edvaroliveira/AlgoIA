@@ -20,12 +20,11 @@ efeitos ponta a ponta da moderacao.
 **Atualização 2026-09-21:** AP-05, AP-06, AP-07, AP-08, AP-09, AP-10 e AP-12
 implementados. Reverificado contra o código atual antes de implementar —
 `php bin/smoke_static.php`, `php bin/run_tests.php` (63 testes) e
-`php bin/run_db_tests.php` (58 testes) passam após as mudanças; AP-08 rodado
-via CI (job `integration` novo, com serviço MariaDB — motor real do HostGator
-em produção) por depender de um MySQL
-real que este ambiente de desenvolvimento não tinha disponível localmente.
-Único item ainda aberto: a corrida de e-mail duplicado do AP-07 (nota na
-própria seção AP-07).
+`php bin/run_db_tests.php` (58 testes) passam após as mudanças; AP-08 (e o
+teste de concorrência do AP-07 adicionado depois) roda via CI (job
+`integration`, com serviço MariaDB — motor real do HostGator em produção)
+por depender de um MySQL real que este ambiente de desenvolvimento não tinha
+disponível localmente. Todos os itens deste backlog estão implementados.
 
 ## Modelo de Prioridade
 
@@ -44,7 +43,7 @@ própria seção AP-07).
 | AP-04 | Unificar arredondamento da nota por resposta e total | P1 | P | Implementado e testado |
 | AP-05 | Consumir token de redefinicao de senha atomicamente | P1 | M | Implementado em 2026-09-21; teste em AP-08 |
 | AP-06 | Proteger ultimo admin e mudancas de papel contra concorrencia | P1 | M | Implementado em 2026-09-21; teste concorrente MySQL em AP-08 |
-| AP-07 | Tornar cadastros publicos atomicos e concorrentes | P1 | M | Implementado em 2026-09-21; falta teste concorrente |
+| AP-07 | Tornar cadastros publicos atomicos e concorrentes | P1 | M | Implementado em 2026-09-21; teste concorrente MySQL em AP-08 |
 | AP-08 | Criar testes reais dos fluxos criticos em MySQL e HTTP | P1 | G | Implementado em 2026-09-21 |
 | AP-09 | Eliminar divergencia entre schemas limpos e ampliar smoke | P2 | M | Implementado em 2026-09-21 |
 | AP-10 | Configurar confianca explicita em proxy reverso | P2 | M | Implementado em 2026-09-21 |
@@ -323,12 +322,12 @@ acessos administrativos ou alterar papel enquanto novas dependencias surgem.
 usuário e matrícula na mesma transação (commit/rollback juntos). Nos dois
 fluxos (aluno e docente), a violação da constraint única de e-mail
 (`SQLSTATE 23000`) é capturada e convertida em erro de formulário controlado
-em vez de propagar como exceção não tratada. Teste de concorrência real
-(duas conexões disputando o mesmo e-mail) segue pendente — não incluído no
-AP-08, que cobriu os itens com lock explícito (`FOR UPDATE`); a garantia de
-correção aqui vem só da constraint `UNIQUE` em `users.email` + captura de
-`SQLSTATE 23000`, o que já é suficiente para o critério de aceite funcional,
-mas sem teste automatizado de duas conexões reais.
+em vez de propagar como exceção não tratada. Teste de concorrência real com
+duas conexões MySQL adicionado em `bin/run_integration_tests.php`: a conexão
+A insere o e-mail sem commitar; a conexão B tenta o mesmo INSERT e trava
+(lock do índice único do InnoDB, não erro imediato) até A commitar — só
+então B recebe o `SQLSTATE 23000` real que o controller já captura. Fecha a
+lacuna deixada em aberto quando o AP-08 foi implementado.
 
 **Achado:** cadastro de aluno cria o usuario e depois cria a matricula, sem
 transacao. O teste de e-mail existente tambem ocorre antes do insert, permitindo
@@ -401,17 +400,19 @@ conexoes MySQL de verdade e prova que a segunda trava/perde a corrida
 enquanto a primeira segura a transacao: AP-01/AP-02 (lock da tentativa no
 submit), AP-03 (lock do job na fila, incluindo ownership de `markCompleted`),
 AP-05 (consumo atomico do token — duplo consumo sequencial), AP-06 (lock do
-ultimo admin). Inclui smoke HTTP via `php -S` servindo `public/` de verdade:
-headers de seguranca, redirect de rota admin sem sessao, CSRF em POST.
-Novo job `integration` em `.github/workflows/ci.yml` sobe um servico MySQL
-8.0 e roda o script — job separado do `test` original (que continua
+ultimo admin), AP-07 (INSERT concorrente com e-mail duplicado — trava no
+lock do indice unico do InnoDB ate a primeira conexao commitar, so entao a
+segunda recebe o `SQLSTATE 23000` real). Inclui smoke HTTP via `php -S`
+servindo `public/` de verdade: headers de seguranca, redirect de rota admin
+sem sessao, CSRF em POST. Novo job `integration` em
+`.github/workflows/ci.yml` sobe um servico MariaDB (motor real do HostGator
+em producao — MySQL 8 recusa uma DDL que MariaDB aceita, ver commit da
+correcao) e roda o script — job separado do `test` original (que continua
 "Lint + testes (sem banco)", sem MySQL, inalterado). Guarda de seguranca:
 recusa rodar fora de um banco cujo nome contenha `test`/`ci` (o script trunca
-todas as tabelas). Nao cobre: a corrida de e-mail duplicado do AP-07 (duas
-conexoes reais registrando o mesmo e-mail ao mesmo tempo — esse item segue
-com a lacuna registrada nele mesmo), teste de HTTP autenticado ponta a ponta
-(login real + sessao + ação autenticada) nem carga/performance — escopo
-ficou nos pontos de concorrencia e autorizacao negativa que motivaram o item.
+todas as tabelas). Nao cobre: teste de HTTP autenticado ponta a ponta (login
+real + sessao + acao autenticada) nem carga/performance — escopo ficou nos
+pontos de concorrencia e autorizacao negativa que motivaram o item.
 
 **Achado:** a suite atual passa, mas varios testes de banco reproduzem SQL ou
 estado-maquina em tabelas auxiliares SQLite, sem executar os services reais. O CI
