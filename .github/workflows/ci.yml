@@ -34,3 +34,45 @@ jobs:
 
       - name: Testes da camada de dados (SQLite em memória)
         run: php bin/run_db_tests.php
+
+  integration:
+    name: Testes de integração (MySQL + HTTP)
+    runs-on: ubuntu-latest
+
+    services:
+      # MariaDB, não MySQL: é o motor real do HostGator (produção), conforme
+      # 001_create_tables.sql. MySQL 8 recusa `TEXT ... DEFAULT ''`
+      # (system_settings.setting_value) que MariaDB aceita — usar MySQL aqui
+      # geraria falso negativo para um schema que roda bem em produção.
+      mysql:
+        image: mariadb:10.11
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
+          MARIADB_DATABASE: algoia_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_DATABASE: algoia_ci
+      DB_USERNAME: root
+      DB_PASSWORD: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo, pdo_mysql, curl, mbstring, fileinfo
+          coverage: none
+
+      - name: Testes de integração reais (AP-08 / RP-07)
+        run: php bin/run_integration_tests.php
