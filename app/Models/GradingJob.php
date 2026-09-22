@@ -11,10 +11,20 @@ class GradingJob extends Model
   public const STATUS_COMPLETED = 'completed';
   public const STATUS_FAILED = 'failed';
 
-  private const MAX_ATTEMPTS = 3;
-  private const STALE_PROCESSING_MINUTES = 15;
+  private const DEFAULT_MAX_ATTEMPTS = 3;
+  private const DEFAULT_STALE_PROCESSING_MINUTES = 15;
 
   protected string $table = 'grading_jobs';
+
+  private readonly int $maxAttempts;
+  private readonly int $staleProcessingMinutes;
+
+  public function __construct(?\Core\Database $db = null)
+  {
+    parent::__construct($db);
+    $this->maxAttempts = max(1, (int) \Core\env('GRADING_JOB_MAX_ATTEMPTS', self::DEFAULT_MAX_ATTEMPTS));
+    $this->staleProcessingMinutes = max(1, (int) \Core\env('GRADING_JOB_STALE_MINUTES', self::DEFAULT_STALE_PROCESSING_MINUTES));
+  }
 
   public function enqueueAttempt(int $attemptId): void
   {
@@ -52,7 +62,7 @@ class GradingJob extends Model
                ORDER BY available_at ASC, id ASC
                LIMIT 1
                FOR UPDATE",
-        [self::MAX_ATTEMPTS]
+        [$this->maxAttempts]
       );
 
       if (!$job) {
@@ -142,7 +152,7 @@ class GradingJob extends Model
                    last_error = 'Job recuperado após ficar travado em processamento.'
                WHERE status = ?
                  AND locked_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)",
-        [self::STATUS_FAILED, self::STATUS_PROCESSING, self::STALE_PROCESSING_MINUTES]
+        [self::STATUS_FAILED, self::STATUS_PROCESSING, $this->staleProcessingMinutes]
       );
     } catch (\Throwable $e) {
       error_log('grading_jobs stale recovery unavailable: ' . $e->getMessage());
@@ -328,7 +338,7 @@ class GradingJob extends Model
                  AND gj.available_at <= NOW()
                ORDER BY gj.available_at ASC, gj.id ASC
                LIMIT {$safeLimit}",
-        [self::MAX_ATTEMPTS]
+        [$this->maxAttempts]
       );
     } catch (\Throwable $e) {
       error_log('grading_jobs next runnable unavailable: ' . $e->getMessage());
@@ -366,8 +376,8 @@ class GradingJob extends Model
              FROM grading_jobs gj
              {$teacherJoin}
              WHERE (
-               (gj.status = 'queued' AND gj.available_at <= DATE_SUB(NOW(), INTERVAL " . self::STALE_PROCESSING_MINUTES . " MINUTE))
-               OR (gj.status = 'processing' AND gj.locked_at <= DATE_SUB(NOW(), INTERVAL " . self::STALE_PROCESSING_MINUTES . " MINUTE))
+               (gj.status = 'queued' AND gj.available_at <= DATE_SUB(NOW(), INTERVAL " . $this->staleProcessingMinutes . " MINUTE))
+               OR (gj.status = 'processing' AND gj.locked_at <= DATE_SUB(NOW(), INTERVAL " . $this->staleProcessingMinutes . " MINUTE))
              )
              {$teacherWhere}",
       $params
