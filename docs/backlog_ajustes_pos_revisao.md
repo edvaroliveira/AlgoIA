@@ -29,6 +29,8 @@ Este backlog cobre os ajustes identificados apos a segunda revisao do sistema, j
 
 ## P0 - Corrigir cadeia de migrations e schema base
 
+**Status:** implementado via documentacao (`docs/deploy_operacional.md`, secao "Atualizacao de base existente"). Ordem oficial de execucao registrada, incluindo nota explicita sobre os dois arquivos `002_*`. Colunas `attempts.turma_id`, `users.must_change_password` e `users.password_reset_at` ja presentes em `001_create_tables.sql`. Os arquivos `002_*` nao foram renomeados para nao invalidar deploys que ja os aplicaram por esse nome.
+
 **Problema:** as migrations atuais estao inconsistentes para instalacao limpa, com dois arquivos `002` e uma migration tentando adicionar coluna ja criada no schema inicial.
 
 **Objetivo:** tornar instalacao e atualizacao de banco previsiveis.
