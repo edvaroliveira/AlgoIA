@@ -17,8 +17,8 @@ As suites verdes confirmam as invariantes atualmente testadas, mas nao exercitam
 concorrencia MySQL real, requests completos, integracao com a OpenAI nem os
 efeitos ponta a ponta da moderacao.
 
-**Atualização 2026-09-21:** AP-05, AP-06, AP-07, AP-09 e AP-10 implementados;
-AP-12 parcial. Reverificado contra o código atual antes de implementar —
+**Atualização 2026-09-21:** AP-05, AP-06, AP-07, AP-09, AP-10 e AP-12
+implementados. Reverificado contra o código atual antes de implementar —
 `php bin/smoke_static.php`, `php bin/run_tests.php` (63 testes) e
 `php bin/run_db_tests.php` (58 testes) passam após as mudanças. AP-08 (teste
 real MySQL/HTTP) segue pendente — é o item que fecharia a lacuna de cobertura
@@ -46,7 +46,7 @@ concorrente citada em AP-05, AP-06 e AP-07 acima.
 | AP-09 | Eliminar divergencia entre schemas limpos e ampliar smoke | P2 | M | Implementado em 2026-09-21 |
 | AP-10 | Configurar confianca explicita em proxy reverso | P2 | M | Implementado em 2026-09-21 |
 | AP-11 | Revalidar tentativa em andamento antes de reutiliza-la | P2 | P | Implementado junto ao AP-01 |
-| AP-12 | Definir limites de entrada e guardrails operacionais | P2 | M | Parcial em 2026-09-21; ver nota |
+| AP-12 | Definir limites de entrada e guardrails operacionais | P2 | M | Implementado em 2026-09-21 |
 
 ---
 
@@ -441,12 +441,18 @@ integridade referencial e desempenho diferentes sem alerta automatizado.
 **Prioridade:** P2  
 **Esforco:** M
 
-**Situacao:** parcial em 2026-09-21. Resposta de tentativa
+**Situacao:** implementado em 2026-09-21. Resposta de tentativa
 (`AttemptController::MAX_ANSWER_LENGTH`) e enunciado/gabarito de questão
-(`QuestionController::MAX_TEXT_LENGTH`) agora rejeitam payload acima de 10000
-caracteres com erro controlado, antes de chegar ao banco ou à OpenAI. Não
-foram tratados: timeout/retries fixos da OpenAI, lote/lease do worker fixos em
-`GradingJob`, nem alertas operacionais de fila parada — ficam pendentes.
+(`QuestionController::MAX_TEXT_LENGTH`) rejeitam payload acima de 10000
+caracteres com erro controlado, antes de chegar ao banco ou à OpenAI.
+Timeout/retries da OpenAI (`OPENAI_TIMEOUT_SECONDS`, `OPENAI_MAX_RETRIES`) e
+tentativas/janela de job travado (`GRADING_JOB_MAX_ATTEMPTS`,
+`GRADING_JOB_STALE_MINUTES`) passaram de constantes fixas para variáveis de
+ambiente com os mesmos padrões. `bin/process_grading_jobs.php` falha cedo
+(exit 2) se `OPENAI_API_KEY`/extensões faltarem. Alerta operacional documentado
+via `--status` (campos `stale`/`failed`) em `docs/deploy_operacional.md` — não
+foi criado um serviço de alerta automatizado, só a base de dados para montar
+um.
 
 **Achado:** respostas, enunciados, descricoes e alguns filtros nao possuem
 limites de tamanho explicitos na aplicacao. Configuracoes criticas da fila e da
