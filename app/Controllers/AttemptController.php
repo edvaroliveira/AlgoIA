@@ -20,6 +20,11 @@ class AttemptController
 {
   private const PENDING_PER_PAGE = 20;
 
+  // TEXT (MySQL) comporta ~65535 bytes; em utf8mb4 (4 bytes/char no pior
+  // caso), 10000 caracteres cabe com folga. Também limita o custo de token
+  // por resposta enviada à correção por IA.
+  private const MAX_ANSWER_LENGTH = 10000;
+
   private Exercise $exercises;
   private Question $questions;
   private Attempt  $attempts;
@@ -91,6 +96,12 @@ class AttemptController
     if ($questionId <= 0 || $studentAnswer === '') {
       header('Content-Type: application/json');
       exit(json_encode(['ok' => false, 'error' => 'Dados inválidos.']));
+    }
+
+    if (mb_strlen($studentAnswer) > self::MAX_ANSWER_LENGTH) {
+      http_response_code(400);
+      header('Content-Type: application/json');
+      exit(json_encode(['ok' => false, 'error' => 'Resposta muito longa (máximo ' . self::MAX_ANSWER_LENGTH . ' caracteres).']));
     }
 
     if (!$this->questions->belongsToExercise($questionId, (int) $attempt['exercise_id'])) {

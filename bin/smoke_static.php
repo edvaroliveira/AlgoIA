@@ -118,9 +118,33 @@ $checks = [
     // RS-02: cabeçalho de proxy só vale vindo de proxy declarado.
     'file' => 'app/Services/AuditService.php',
     'mustContain' => [
-      'isTrustedProxy',
+      'is_trusted_proxy',
+      'REMOTE_ADDR',
+    ],
+  ],
+  [
+    // RS-02 / AP-10: helper compartilhado de confiança em proxy — sem ele,
+    // AuditService, index.php e Session.php divergiriam na regra de quando
+    // aceitar cabeçalho de proxy.
+    'file' => 'core/Env.php',
+    'mustContain' => [
+      'function is_trusted_proxy',
+      'function request_is_https',
       'TRUSTED_PROXIES',
-      "REMOTE_ADDR",
+    ],
+  ],
+  [
+    // AP-10: X-Forwarded-Proto só deve valer atrás de proxy declarado —
+    // senão um cliente direto pode forjar HTTPS e obter cookie/HSTS indevidos.
+    'file' => 'public/index.php',
+    'mustContain' => [
+      'request_is_https',
+    ],
+  ],
+  [
+    'file' => 'core/Session.php',
+    'mustContain' => [
+      'request_is_https',
     ],
   ],
   [

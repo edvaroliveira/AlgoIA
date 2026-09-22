@@ -168,15 +168,6 @@ class AdminUserController extends AdminBaseController
       $errors[] = 'Você não pode remover o próprio acesso administrativo ativo.';
     }
 
-    $isCurrentlyLastActiveAdmin = ($user['role'] ?? '') === 'admin'
-      && ($user['status'] ?? '') === 'active'
-      && $this->users->countActiveAdmins() <= 1;
-    $willRemainActiveAdmin = $role === 'admin' && $status === 'active';
-
-    if ($isCurrentlyLastActiveAdmin && !$willRemainActiveAdmin) {
-      $errors[] = 'Não é possível alterar o último administrador ativo para um estado sem acesso administrativo ativo.';
-    }
-
     $currentRole = (string) ($user['role'] ?? '');
     if ($currentRole !== $role) {
       if ($currentRole === 'teacher' && $role !== 'teacher'
@@ -203,7 +194,32 @@ class AdminUserController extends AdminBaseController
       return;
     }
 
-    $this->users->updateAdminManagedProfile($userId, $name, $email, $role, $status);
+    $willRemainActiveAdmin = $role === 'admin' && $status === 'active';
+
+    $this->users->beginTransaction();
+    try {
+      $isCurrentlyLastActiveAdmin = ($user['role'] ?? '') === 'admin'
+        && ($user['status'] ?? '') === 'active'
+        && $this->users->countActiveAdminsForUpdate() <= 1;
+
+      if ($isCurrentlyLastActiveAdmin && !$willRemainActiveAdmin) {
+        $this->users->rollback();
+        View::render('admin/users/edit', [
+          'user'   => array_merge($user, compact('name', 'email', 'role', 'status')),
+          'errors' => ['Não é possível alterar o último administrador ativo para um estado sem acesso administrativo ativo.'],
+        ]);
+        return;
+      }
+
+      $this->users->updateAdminManagedProfile($userId, $name, $email, $role, $status);
+      $this->users->commit();
+    } catch (\Throwable $e) {
+      if ($this->users->inTransaction()) {
+        $this->users->rollback();
+      }
+      throw $e;
+    }
+
     AuditService::record('admin.user.profile_update', 'user', $userId, [
       'before' => [
         'name'   => $user['name']   ?? null,
@@ -243,13 +259,24 @@ class AdminUserController extends AdminBaseController
       View::redirect('/admin/users');
     }
 
-    $blockReason = $this->getUserStatusTransitionBlockReason($user, $targetStatus, $this->users->countActiveAdmins());
-    if ($blockReason !== null) {
-      $session->flash('error', $blockReason);
-      View::redirect('/admin/users');
+    $this->users->beginTransaction();
+    try {
+      $blockReason = $this->getUserStatusTransitionBlockReason($user, $targetStatus, $this->users->countActiveAdminsForUpdate());
+      if ($blockReason !== null) {
+        $this->users->rollback();
+        $session->flash('error', $blockReason);
+        View::redirect('/admin/users');
+      }
+
+      $this->users->updateStatus($userId, $targetStatus);
+      $this->users->commit();
+    } catch (\Throwable $e) {
+      if ($this->users->inTransaction()) {
+        $this->users->rollback();
+      }
+      throw $e;
     }
 
-    $this->users->updateStatus($userId, $targetStatus);
     $this->recordUserStatusAudit($user, $targetStatus);
 
     $session->flash('success', $targetStatus === 'active'
@@ -321,26 +348,42 @@ class AdminUserController extends AdminBaseController
       View::redirect($redirectPath);
     }
 
-    $remainingActiveAdmins = $this->users->countActiveAdmins();
-    $updatedCount          = 0;
-    $blockedCount          = 0;
-    $firstBlockReason      = null;
+    $updatedCount     = 0;
+    $blockedCount     = 0;
+    $firstBlockReason = null;
+    $auditQueue       = [];
 
-    foreach ($activeUsers as $user) {
-      $blockReason = $this->getUserStatusTransitionBlockReason($user, 'inactive', $remainingActiveAdmins);
-      if ($blockReason !== null) {
-        $blockedCount++;
-        $firstBlockReason ??= $blockReason;
-        continue;
+    $this->users->beginTransaction();
+    try {
+      $remainingActiveAdmins = $this->users->countActiveAdminsForUpdate();
+
+      foreach ($activeUsers as $user) {
+        $blockReason = $this->getUserStatusTransitionBlockReason($user, 'inactive', $remainingActiveAdmins);
+        if ($blockReason !== null) {
+          $blockedCount++;
+          $firstBlockReason ??= $blockReason;
+          continue;
+        }
+
+        $this->users->updateStatus((int) ($user['id'] ?? 0), 'inactive');
+        $auditQueue[] = $user;
+        $updatedCount++;
+
+        if (($user['role'] ?? '') === 'admin') {
+          $remainingActiveAdmins--;
+        }
       }
 
-      $this->users->updateStatus((int) ($user['id'] ?? 0), 'inactive');
+      $this->users->commit();
+    } catch (\Throwable $e) {
+      if ($this->users->inTransaction()) {
+        $this->users->rollback();
+      }
+      throw $e;
+    }
+
+    foreach ($auditQueue as $user) {
       $this->recordUserStatusAudit($user, 'inactive', 'batch_deactivate');
-      $updatedCount++;
-
-      if (($user['role'] ?? '') === 'admin') {
-        $remainingActiveAdmins--;
-      }
     }
 
     $ignoredCount = count($selectedUserIds) - count($activeUsers);

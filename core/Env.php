@@ -121,6 +121,90 @@ function app_safe_path(string $candidate, string $fallback): string
 }
 
 /**
+ * TRUSTED_PROXIES: lista separada por vírgula de IPs ou blocos CIDR que têm
+ * permissão de anunciar dados de conexão do cliente original (IP, protocolo)
+ * via cabeçalho. Sem essa lista configurada, cabeçalhos de proxy nunca são
+ * confiados — qualquer cliente pode forjá-los.
+ */
+function is_trusted_proxy(string $remoteAddr): bool
+{
+  if ($remoteAddr === '') {
+    return false;
+  }
+
+  $configured = trim((string) env('TRUSTED_PROXIES', ''));
+  if ($configured === '') {
+    return false;
+  }
+
+  foreach (explode(',', $configured) as $entry) {
+    $entry = trim($entry);
+    if ($entry !== '' && ip_matches($remoteAddr, $entry)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function ip_matches(string $ip, string $rule): bool
+{
+  if (!str_contains($rule, '/')) {
+    return $ip === $rule;
+  }
+
+  [$subnet, $bits] = explode('/', $rule, 2);
+  $ipBin     = @inet_pton($ip);
+  $subnetBin = @inet_pton($subnet);
+  $bits      = (int) $bits;
+
+  if ($ipBin === false || $subnetBin === false || strlen($ipBin) !== strlen($subnetBin)) {
+    return false;
+  }
+
+  $maxBits = strlen($ipBin) * 8;
+  if ($bits < 0 || $bits > $maxBits) {
+    return false;
+  }
+
+  $wholeBytes = intdiv($bits, 8);
+  $restBits   = $bits % 8;
+
+  if ($wholeBytes > 0 && strncmp($ipBin, $subnetBin, $wholeBytes) !== 0) {
+    return false;
+  }
+
+  if ($restBits === 0) {
+    return true;
+  }
+
+  $mask = ~((1 << (8 - $restBits)) - 1) & 0xFF;
+
+  return (ord($ipBin[$wholeBytes]) & $mask) === (ord($subnetBin[$wholeBytes]) & $mask);
+}
+
+/**
+ * true quando a requisição deve ser tratada como HTTPS: TLS direto, ou
+ * X-Forwarded-Proto vindo de um proxy declarado em TRUSTED_PROXIES. Sem a
+ * variável configurada, o cabeçalho do proxy é ignorado — mesma regra de
+ * confiança usada em AuditService para IP.
+ */
+function request_is_https(): bool
+{
+  $direct = (($_SERVER['HTTPS'] ?? '') !== '' && ($_SERVER['HTTPS'] ?? '') !== 'off');
+  if ($direct) {
+    return true;
+  }
+
+  $remoteAddr = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+  if (!is_trusted_proxy($remoteAddr)) {
+    return false;
+  }
+
+  return ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+}
+
+/**
  * URL de asset estático com cache-busting por mtime (?v=...).
  * Garante que CSS/JS atualizados sejam recarregados pelo navegador.
  */
