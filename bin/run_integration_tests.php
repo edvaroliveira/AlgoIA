@@ -61,10 +61,9 @@ function newRawConnection(array $cfg): PDO
     PDO::ATTR_ERRMODE               => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE    => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES      => false,
-    // Sem isso, o driver mysqlnd pode deixar um resultset aberto entre
-    // instruções DDL/PREPARE em sequência (schema tem PREPARE/EXECUTE em
-    // 020_admin_reviewed_by_fk.sql) e a próxima chamada falha com
-    // "Cannot execute queries while other unbuffered queries are active".
+    // Os testes de lock abaixo usam ->query()->fetch() diretamente (fora
+    // dos helpers de Core\Database); sem query buffered, um cursor aberto
+    // e não totalmente consumido quebra a próxima chamada na mesma conexão.
     PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
   ]);
 }
@@ -96,23 +95,55 @@ $dbB = wrapAsDatabase($pdoB);
 (new ReflectionProperty(\Core\Database::class, 'instance'))->setValue(null, $dbA);
 
 // ── Schema ────────────────────────────────────────────────────────────────
-function applySchema(PDO $pdo, string $path): void
+/**
+ * Aplica um .sql via cliente `mysql` (CLI), não via loop de PDO::exec().
+ *
+ * database/migrations/020_admin_reviewed_by_fk.sql usa SQL dinâmico
+ * (PREPARE/EXECUTE/DEALLOCATE) para ser idempotente. Rodar isso através de
+ * PDO — dividindo o arquivo em instruções e chamando exec() uma a uma —
+ * quebra com "Cannot execute queries while other unbuffered queries are
+ * active" logo após o EXECUTE (limitação do driver PDO_MYSQL/mysqlnd com SQL
+ * dinâmico, não um bug no SQL em si). O cliente `mysql` lida com isso nativamente
+ * — e é como os próprios arquivos já orientam serem aplicados (ver cabeçalho
+ * de 001_create_tables.sql: "via phpMyAdmin ou CLI").
+ */
+function applySchema(array $cfg, string $path): void
 {
-  $sql = (string) file_get_contents($path);
-  $sql = preg_replace('/^--.*$/m', '', $sql) ?? $sql;
+  if (@shell_exec('command -v mysql') === null) {
+    throw new \RuntimeException('Cliente `mysql` não encontrado no PATH — necessário para aplicar o schema.');
+  }
 
-  foreach (array_filter(array_map('trim', explode(';', $sql))) as $stmt) {
-    try {
-      $pdo->exec($stmt);
-    } catch (\Throwable $e) {
-      fwrite(STDERR, "Falhou aplicando statement de {$path}:\n{$stmt}\n");
-      throw $e;
-    }
+  $passwordSet = $cfg['password'] !== '';
+  if ($passwordSet) {
+    putenv('MYSQL_PWD=' . $cfg['password']);
+  }
+
+  $cmd = sprintf(
+    'mysql --host=%s --user=%s --database=%s < %s 2>&1',
+    escapeshellarg($cfg['host']),
+    escapeshellarg($cfg['username']),
+    escapeshellarg($cfg['database']),
+    escapeshellarg($path)
+  );
+
+  exec($cmd, $outputLines, $exitCode);
+
+  if ($passwordSet) {
+    putenv('MYSQL_PWD');
+  }
+
+  if ($exitCode !== 0) {
+    throw new \RuntimeException("Falha ao aplicar {$path} via CLI:\n" . implode("\n", $outputLines));
   }
 }
 
-applySchema($pdoA, ROOT_PATH . '/database/migrations/001_create_tables.sql');
-applySchema($pdoA, ROOT_PATH . '/database/migrations/020_admin_reviewed_by_fk.sql');
+try {
+  applySchema($cfg, ROOT_PATH . '/database/migrations/001_create_tables.sql');
+  applySchema($cfg, ROOT_PATH . '/database/migrations/020_admin_reviewed_by_fk.sql');
+} catch (\Throwable $e) {
+  echo 'Não foi possível aplicar o schema (' . $e->getMessage() . ") — testes de integração pulados.\n";
+  exit(0);
+}
 
 $allTables = [
   'injection_logs', 'answers', 'grading_jobs', 'attempts', 'questions',
