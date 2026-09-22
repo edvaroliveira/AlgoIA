@@ -42,6 +42,27 @@ if ($mode !== 'run') {
   exit(0);
 }
 
+// Falha cedo e com mensagem clara: sem isso, cada job na fila falharia um a
+// um só na hora de chamar a OpenAI, gastando tentativas e tempo de retry por
+// nada quando o problema é de configuração do worker, não da fila.
+$openaiConfig = require ROOT_PATH . '/config/openai.php';
+$bootstrapErrors = [];
+
+if (trim((string) $openaiConfig['api_key']) === '') {
+  $bootstrapErrors[] = 'OPENAI_API_KEY não configurada.';
+}
+if (!extension_loaded('curl')) {
+  $bootstrapErrors[] = 'extensão PHP curl não está carregada (necessária para chamar a OpenAI).';
+}
+if (!extension_loaded('json')) {
+  $bootstrapErrors[] = 'extensão PHP json não está carregada.';
+}
+
+if ($bootstrapErrors !== []) {
+  fwrite(STDERR, "Worker de correção não pode iniciar:\n- " . implode("\n- ", $bootstrapErrors) . "\n");
+  exit(2);
+}
+
 $processor = new App\Services\GradingJobProcessor();
 $processed = $processor->processBatch($limit);
 $failed    = $processor->failedCount();
