@@ -21,7 +21,8 @@ efeitos ponta a ponta da moderacao.
 implementados. Reverificado contra o código atual antes de implementar —
 `php bin/smoke_static.php`, `php bin/run_tests.php` (63 testes) e
 `php bin/run_db_tests.php` (58 testes) passam após as mudanças; AP-08 rodado
-via CI (job `integration` novo, com serviço MySQL) por depender de um MySQL
+via CI (job `integration` novo, com serviço MariaDB — motor real do HostGator
+em produção) por depender de um MySQL
 real que este ambiente de desenvolvimento não tinha disponível localmente.
 Único item ainda aberto: a corrida de e-mail duplicado do AP-07 (nota na
 própria seção AP-07).

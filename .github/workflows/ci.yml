@@ -40,11 +40,15 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
+      # MariaDB, não MySQL: é o motor real do HostGator (produção), conforme
+      # 001_create_tables.sql. MySQL 8 recusa `TEXT ... DEFAULT ''`
+      # (system_settings.setting_value) que MariaDB aceita — usar MySQL aqui
+      # geraria falso negativo para um schema que roda bem em produção.
       mysql:
-        image: mysql:8.0
+        image: mariadb:10.11
         env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-          MYSQL_DATABASE: algoia_ci
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
+          MARIADB_DATABASE: algoia_ci
         ports:
           - 3306:3306
         options: >-

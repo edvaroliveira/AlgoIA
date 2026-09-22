@@ -347,7 +347,8 @@ continua sendo o teste unitário/SQLite (mantido para rodar sem MySQL); a
 suíte real ficou em `bin/run_integration_tests.php`, novo, que conecta a um
 MySQL de verdade e roda os services reais com duas conexões para os pontos de
 lock (AP-01/AP-02, AP-03, AP-05, AP-06), além de smoke HTTP via `php -S`. Novo
-job `integration` em `.github/workflows/ci.yml` com serviço MySQL 8.0.
+job `integration` em `.github/workflows/ci.yml` com serviço MariaDB (motor
+real do HostGator em produção).
 
 **Dependencias:** implementar junto com RP-01 a RP-06, tornando os testes parte
 dos criterios de conclusao de cada item.
