@@ -25,4 +25,29 @@ abstract class Model
   {
     return $this->db->execute("DELETE FROM {$this->table} WHERE id = ?", [$id]);
   }
+
+  /**
+   * Proxies de transação — permitem que um controller componha uma checagem
+   * bloqueante (ex.: contagem com FOR UPDATE) e uma escrita como uma única
+   * operação atômica, sem expor a instância de Database.
+   */
+  public function beginTransaction(): void
+  {
+    $this->db->beginTransaction();
+  }
+
+  public function commit(): void
+  {
+    $this->db->commit();
+  }
+
+  public function rollback(): void
+  {
+    $this->db->rollback();
+  }
+
+  public function inTransaction(): bool
+  {
+    return $this->db->inTransaction();
+  }
 }

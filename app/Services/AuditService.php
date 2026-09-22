@@ -41,7 +41,7 @@ class AuditService
   {
     $remoteAddr = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
 
-    if (self::isTrustedProxy($remoteAddr)) {
+    if (\Core\is_trusted_proxy($remoteAddr)) {
       foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR'] as $key) {
         $value = trim((string) ($_SERVER[$key] ?? ''));
         if ($value === '') {
@@ -59,63 +59,5 @@ class AuditService
     }
 
     return $remoteAddr !== '' ? substr($remoteAddr, 0, 45) : null;
-  }
-
-  /** TRUSTED_PROXIES: lista separada por vírgula de IPs ou blocos CIDR. */
-  private static function isTrustedProxy(string $remoteAddr): bool
-  {
-    if ($remoteAddr === '') {
-      return false;
-    }
-
-    $configured = trim((string) \Core\env('TRUSTED_PROXIES', ''));
-    if ($configured === '') {
-      return false;
-    }
-
-    foreach (explode(',', $configured) as $entry) {
-      $entry = trim($entry);
-      if ($entry !== '' && self::ipMatches($remoteAddr, $entry)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private static function ipMatches(string $ip, string $rule): bool
-  {
-    if (!str_contains($rule, '/')) {
-      return $ip === $rule;
-    }
-
-    [$subnet, $bits] = explode('/', $rule, 2);
-    $ipBin     = @inet_pton($ip);
-    $subnetBin = @inet_pton($subnet);
-    $bits      = (int) $bits;
-
-    if ($ipBin === false || $subnetBin === false || strlen($ipBin) !== strlen($subnetBin)) {
-      return false;
-    }
-
-    $maxBits = strlen($ipBin) * 8;
-    if ($bits < 0 || $bits > $maxBits) {
-      return false;
-    }
-
-    $wholeBytes = intdiv($bits, 8);
-    $restBits   = $bits % 8;
-
-    if ($wholeBytes > 0 && strncmp($ipBin, $subnetBin, $wholeBytes) !== 0) {
-      return false;
-    }
-
-    if ($restBits === 0) {
-      return true;
-    }
-
-    $mask = ~((1 << (8 - $restBits)) - 1) & 0xFF;
-
-    return (ord($ipBin[$wholeBytes]) & $mask) === (ord($subnetBin[$wholeBytes]) & $mask);
   }
 }

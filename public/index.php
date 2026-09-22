@@ -6,8 +6,12 @@ define('ROOT_PATH', dirname(__DIR__));
 
 $cspNonce = base64_encode(random_bytes(18));
 
-$isHttps = (($_SERVER['HTTPS'] ?? '') !== '' && ($_SERVER['HTTPS'] ?? '') !== 'off')
-  || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+// Env loader must come before autoloader (defines Core\Env and env()) — e
+// antes da checagem de HTTPS abaixo, que depende de TRUSTED_PROXIES do .env.
+require ROOT_PATH . '/core/Env.php';
+(new Core\Env(ROOT_PATH . '/.env'))->load();
+
+$isHttps = \Core\request_is_https();
 
 header('X-Frame-Options: SAMEORIGIN');
 header('X-Content-Type-Options: nosniff');
@@ -18,10 +22,6 @@ if ($isHttps) {
   header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 }
 header("Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; style-src 'self' https://cdn.jsdelivr.net; script-src 'self' 'nonce-{$cspNonce}' https://cdn.jsdelivr.net; connect-src 'self'; font-src 'self' https://cdn.jsdelivr.net; form-action 'self'; base-uri 'self'; frame-ancestors 'self'");
-
-// Env loader must come before autoloader (defines Core\Env and env())
-require ROOT_PATH . '/core/Env.php';
-(new Core\Env(ROOT_PATH . '/.env'))->load();
 
 require ROOT_PATH . '/autoload.php';
 

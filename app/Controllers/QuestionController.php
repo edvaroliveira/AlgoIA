@@ -13,6 +13,11 @@ use Core\View;
 
 class QuestionController
 {
+  // TEXT (MySQL) comporta ~65535 bytes; em utf8mb4 (4 bytes/char no pior
+  // caso), 10000 caracteres cabe com folga e ainda é generoso para um
+  // enunciado ou gabarito de exercício.
+  private const MAX_TEXT_LENGTH = 10000;
+
   private Question $questions;
   private Exercise $exercises;
 
@@ -49,8 +54,14 @@ class QuestionController
     if (mb_strlen($text) < 5) {
       $errors[] = 'Enunciado da questão muito curto (mínimo 5 caracteres).';
     }
+    if (mb_strlen($text) > self::MAX_TEXT_LENGTH) {
+      $errors[] = 'Enunciado da questão muito longo (máximo ' . self::MAX_TEXT_LENGTH . ' caracteres).';
+    }
     if (mb_strlen($hint) < 5) {
       $errors[] = 'Gabarito/conceito esperado muito curto (mínimo 5 caracteres).';
+    }
+    if (mb_strlen($hint) > self::MAX_TEXT_LENGTH) {
+      $errors[] = 'Gabarito/conceito esperado muito longo (máximo ' . self::MAX_TEXT_LENGTH . ' caracteres).';
     }
 
     if ($errors) {

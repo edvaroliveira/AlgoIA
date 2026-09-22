@@ -70,7 +70,8 @@ CREATE TABLE IF NOT EXISTS exercises (
     created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_ex_teacher FOREIGN KEY (teacher_id) REFERENCES users(id),
-    CONSTRAINT fk_ex_turma   FOREIGN KEY (turma_id)   REFERENCES turmas(id) ON DELETE SET NULL
+    CONSTRAINT fk_ex_turma   FOREIGN KEY (turma_id)   REFERENCES turmas(id) ON DELETE SET NULL,
+    CONSTRAINT fk_ex_admin_reviewed_by FOREIGN KEY (admin_reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS exercise_turmas (
@@ -97,7 +98,8 @@ CREATE TABLE IF NOT EXISTS questions (
     admin_reviewed_at    DATETIME NULL,
     admin_reviewed_by    INT UNSIGNED NULL,
     created_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_q_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
+    CONSTRAINT fk_q_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+    CONSTRAINT fk_q_admin_reviewed_by FOREIGN KEY (admin_reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── Tentativas ────────────────────────────────────────────────────────────────
