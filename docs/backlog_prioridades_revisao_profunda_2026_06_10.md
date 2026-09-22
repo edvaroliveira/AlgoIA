@@ -35,7 +35,7 @@ worker, reprocessamento manual e cobertura de testes.
 | RP-01 | Bloquear exclusao destrutiva de exercicios publicados | P0 | Implementado; manter teste |
 | RP-02 | Tornar o submit da tentativa atomico | P0 | Parcial; ver RP-09 e RP-10 |
 | RP-03 | Proteger inicio e limite de tentativas contra concorrencia | P0 | Parcial; exige teste MySQL e RP-10 |
-| RP-04 | Aplicar bloqueio de moderacao por questao | P1 | Pendente |
+| RP-04 | Aplicar bloqueio de moderacao por questao | P1 | Implementado (ver AP-02) |
 | RP-05 | Implementar lease seguro e heartbeat no worker | P1 | Parcial; heartbeat desconectado |
 | RP-06 | Neutralizar formulas nas exportacoes CSV | P1 | Implementado; melhorar teste |
 | RP-07 | Criar testes de integracao dos fluxos criticos | P1 | Pendente |
@@ -197,8 +197,13 @@ da migration.
 
 **Prioridade:** P1
 
-**Situacao apos reavaliacao:** pendente. O bloqueio da questao continua sem
-efeito na exibicao, autosave, submit, correcao e nota maxima.
+**Situacao apos reavaliacao:** implementado em 2026-06-12 (commits `bacf761`
+"AP-01 a AP-04" e `a38538d` "AP-NG-01/02"), superado pelo item equivalente
+AP-02 em `docs/backlog_auditoria_profunda_2026_06_12.md`. Verificado em
+2026-09-21 contra o código atual: `AttemptSubmissionService` revalida questão
+bloqueada dentro da transação, `AttemptGradingService` usa
+`Question::hasBlockedByExercise()`, e `Question::findByExercise()` já exclui
+questões bloqueadas.
 
 **Problema:** o admin consegue marcar uma questao como `blocked`, mas as
 consultas do aluno e o pipeline de correcao continuam carregando a questao.
@@ -336,7 +341,10 @@ dados, nunca como formulas executaveis.
 
 **Prioridade:** P1
 
-**Situacao apos reavaliacao:** pendente. A suite atual passa, mas nao executa os
+**Situacao apos reavaliacao:** pendente — mesmo item que AP-08 em
+`docs/backlog_auditoria_profunda_2026_06_12.md`, verificado em 2026-09-21:
+`bin/run_db_tests.php` ainda roda contra SQLite em memória via reflection, sem
+MySQL real nem suite HTTP. A suite atual passa, mas nao executa os
 servicos transacionais reais nem concorrencia MySQL.
 
 **Dependencias:** implementar junto com RP-01 a RP-06, tornando os testes parte

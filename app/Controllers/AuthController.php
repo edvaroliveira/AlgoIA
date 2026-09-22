@@ -209,7 +209,19 @@ class AuthController
       return;
     }
 
-    $this->users->updatePassword((int) $user['id'], $password);
+    $consumed = $this->users->consumePasswordResetToken((int) $user['id'], $token, $password);
+
+    if (!$consumed) {
+      // Token já foi consumido (request concorrente) ou expirou entre a
+      // validação acima e este ponto.
+      View::render('auth/reset_password', [
+        'token' => $token,
+        'validToken' => false,
+        'errors' => ['Link de redefinição inválido ou expirado.'],
+      ], 'layouts/guest');
+      return;
+    }
+
     \App\Services\AuditService::record('auth.password_reset_token_completed', 'user', (int) $user['id']);
 
     global $session;
@@ -292,8 +304,25 @@ class AuthController
       return;
     }
 
-    $userId = $this->users->create($name, $email, $password, 'student', 'pending', null, 'student_public');
-    $turmaModel->enrollStudent($userId, (int) $turma['id']);
+    // Cria usuário e matrícula na mesma transação: se a matrícula falhar, o
+    // cadastro não fica órfão. A checagem de e-mail acima é só UX — a
+    // constraint UNIQUE em users.email é quem decide sob concorrência.
+    $this->users->beginTransaction();
+    try {
+      $userId = $this->users->create($name, $email, $password, 'student', 'pending', null, 'student_public');
+      $turmaModel->enrollStudent($userId, (int) $turma['id']);
+      $this->users->commit();
+    } catch (\PDOException $e) {
+      $this->users->rollback();
+      if ((string) $e->getCode() === '23000') {
+        View::render('auth/register', [
+          'errors' => ['Este e-mail já está cadastrado.'],
+          'old'    => compact('name', 'email', 'turmaKey'),
+        ], 'layouts/guest');
+        return;
+      }
+      throw $e;
+    }
 
     View::render('auth/register', [
       'success' => 'Cadastro realizado com sucesso! Aguarde a aprovação do docente para acessar a plataforma.',
@@ -378,7 +407,19 @@ class AuthController
       return;
     }
 
-    $newUserId = $this->users->create($name, $email, $password, 'teacher', 'pending', $institution, 'teacher_public');
+    try {
+      $newUserId = $this->users->create($name, $email, $password, 'teacher', 'pending', $institution, 'teacher_public');
+    } catch (\PDOException $e) {
+      if ((string) $e->getCode() === '23000') {
+        $this->recordFailedTeacherReg();
+        View::render('auth/register_teacher', [
+          'errors' => ['Este e-mail já está associado a uma conta.'],
+          'old'    => compact('name', 'email', 'institution'),
+        ], 'layouts/guest');
+        return;
+      }
+      throw $e;
+    }
     $this->clearTeacherRegThrottle();
 
     \App\Services\AuditService::record('auth.teacher_registration_request', 'user', $newUserId, [

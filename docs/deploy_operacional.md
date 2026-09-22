@@ -10,7 +10,7 @@ Para um ambiente novo, use o schema consolidado:
 
 1. Criar o banco vazio com charset `utf8mb4`.
 2. Executar `database/migrations/001_create_tables.sql`.
-3. Nao executar as migrations incrementais `002` a `019` em seguida, pois elas existem para atualizar bases antigas.
+3. Nao executar as migrations incrementais `002` a `020` em seguida, pois elas existem para atualizar bases antigas.
 
 O arquivo `001_create_tables.sql` contem o schema atual consolidado, incluindo auditoria, configuracoes, cadastro docente, contexto de turma em tentativas, reset por token e motivos de desconto da IA.
 
@@ -37,8 +37,11 @@ Para um ambiente que ja foi criado com schema antigo, nao reexecute `001_create_
 17. `017_grading_jobs_worker_id.sql`
 18. `018_attempts_start_index.sql`
 19. `019_users_password_changed_at.sql`
+20. `020_admin_reviewed_by_fk.sql`
 
 Observacao: existem dois arquivos iniciados por `002` por historico do projeto. A ordem acima e a referencia oficial.
+
+A migration `020` adiciona as FKs `exercises.admin_reviewed_by -> users(id)` e `questions.admin_reviewed_by -> users(id)`, presentes nos schemas de teste (`000_reset_test_*_hostgator.sql`) desde sempre mas ausentes do `001_create_tables.sql` ate esta migration. Se alguma linha tiver `admin_reviewed_by` apontando para um `id` de usuario que nao existe mais, o `ALTER TABLE` falha — nesse caso, zere os valores orfaos antes de reaplicar.
 
 A migration `019` e **pre-requisito do deploy do codigo**, nao opcional: sem a coluna `users.password_changed_at` toda troca de senha falha com "Unknown column". Aplique a migration antes de publicar os arquivos. Ela tambem preenche a coluna com `created_at` nas linhas existentes, para que o primeiro deploy nao derrube todas as sessoes de uma vez.
 

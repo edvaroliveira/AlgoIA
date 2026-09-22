@@ -92,6 +92,28 @@ try {
     }
   }
 
+  $requiredForeignKeys = [
+    ['exercises', 'admin_reviewed_by', 'users'],
+    ['questions', 'admin_reviewed_by', 'users'],
+  ];
+
+  foreach ($requiredForeignKeys as [$table, $column, $referencedTable]) {
+    $row = $db->fetchOne(
+      "SELECT CONSTRAINT_NAME
+             FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = ?
+               AND COLUMN_NAME = ?
+               AND REFERENCED_TABLE_NAME = ?
+             LIMIT 1",
+      [$table, $column, $referencedTable]
+    );
+
+    if (!$row) {
+      $missing[] = "FK ausente: {$table}.{$column} -> {$referencedTable}";
+    }
+  }
+
   if ($missing !== []) {
     fwrite(STDERR, "Smoke schema falhou:\n- " . implode("\n- ", $missing) . "\n");
     exit(1);
