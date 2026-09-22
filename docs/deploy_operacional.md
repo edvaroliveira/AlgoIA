@@ -109,14 +109,34 @@ php bin/process_grading_jobs.php 10
 
 O argumento numerico define o maximo de jobs processados por execucao. Jobs com falha ficam recuperaveis para nova tentativa automatica ou reprocessamento manual.
 
-O worker sai com codigo `1` quando algum job do lote falhou (`0` quando o lote correu limpo). Use esse codigo para alarme no cron — ate a revisao de 2026-09-21 o script saia sempre com `0` e a degradacao da fila passava despercebida.
-Jobs que ficarem travados como `processing` por mais de 15 minutos sao recuperados pelo proprio worker e voltam ao ciclo de tentativa. Quando uma tentativa e corrigida manualmente, o job correspondente e marcado como concluido para evitar alerta falso.
+O worker sai com codigo `1` quando algum job do lote falhou (`0` quando o lote correu limpo) e com codigo `2` quando a propria configuracao do worker esta invalida (`OPENAI_API_KEY` vazia ou extensao `curl`/`json` ausente) — nesse caso nenhum job chega a ser tentado. Use esses codigos para alarme no cron — ate a revisao de 2026-09-21 o script saia sempre com `0` e a degradacao da fila passava despercebida.
+Jobs que ficarem travados como `processing` ou `queued` por mais de `GRADING_JOB_STALE_MINUTES` (padrao 15 minutos) sao recuperados pelo proprio worker e voltam ao ciclo de tentativa. Quando uma tentativa e corrigida manualmente, o job correspondente e marcado como concluido para evitar alerta falso.
 
 Para validar a fila sem chamar a OpenAI, use:
 
 ```bash
 php bin/process_grading_jobs.php --dry-run 10
 ```
+
+Esse mesmo comando serve de base para alerta operacional: o campo `stale` do
+JSON de saida (`Queue summary: {...}`) conta jobs presos alem do limite
+configurado, e `failed` conta jobs que esgotaram `GRADING_JOB_MAX_ATTEMPTS`
+(padrao 3) sem sucesso. Um cron de monitoramento separado pode rodar
+`--status` periodicamente e alertar quando `stale > 0` ou `failed` crescer
+sem reprocessamento.
+
+### Variaveis de configuracao da fila e da OpenAI
+
+| Variavel | Padrao | Efeito |
+|---|---|---|
+| `OPENAI_TIMEOUT_SECONDS` | 30 | Timeout por chamada HTTP a OpenAI. |
+| `OPENAI_MAX_RETRIES` | 3 | Tentativas por chamada antes de marcar o job como falho. |
+| `GRADING_JOB_MAX_ATTEMPTS` | 3 | Tentativas de correcao por job antes de esgotar (`status = failed` permanente ate reprocessamento manual). |
+| `GRADING_JOB_STALE_MINUTES` | 15 | Minutos parado em `processing`/`queued` antes de ser recuperado automaticamente. |
+
+Aumentar `GRADING_JOB_STALE_MINUTES` sem aumentar o timeout/retry da OpenAI de
+forma proporcional pode mascarar workers travados; os dois devem ser ajustados
+juntos.
 
 ## Prompt e Auditoria Pedagogica
 

@@ -165,10 +165,30 @@ $checks = [
   ],
   [
     // RS-10: cron precisa enxergar degradação da fila pelo exit code.
+    // AP-12: worker falha cedo (exit 2) se config crítica estiver ausente,
+    // em vez de queimar retries job por job.
     'file' => 'bin/process_grading_jobs.php',
     'mustContain' => [
       'failedCount',
       'exit($failed > 0 ? 1 : 0);',
+      'OPENAI_API_KEY não configurada',
+      'exit(2)',
+    ],
+  ],
+  [
+    // AP-12: timeout/retries da OpenAI e limites do worker configuráveis por
+    // env, com fallback para os padrões anteriores.
+    'file' => 'config/openai.php',
+    'mustContain' => [
+      'OPENAI_TIMEOUT_SECONDS',
+      'OPENAI_MAX_RETRIES',
+    ],
+  ],
+  [
+    'file' => 'app/Models/GradingJob.php',
+    'mustContain' => [
+      'GRADING_JOB_MAX_ATTEMPTS',
+      'GRADING_JOB_STALE_MINUTES',
     ],
   ],
   [
