@@ -102,7 +102,12 @@ function applySchema(PDO $pdo, string $path): void
   $sql = preg_replace('/^--.*$/m', '', $sql) ?? $sql;
 
   foreach (array_filter(array_map('trim', explode(';', $sql))) as $stmt) {
-    $pdo->exec($stmt);
+    try {
+      $pdo->exec($stmt);
+    } catch (\Throwable $e) {
+      fwrite(STDERR, "Falhou aplicando statement de {$path}:\n{$stmt}\n");
+      throw $e;
+    }
   }
 }
 
