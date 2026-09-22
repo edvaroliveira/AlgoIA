@@ -18,8 +18,9 @@ declare(strict_types=1);
  *
  * Cobre: AP-01/AP-02 (lock da tentativa no submit), AP-03 (lock do job na
  * fila), AP-05 (consumo atômico do token de reset), AP-06 (lock do último
- * admin). HTTP smoke (headers, redirect de rota protegida, CSRF) via
- * `php -S` servindo public/ de verdade.
+ * admin), AP-07 (INSERT concorrente com e-mail duplicado). HTTP smoke
+ * (headers, redirect de rota protegida, CSRF) via `php -S` servindo public/
+ * de verdade.
  *
  * SEGURANÇA: só roda contra um banco cujo nome contenha "test"/"ci", ou com
  * INTEGRATION_TESTS_CONFIRM=1 explícito — o script TRUNCA todas as tabelas
@@ -253,6 +254,44 @@ $dbA->commit();
 
 $pdoB->exec("UPDATE users SET status = 'active' WHERE id = {$adminId} AND role = 'admin'");
 check(true, 'AP-06: após o commit da conexão A, a conexão B consegue escrever na mesma linha');
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AP-07 — cadastro público concorrente com o mesmo e-mail, DUAS conexões reais
+//
+// InnoDB coloca lock exclusivo na entrada do índice único assim que o INSERT
+// não commitado é executado — uma segunda transação inserindo o mesmo valor
+// único BLOQUEIA (não erra na hora) até a primeira resolver. Só depois do
+// commit da primeira é que a segunda recebe o erro de chave duplicada real
+// (SQLSTATE 23000) que AuthController::register()/registerTeacher() já
+// capturam e convertem em erro de formulário.
+// ═══════════════════════════════════════════════════════════════════════════
+
+$raceEmail = 'race.' . bin2hex(random_bytes(4)) . '@test.local';
+
+$dbA->beginTransaction();
+$usersA->create('Corrida A', $raceEmail, 'SenhaA1234', 'student', 'active'); // INSERT não commitado
+
+$pdoB->exec('SET SESSION innodb_lock_wait_timeout = 1');
+$raceBlockedByLock = false;
+try {
+  $usersB->create('Corrida B', $raceEmail, 'SenhaB1234', 'student', 'active');
+} catch (\PDOException $e) {
+  $raceBlockedByLock = ((int) ($e->errorInfo[1] ?? 0)) === 1205; // lock wait timeout
+}
+check($raceBlockedByLock, 'AP-07: INSERT concorrente com o mesmo e-mail trava até a conexão A commitar (lock real do índice único)');
+
+$dbA->commit();
+
+$raceDuplicateRejected = false;
+try {
+  $usersB->create('Corrida B', $raceEmail, 'SenhaB1234', 'student', 'active');
+} catch (\PDOException $e) {
+  $raceDuplicateRejected = $e->getCode() === '23000';
+}
+check($raceDuplicateRejected, 'AP-07: após o commit da conexão A, a conexão B recebe SQLSTATE 23000 (o mesmo erro que o controller captura)');
+
+$raceRows = $pdoA->query("SELECT COUNT(*) AS total FROM users WHERE email = '{$raceEmail}'")->fetch();
+check((int) $raceRows['total'] === 1, 'AP-07: apenas um usuário foi de fato criado com o e-mail disputado');
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AP-03 — lock do job de correção (claimNext) com DUAS conexões reais
