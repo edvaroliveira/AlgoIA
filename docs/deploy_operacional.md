@@ -151,3 +151,41 @@ Tentativas suspeitas de prompt injection sao registradas em `injection_logs`.
 - **Redacao por truncamento:** o registro guarda apenas um trecho redigido da resposta do aluno (ate 500 caracteres, com marcador de truncamento), nunca o conteudo integral. Vide `OpenAIService::buildInjectionLogSummary`.
 - **Uso restrito:** o conteudo serve para revisao manual de incidentes; as telas de professor/admin usam apenas a contagem de ocorrencias (`injection_flag_count`), nao o texto.
 - **Retencao:** registros sao apagados apos 180 dias (`App\Models\InjectionLog::RETENTION_DAYS`). A limpeza roda automaticamente ao final de cada execucao do worker `bin/process_grading_jobs.php`, portanto nao requer cron adicional alem do ja configurado para a fila.
+
+## Testes
+
+| Script | O que roda | Precisa de banco? |
+|---|---|---|
+| `bin/smoke_static.php` | Invariantes de codigo (grep de padroes que nao podem regredir) | Nao |
+| `bin/run_tests.php` | Unitarios (sanitizacao, rotas, cache-busting) | Nao |
+| `bin/run_db_tests.php` | Camada de dados com SQLite em memoria (SQL portavel) | Nao (SQLite em memoria) |
+| `bin/run_integration_tests.php` | Services reais (`AttemptSubmissionService`, `GradingJob`, `User`) contra MySQL real, com duas conexoes para os pontos que dependem de lock (`FOR UPDATE`); smoke HTTP via `php -S` | Sim, MySQL |
+| `bin/smoke_schema.php` | Colunas, indices e FKs esperadas no schema aplicado | Sim, MySQL |
+
+### `bin/run_integration_tests.php`
+
+Cobre os pontos de concorrencia do backlog de auditoria profunda (AP-01/AP-02,
+AP-03, AP-05, AP-06) rodando os services de producao contra um MySQL real —
+nao uma reproducao do SQL em outro motor. Para os pontos cuja correcao foi um
+lock, abre duas conexoes reais e prova que a segunda trava/perde a corrida
+enquanto a primeira segura a transacao.
+
+**Seguranca:** o script recusa rodar a menos que `DB_DATABASE` contenha
+`test`/`ci` (case-insensitive) ou `INTEGRATION_TESTS_CONFIRM=1` esteja
+definido — ele **trunca todas as tabelas** do banco configurado no inicio e
+no fim. Nunca aponte para um banco de producao.
+
+Rodar localmente (requer MySQL/MariaDB acessivel e as variaveis `DB_*` do
+`.env` apontando para um banco de teste dedicado):
+
+```bash
+php bin/run_integration_tests.php
+```
+
+Sem `pdo_mysql`, sem conexao com o MySQL, ou com um `DB_DATABASE` que nao
+pareça de teste, o script pula com aviso e sai com codigo `0` — nao é um
+requisito duro para desenvolvimento local sem banco.
+
+No CI, o job `integration` (`.github/workflows/ci.yml`) sobe um servico MySQL
+8.0 dedicado (`algoia_ci`) e roda o script automaticamente, separado do job
+`test` original ("Lint + testes (sem banco)"), que continua sem MySQL.

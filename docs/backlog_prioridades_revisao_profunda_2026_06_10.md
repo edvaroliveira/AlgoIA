@@ -38,7 +38,7 @@ worker, reprocessamento manual e cobertura de testes.
 | RP-04 | Aplicar bloqueio de moderacao por questao | P1 | Implementado (ver AP-02) |
 | RP-05 | Implementar lease seguro e heartbeat no worker | P1 | Parcial; heartbeat desconectado |
 | RP-06 | Neutralizar formulas nas exportacoes CSV | P1 | Implementado; melhorar teste |
-| RP-07 | Criar testes de integracao dos fluxos criticos | P1 | Pendente |
+| RP-07 | Criar testes de integracao dos fluxos criticos | P1 | Implementado (ver AP-08) |
 | RP-08 | Alinhar migrations, documentacao e smoke de schema | P2 | Parcial; ver RP-11 |
 | RP-09 | Corrigir falso sucesso e auditoria duplicada no submit | P0 | Novo |
 | RP-10 | Revalidar publicacao dentro das transacoes | P1 | Novo |
@@ -341,11 +341,13 @@ dados, nunca como formulas executaveis.
 
 **Prioridade:** P1
 
-**Situacao apos reavaliacao:** pendente — mesmo item que AP-08 em
-`docs/backlog_auditoria_profunda_2026_06_12.md`, verificado em 2026-09-21:
-`bin/run_db_tests.php` ainda roda contra SQLite em memória via reflection, sem
-MySQL real nem suite HTTP. A suite atual passa, mas nao executa os
-servicos transacionais reais nem concorrencia MySQL.
+**Situacao apos reavaliacao:** implementado em 2026-09-21 — mesmo item que
+AP-08 em `docs/backlog_auditoria_profunda_2026_06_12.md`. `bin/run_db_tests.php`
+continua sendo o teste unitário/SQLite (mantido para rodar sem MySQL); a
+suíte real ficou em `bin/run_integration_tests.php`, novo, que conecta a um
+MySQL de verdade e roda os services reais com duas conexões para os pontos de
+lock (AP-01/AP-02, AP-03, AP-05, AP-06), além de smoke HTTP via `php -S`. Novo
+job `integration` em `.github/workflows/ci.yml` com serviço MySQL 8.0.
 
 **Dependencias:** implementar junto com RP-01 a RP-06, tornando os testes parte
 dos criterios de conclusao de cada item.
