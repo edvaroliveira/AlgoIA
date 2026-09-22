@@ -11,6 +11,7 @@ class OpenAIService
   private string $apiKey;
   private string $model;
   private int    $timeout;
+  private int    $maxRetries;
   private ?Database $db;
 
   /** Patterns that indicate a prompt injection attempt. */
@@ -35,10 +36,11 @@ class OpenAIService
   public function __construct(?Database $db = null)
   {
     $cfg = require ROOT_PATH . '/config/openai.php';
-    $this->apiKey  = $cfg['api_key'];
-    $this->model   = $cfg['model'];
-    $this->timeout = $cfg['timeout'];
-    $this->db      = $db; // resolvido sob demanda em db(); Database::getInstance() não é obrigatório
+    $this->apiKey     = $cfg['api_key'];
+    $this->model      = $cfg['model'];
+    $this->timeout    = $cfg['timeout'];
+    $this->maxRetries = $cfg['max_retries'];
+    $this->db         = $db; // resolvido sob demanda em db(); Database::getInstance() não é obrigatório
   }
 
   /** Resolve a conexão sob demanda — evita exigir banco real em serviços que nunca chegam a logar. */
@@ -73,7 +75,7 @@ class OpenAIService
     $userPrompt   = $this->buildUserPrompt($questionText, $expectedAnswerHint, $studentAnswer, $maxScore);
 
     // Layer 2 — isolated delimiters in prompt
-    $rawResponse = $this->callApi($systemPrompt, $userPrompt);
+    $rawResponse = $this->callApi($systemPrompt, $userPrompt, $this->maxRetries);
 
     // Layer 3 — strict structural validation
     return $this->parseResponse($rawResponse, $maxScore, $questionText, $expectedAnswerHint);
