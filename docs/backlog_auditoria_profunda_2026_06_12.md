@@ -17,12 +17,15 @@ As suites verdes confirmam as invariantes atualmente testadas, mas nao exercitam
 concorrencia MySQL real, requests completos, integracao com a OpenAI nem os
 efeitos ponta a ponta da moderacao.
 
-**Atualização 2026-09-21:** AP-05, AP-06, AP-07, AP-09, AP-10 e AP-12
+**Atualização 2026-09-21:** AP-05, AP-06, AP-07, AP-08, AP-09, AP-10 e AP-12
 implementados. Reverificado contra o código atual antes de implementar —
 `php bin/smoke_static.php`, `php bin/run_tests.php` (63 testes) e
-`php bin/run_db_tests.php` (58 testes) passam após as mudanças. AP-08 (teste
-real MySQL/HTTP) segue pendente — é o item que fecharia a lacuna de cobertura
-concorrente citada em AP-05, AP-06 e AP-07 acima.
+`php bin/run_db_tests.php` (58 testes) passam após as mudanças; AP-08 rodado
+via CI (job `integration` novo, com serviço MariaDB — motor real do HostGator
+em produção) por depender de um MySQL
+real que este ambiente de desenvolvimento não tinha disponível localmente.
+Único item ainda aberto: a corrida de e-mail duplicado do AP-07 (nota na
+própria seção AP-07).
 
 ## Modelo de Prioridade
 
@@ -35,14 +38,14 @@ concorrente citada em AP-05, AP-06 e AP-07 acima.
 
 | ID | Item | Prioridade | Esforco | Situacao |
 |---|---|---|---|---|
-| AP-01 | Completar revalidacao transacional do submit | P0 | M | Implementado; falta teste concorrente MySQL |
-| AP-02 | Tornar bloqueio de questao efetivo em todo o fluxo | P0 | M | Implementado; falta teste ponta a ponta MySQL/HTTP |
-| AP-03 | Garantir lease continuo e propriedade estrita do worker | P1 | M | Implementado; falta teste concorrente MySQL |
+| AP-01 | Completar revalidacao transacional do submit | P0 | M | Implementado; teste concorrente MySQL em AP-08 |
+| AP-02 | Tornar bloqueio de questao efetivo em todo o fluxo | P0 | M | Implementado; teste MySQL em AP-08 (falta HTTP ponta a ponta autenticado) |
+| AP-03 | Garantir lease continuo e propriedade estrita do worker | P1 | M | Implementado; teste concorrente MySQL em AP-08 |
 | AP-04 | Unificar arredondamento da nota por resposta e total | P1 | P | Implementado e testado |
-| AP-05 | Consumir token de redefinicao de senha atomicamente | P1 | M | Implementado em 2026-09-21; falta teste concorrente MySQL |
-| AP-06 | Proteger ultimo admin e mudancas de papel contra concorrencia | P1 | M | Implementado em 2026-09-21; falta teste concorrente MySQL |
+| AP-05 | Consumir token de redefinicao de senha atomicamente | P1 | M | Implementado em 2026-09-21; teste em AP-08 |
+| AP-06 | Proteger ultimo admin e mudancas de papel contra concorrencia | P1 | M | Implementado em 2026-09-21; teste concorrente MySQL em AP-08 |
 | AP-07 | Tornar cadastros publicos atomicos e concorrentes | P1 | M | Implementado em 2026-09-21; falta teste concorrente |
-| AP-08 | Criar testes reais dos fluxos criticos em MySQL e HTTP | P1 | G | Pendente |
+| AP-08 | Criar testes reais dos fluxos criticos em MySQL e HTTP | P1 | G | Implementado em 2026-09-21 |
 | AP-09 | Eliminar divergencia entre schemas limpos e ampliar smoke | P2 | M | Implementado em 2026-09-21 |
 | AP-10 | Configurar confianca explicita em proxy reverso | P2 | M | Implementado em 2026-09-21 |
 | AP-11 | Revalidar tentativa em andamento antes de reutiliza-la | P2 | P | Implementado junto ao AP-01 |
@@ -59,8 +62,9 @@ concorrente citada em AP-05, AP-06 e AP-07 acima.
 
 **Situacao:** implementado em 2026-06-12. O submit agora exige contexto de
 turma e revalida, dentro da transacao, janela completa, matricula ativa,
-exercicio ativo e moderacao de exercicio/questoes. O teste concorrente MySQL
-permanece pendente no AP-08.
+exercicio ativo e moderacao de exercicio/questoes. Teste concorrente com duas
+conexoes MySQL reais (lock na linha da tentativa) e teste de rejeicao por
+moderacao adicionados em `bin/run_integration_tests.php` (AP-08, 2026-09-21).
 
 **Achado:** `AttemptSubmissionService` bloqueia a tentativa e verifica somente a
 existencia da publicacao e `closes_at`. A decisao final nao revalida
@@ -176,7 +180,9 @@ apos um retry sem que as respostas tenham mudado.
 **Situacao:** implementado em 2026-06-12. A correcao renova o lease entre
 respostas, antes de persistir resultado e antes de concluir a tentativa.
 Conclusao e falha agora exigem `status = processing` e ownership exato do
-`worker_id`. O teste concorrente MySQL permanece pendente no AP-08.
+`worker_id`. Teste com duas conexoes MySQL reais (lock em `claimNext`, guarda
+de ownership em `markCompleted`) adicionado em `bin/run_integration_tests.php`
+(AP-08, 2026-09-21).
 
 **Achado:** o lease e renovado apenas uma vez antes da correcao completa. Uma
 tentativa com varias respostas pode ultrapassar 15 minutos e ser recuperada por
@@ -246,8 +252,11 @@ a resposta e inconsistente e tentativas orfas permanecem abertas.
 **Situacao:** implementado em 2026-09-21. `User::consumePasswordResetToken()`
 faz um único `UPDATE` cuja `WHERE` casa o hash do token e a expiração e já
 limpa o próprio hash na mesma instrução — a segunda de duas requisições
-concorrentes com o mesmo token casa zero linhas e recebe `false`. O teste
-concorrente MySQL permanece pendente no AP-08.
+concorrentes com o mesmo token casa zero linhas e recebe `false`. Teste de
+duplo consumo sequencial contra MySQL real adicionado em
+`bin/run_integration_tests.php` (AP-08, 2026-09-21) — a atomicidade vem do
+próprio `UPDATE` de instrução única, não de um lock que exija duas conexões
+sobrepostas para provar.
 
 **Achado:** o reset consulta o token valido e depois atualiza a senha em outra
 operacao. Dois requests concorrentes com o mesmo token podem ambos passar na
@@ -281,7 +290,9 @@ consulta e trocar a senha; o ultimo commit vence.
 e `updateUser` (troca de papel/status) agora abrem uma transação, contam admins
 ativos com `User::countActiveAdminsForUpdate()` (`SELECT ... FOR UPDATE`) e só
 então decidem e escrevem — o lock nas linhas de admin ativo serializa requests
-concorrentes. O teste concorrente MySQL permanece pendente no AP-08.
+concorrentes. Teste com duas conexões MySQL reais (UPDATE concorrente trava
+até a conexão que segura o lock liberar) adicionado em
+`bin/run_integration_tests.php` (AP-08, 2026-09-21).
 
 **Achado:** contagem do ultimo admin, verificacao de dependencias e atualizacao
 do usuario ocorrem em queries separadas, sem lock ou transacao.
@@ -313,7 +324,11 @@ usuário e matrícula na mesma transação (commit/rollback juntos). Nos dois
 fluxos (aluno e docente), a violação da constraint única de e-mail
 (`SQLSTATE 23000`) é capturada e convertida em erro de formulário controlado
 em vez de propagar como exceção não tratada. Teste de concorrência real
-(duas conexões disputando o mesmo e-mail) permanece pendente no AP-08.
+(duas conexões disputando o mesmo e-mail) segue pendente — não incluído no
+AP-08, que cobriu os itens com lock explícito (`FOR UPDATE`); a garantia de
+correção aqui vem só da constraint `UNIQUE` em `users.email` + captura de
+`SQLSTATE 23000`, o que já é suficiente para o critério de aceite funcional,
+mas sem teste automatizado de duas conexões reais.
 
 **Achado:** cadastro de aluno cria o usuario e depois cria a matricula, sem
 transacao. O teste de e-mail existente tambem ocorre antes do insert, permitindo
@@ -377,6 +392,26 @@ e registrar IP falso na auditoria.
 
 **Prioridade:** P1  
 **Esforco:** G
+
+**Situacao:** implementado em 2026-09-21. `bin/run_integration_tests.php`
+conecta a um MySQL real, aplica `001_create_tables.sql` (+ `020`) e roda os
+services reais (`AttemptSubmissionService`, `GradingJob`, `User`) contra esse
+banco. Para os pontos cuja correcao foi um lock (`FOR UPDATE`), abre DUAS
+conexoes MySQL de verdade e prova que a segunda trava/perde a corrida
+enquanto a primeira segura a transacao: AP-01/AP-02 (lock da tentativa no
+submit), AP-03 (lock do job na fila, incluindo ownership de `markCompleted`),
+AP-05 (consumo atomico do token — duplo consumo sequencial), AP-06 (lock do
+ultimo admin). Inclui smoke HTTP via `php -S` servindo `public/` de verdade:
+headers de seguranca, redirect de rota admin sem sessao, CSRF em POST.
+Novo job `integration` em `.github/workflows/ci.yml` sobe um servico MySQL
+8.0 e roda o script — job separado do `test` original (que continua
+"Lint + testes (sem banco)", sem MySQL, inalterado). Guarda de seguranca:
+recusa rodar fora de um banco cujo nome contenha `test`/`ci` (o script trunca
+todas as tabelas). Nao cobre: a corrida de e-mail duplicado do AP-07 (duas
+conexoes reais registrando o mesmo e-mail ao mesmo tempo — esse item segue
+com a lacuna registrada nele mesmo), teste de HTTP autenticado ponta a ponta
+(login real + sessao + ação autenticada) nem carga/performance — escopo
+ficou nos pontos de concorrencia e autorizacao negativa que motivaram o item.
 
 **Achado:** a suite atual passa, mas varios testes de banco reproduzem SQL ou
 estado-maquina em tabelas auxiliares SQLite, sem executar os services reais. O CI

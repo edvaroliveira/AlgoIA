@@ -211,6 +211,26 @@ $checks = [
       'uk_grading_jobs_attempt',
     ],
   ],
+  [
+    // AP-08: guarda de segurança do script de integração — sem ela, rodar
+    // localmente contra um DB_DATABASE de produção por engano trunca tudo.
+    'file' => 'bin/run_integration_tests.php',
+    'mustContain' => [
+      'INTEGRATION_TESTS_CONFIRM',
+      "preg_match('/test|ci/i'",
+      'TRUNCATE TABLE',
+    ],
+  ],
+  [
+    // AP-08 / CI: job de integração novo não pode substituir nem renomear o
+    // job "Lint + testes (sem banco)" que a branch protection da main exige.
+    'file' => '.github/workflows/ci.yml',
+    'mustContain' => [
+      'Lint + testes (sem banco)',
+      'name: Testes de integração (MySQL + HTTP)',
+      'run_integration_tests.php',
+    ],
+  ],
 ];
 $lintFiles = [
   'app/Controllers/AuthController.php',
