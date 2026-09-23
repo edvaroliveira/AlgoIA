@@ -260,7 +260,7 @@ class Turma extends Model
   public function belongsToTeacher(int $turmaId, int $teacherId): bool
   {
     $row = $this->db->fetchOne(
-      "SELECT id FROM turmas WHERE id = ? AND teacher_id = ?",
+      "SELECT id FROM turmas WHERE id = ? AND teacher_id = ? AND active = 1",
       [$turmaId, $teacherId]
     );
     return $row !== false;
