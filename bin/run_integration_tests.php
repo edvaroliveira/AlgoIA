@@ -48,10 +48,12 @@ $dbName    = (string) $cfg['database'];
 $confirmed = (string) \Core\env('INTEGRATION_TESTS_CONFIRM', '') === '1';
 
 if (!$confirmed && !preg_match('/test|ci/i', $dbName)) {
-  fwrite(STDERR,
+  fwrite(
+    STDERR,
     "Recusado: DB_DATABASE ('{$dbName}') não parece um banco de teste.\n" .
-    "Defina INTEGRATION_TESTS_CONFIRM=1 para confirmar explicitamente — " .
-    "este script TRUNCA todas as tabelas do banco configurado.\n");
+      "Defina INTEGRATION_TESTS_CONFIRM=1 para confirmar explicitamente — " .
+      "este script TRUNCA todas as tabelas do banco configurado.\n"
+  );
   exit(0);
 }
 
@@ -147,9 +149,19 @@ try {
 }
 
 $allTables = [
-  'injection_logs', 'answers', 'grading_jobs', 'attempts', 'questions',
-  'exercise_turmas', 'exercises', 'student_turma', 'turmas',
-  'login_attempts', 'system_settings', 'audit_logs', 'users',
+  'injection_logs',
+  'answers',
+  'grading_jobs',
+  'attempts',
+  'questions',
+  'exercise_turmas',
+  'exercises',
+  'student_turma',
+  'turmas',
+  'login_attempts',
+  'system_settings',
+  'audit_logs',
+  'users',
 ];
 
 $pdoA->exec('SET FOREIGN_KEY_CHECKS = 0');
@@ -377,6 +389,92 @@ check($blockedByModeration, 'AP-02: submit é rejeitado quando a questão do exe
 
 $attempt3After = $pdoA->query("SELECT status FROM attempts WHERE id = {$scenario3['attemptId']}")->fetch();
 check((string) $attempt3After['status'] === 'in_progress', 'AP-02: tentativa permanece in_progress após rejeição por moderação (rollback real)');
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RP-23 — turma inativa bloqueia acesso do aluno e operações docentes
+// ═══════════════════════════════════════════════════════════════════════════
+
+$inactiveScenario = seedScenario($pdoA);
+$pdoA->exec("UPDATE turmas SET active = 0 WHERE id = {$inactiveScenario['turmaId']}");
+
+$inactiveExercises = new App\Models\Exercise($dbA);
+check(
+  $inactiveExercises->findAllForStudent($inactiveScenario['studentId']) === [],
+  'RP-23-01: turma inativa não aparece na lista de exercícios do aluno'
+);
+check(
+  $inactiveExercises->findForStudent($inactiveScenario['exerciseId'], $inactiveScenario['studentId']) === false,
+  'RP-23-01: detalhe do exercício de turma inativa fica indisponível'
+);
+check(
+  !$inactiveExercises->studentHasAccess($inactiveScenario['exerciseId'], $inactiveScenario['studentId']),
+  'RP-23-01: studentHasAccess rejeita turma inativa'
+);
+check(
+  $inactiveExercises->findOpenPublicationForStudent($inactiveScenario['exerciseId'], $inactiveScenario['studentId']) === false,
+  'RP-23-01: publicação aberta de turma inativa não é retornada'
+);
+
+$inactiveStartRejected = false;
+try {
+  (new App\Services\AttemptStartService($dbA))->start(
+    $inactiveScenario['studentId'],
+    $inactiveScenario['exerciseId'],
+    $inactiveScenario['turmaId']
+  );
+} catch (\RuntimeException $e) {
+  $inactiveStartRejected = true;
+}
+check($inactiveStartRejected, 'RP-23-01: início de tentativa é rejeitado para turma inativa');
+
+$inactiveSubmitRejected = false;
+try {
+  (new App\Services\AttemptSubmissionService($dbA))->submit(
+    $inactiveScenario['attemptId'],
+    $inactiveScenario['studentId'],
+    []
+  );
+} catch (\RuntimeException $e) {
+  $inactiveSubmitRejected = true;
+}
+check($inactiveSubmitRejected, 'RP-23-01: envio de tentativa é rejeitado para turma inativa');
+
+$inactiveAttempt = $pdoA->query("SELECT status FROM attempts WHERE id = {$inactiveScenario['attemptId']}")->fetch();
+check(
+  (string) ($inactiveAttempt['status'] ?? '') === 'in_progress',
+  'RP-23-01: rejeição por turma inativa preserva a tentativa em andamento'
+);
+
+$inactiveTurmas = new App\Models\Turma($dbA);
+check(
+  !$inactiveTurmas->belongsToTeacher($inactiveScenario['turmaId'], $inactiveScenario['teacherId']),
+  'RP-23-02: turma inativa não é válida para mutação docente'
+);
+
+$inactiveExerciseId = $inactiveExercises->createDraft($inactiveScenario['teacherId'], 'Exercício inativo', 'Teste');
+$pdoA->exec("UPDATE exercises SET status = 'ready' WHERE id = {$inactiveExerciseId}");
+$pdoA->exec("INSERT INTO questions (exercise_id, text, expected_answer_hint, max_score, order_index)
+             VALUES ({$inactiveExerciseId}, 'Questão inativa', 'Resposta esperada', 10.0, 1)");
+
+$inactivePublicationRejected = false;
+try {
+  $inactiveExercises->activate($inactiveExerciseId, [
+    $inactiveScenario['turmaId'] => [
+      'opens_at' => date('Y-m-d H:i:s', time() - 3600),
+      'closes_at' => date('Y-m-d H:i:s', time() + 3600),
+      'max_attempts' => 1,
+    ],
+  ]);
+} catch (\RuntimeException $e) {
+  $inactivePublicationRejected = true;
+}
+check($inactivePublicationRejected, 'RP-23-02: publicação é rejeitada quando a turma está inativa');
+
+$inactiveExercise = $pdoA->query("SELECT status FROM exercises WHERE id = {$inactiveExerciseId}")->fetch();
+check(
+  (string) ($inactiveExercise['status'] ?? '') === 'ready',
+  'RP-23-02: exercício permanece pronto após publicação rejeitada'
+);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Smoke HTTP — servidor embutido do PHP servindo public/ de verdade

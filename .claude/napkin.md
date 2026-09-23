@@ -19,3 +19,5 @@
 ## Domain Behavior Guardrails
 1. **[2026-06-10] Preserve role and turma authorization boundaries**
    Do instead: verify student, teacher, and admin access at controller and model query boundaries whenever changing workflows.
+2. **[2026-09-23] Administrative turma state is an authorization boundary**
+   Do instead: require `turmas.active = 1` in student access, attempt transactions, and teacher mutation/publication paths; add a negative test for deactivation after enrollment.

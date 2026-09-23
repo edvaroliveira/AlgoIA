@@ -32,6 +32,9 @@ class AttemptStartService
       $pub = $db->fetchOne(
         "SELECT et.max_attempts, et.closes_at
                FROM exercise_turmas et
+               JOIN turmas t
+                 ON t.id = et.turma_id
+                AND t.active = 1
                JOIN exercises e
                  ON e.id = et.exercise_id
                 AND e.status = 'active'

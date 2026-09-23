@@ -66,7 +66,7 @@ class TurmaController
   public function regenerateKey(string $id): void
   {
     Request::validateCsrf();
-    $this->getOwnedTurma((int) $id);
+    $this->ensureActiveTurma($this->getOwnedTurma((int) $id), 'teacher.turma.regenerate_key');
 
     $newKey = $this->turmas->regenerateKey((int) $id);
     AuditService::record('teacher.turma.regenerate_key', 'turma', (int) $id);
@@ -79,7 +79,7 @@ class TurmaController
   public function approveStudent(string $id, string $studentId): void
   {
     Request::validateCsrf();
-    $this->getOwnedTurma((int) $id);
+    $this->ensureActiveTurma($this->getOwnedTurma((int) $id), 'teacher.student.approve');
 
     global $session;
 
@@ -97,7 +97,7 @@ class TurmaController
   public function rejectStudent(string $id, string $studentId): void
   {
     Request::validateCsrf();
-    $this->getOwnedTurma((int) $id);
+    $this->ensureActiveTurma($this->getOwnedTurma((int) $id), 'teacher.student.reject');
 
     $this->turmas->rejectStudent((int) $studentId, (int) $id);
     AuditService::record('teacher.student.reject', 'student', (int) $studentId, ['turma_id' => (int) $id]);
@@ -140,6 +140,21 @@ class TurmaController
     $turma = $this->turmas->find($id);
     Auth::ensure($turma && (int) $turma['teacher_id'] === Auth::id());
     return $turma;
+  }
+
+  private function ensureActiveTurma(array $turma, string $action): void
+  {
+    if ((bool) ($turma['active'] ?? false)) {
+      return;
+    }
+
+    AuditService::record($action . '.blocked', 'turma', (int) $turma['id'], [
+      'reason' => 'turma_inactive',
+    ]);
+
+    global $session;
+    $session->flash('error', 'Esta turma está inativa e não aceita novas alterações.');
+    View::redirect('/teacher/turmas/' . (int) $turma['id']);
   }
 
   private function isJoinThrottled(): bool
