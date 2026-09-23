@@ -63,6 +63,9 @@ class AttemptSubmissionService
       $pubOpen = $db->fetchOne(
         "SELECT et.turma_id
                FROM exercise_turmas et
+               JOIN turmas t
+                 ON t.id = et.turma_id
+                AND t.active = 1
                JOIN exercises e
                  ON e.id = et.exercise_id
                 AND e.status = 'active'

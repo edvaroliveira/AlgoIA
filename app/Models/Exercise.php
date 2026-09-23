@@ -356,7 +356,7 @@ class Exercise extends Model
                     MAX(CASE WHEN et.opens_at > NOW() THEN 1 ELSE 0 END) AS has_future_publication
              FROM exercises e
              JOIN exercise_turmas et ON et.exercise_id = e.id
-             JOIN turmas t ON t.id = et.turma_id
+             JOIN turmas t ON t.id = et.turma_id AND t.active = 1
              JOIN student_turma st ON st.turma_id = et.turma_id
              WHERE e.status = 'active'
                AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
@@ -387,7 +387,7 @@ class Exercise extends Model
                     MAX(CASE WHEN et.opens_at > NOW() THEN 1 ELSE 0 END) AS has_future_publication
              FROM exercises e
              JOIN exercise_turmas et ON et.exercise_id = e.id
-             JOIN turmas t ON t.id = et.turma_id
+             JOIN turmas t ON t.id = et.turma_id AND t.active = 1
              JOIN student_turma st ON st.turma_id = et.turma_id
              WHERE e.status = 'active'
                AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
@@ -417,7 +417,7 @@ class Exercise extends Model
                     MAX(CASE WHEN et.opens_at > NOW() THEN 1 ELSE 0 END) AS has_future_publication
              FROM exercises e
              JOIN exercise_turmas et ON et.exercise_id = e.id
-             JOIN turmas t ON t.id = et.turma_id
+             JOIN turmas t ON t.id = et.turma_id AND t.active = 1
              JOIN student_turma st ON st.turma_id = et.turma_id
              WHERE e.id = ?
                AND e.status = 'active'
@@ -439,7 +439,7 @@ class Exercise extends Model
     return $this->db->fetchOne(
       "SELECT et.turma_id, et.opens_at, et.closes_at, et.max_attempts, t.name AS turma_name
              FROM exercise_turmas et
-             JOIN turmas t ON t.id = et.turma_id
+             JOIN turmas t ON t.id = et.turma_id AND t.active = 1
              JOIN student_turma st ON st.turma_id = et.turma_id
              JOIN exercises e ON e.id = et.exercise_id
              WHERE et.exercise_id = ?
@@ -470,7 +470,7 @@ class Exercise extends Model
                       ELSE 2
                     END AS timing_rank
              FROM exercise_turmas et
-             JOIN turmas t ON t.id = et.turma_id
+             JOIN turmas t ON t.id = et.turma_id AND t.active = 1
              JOIN student_turma st ON st.turma_id = et.turma_id
              JOIN exercises e ON e.id = et.exercise_id
              WHERE et.exercise_id = ?
@@ -498,7 +498,7 @@ class Exercise extends Model
     return $this->db->fetchOne(
       "SELECT et.turma_id, et.opens_at, et.closes_at, et.max_attempts, t.name AS turma_name
              FROM exercise_turmas et
-             JOIN turmas t ON t.id = et.turma_id
+             JOIN turmas t ON t.id = et.turma_id AND t.active = 1
              JOIN student_turma st ON st.turma_id = et.turma_id
              JOIN exercises e ON e.id = et.exercise_id
              WHERE et.exercise_id = ?
@@ -584,6 +584,23 @@ class Exercise extends Model
         throw new \RuntimeException('Exercício não está liberado pela moderação para publicação.');
       }
 
+      $turmaIds = array_map('intval', array_keys($publicationConfigs));
+      if ($turmaIds === []) {
+        throw new \RuntimeException('Nenhuma turma válida foi selecionada para publicação.');
+      }
+
+      $placeholders = implode(',', array_fill(0, count($turmaIds), '?'));
+      $activeTurmas = $this->db->fetchAll(
+        "SELECT id FROM turmas
+               WHERE id IN ({$placeholders}) AND active = 1
+               FOR UPDATE",
+        $turmaIds
+      );
+
+      if (count($activeTurmas) !== count($turmaIds)) {
+        throw new \RuntimeException('Uma ou mais turmas selecionadas estão inativas.');
+      }
+
       $this->db->execute("DELETE FROM exercise_turmas WHERE exercise_id = ?", [$id]);
 
       foreach ($publicationConfigs as $turmaId => $config) {
@@ -634,6 +651,7 @@ class Exercise extends Model
       "SELECT e.id
              FROM exercises e
              JOIN exercise_turmas et ON et.exercise_id = e.id
+             JOIN turmas t ON t.id = et.turma_id AND t.active = 1
              JOIN student_turma st ON st.turma_id = et.turma_id
              WHERE e.id = ?
                AND e.status = 'active'
