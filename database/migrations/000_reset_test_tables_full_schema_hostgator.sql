@@ -95,12 +95,8 @@ CREATE TABLE student_turma (
 CREATE TABLE exercises (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     teacher_id INT UNSIGNED NOT NULL,
-    turma_id INT UNSIGNED NULL COMMENT 'legado: publicacao atual usa exercise_turmas',
     title VARCHAR(200) NOT NULL,
     description TEXT NULL,
-    opens_at DATETIME NULL COMMENT 'legado: janela atual usa exercise_turmas',
-    closes_at DATETIME NULL COMMENT 'legado: janela atual usa exercise_turmas',
-    max_attempts INT NULL COMMENT 'legado: tentativas atuais usam exercise_turmas',
     status ENUM('draft','ready','active') NOT NULL DEFAULT 'draft',
     admin_review_status ENUM('approved','flagged','blocked') NOT NULL DEFAULT 'approved',
     admin_review_note TEXT NULL,
@@ -109,13 +105,10 @@ CREATE TABLE exercises (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_exercises_teacher (teacher_id),
-    KEY idx_exercises_turma (turma_id),
     KEY idx_exercises_status_review (status, admin_review_status),
     KEY idx_exercises_admin_reviewed_by (admin_reviewed_by),
     CONSTRAINT fk_ex_teacher
       FOREIGN KEY (teacher_id) REFERENCES users(id),
-    CONSTRAINT fk_ex_turma
-      FOREIGN KEY (turma_id) REFERENCES turmas(id) ON DELETE SET NULL,
     CONSTRAINT fk_ex_admin_reviewed_by
       FOREIGN KEY (admin_reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

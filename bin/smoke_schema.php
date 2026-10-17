@@ -69,6 +69,29 @@ try {
     }
   }
 
+  // Janela, limite e turma pertencem à Publicação (ADR 0003), não ao Exercício.
+  $forbiddenColumns = [
+    'exercises' => ['turma_id', 'opens_at', 'closes_at', 'max_attempts'],
+  ];
+
+  foreach ($forbiddenColumns as $table => $columns) {
+    foreach ($columns as $column) {
+      $row = $db->fetchOne(
+        "SELECT COLUMN_NAME
+               FROM INFORMATION_SCHEMA.COLUMNS
+               WHERE TABLE_SCHEMA = DATABASE()
+                 AND TABLE_NAME = ?
+                 AND COLUMN_NAME = ?
+               LIMIT 1",
+        [$table, $column]
+      );
+
+      if ($row) {
+        $missing[] = "coluna legada presente: {$table}.{$column}";
+      }
+    }
+  }
+
   $requiredIndexes = [
     'attempts'     => ['idx_attempts_student_exercise_turma'],
     'grading_jobs' => ['idx_grading_jobs_status_available'],
