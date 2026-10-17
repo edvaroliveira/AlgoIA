@@ -1,5 +1,7 @@
 # SPEC do Sistema IAProg - 2026-05-27
 
+> **Documento histórico (2026-05-27).** A terminologia canônica está em [GLOSSARY.md](../GLOSSARY.md) e as decisões arquiteturais em [docs/adr/](adr/). Em caso de divergência, prevalecem o glossário, os ADRs e o código.
+
 ## Objetivo
 
 Esta SPEC descreve o comportamento tecnico esperado do IAProg conforme o sistema implementado hoje e os ajustes necessarios para sua evolucao controlada.

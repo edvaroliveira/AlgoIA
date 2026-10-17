@@ -1,5 +1,7 @@
 # PRD do Sistema IAProg - 2026-05-27
 
+> **Documento histórico (2026-05-27).** A terminologia canônica está em [GLOSSARY.md](../GLOSSARY.md) e as decisões arquiteturais em [docs/adr/](adr/). Em caso de divergência, prevalecem o glossário, os ADRs e o código.
+
 ## Visao do produto
 
 IAProg e uma plataforma para operacao de atividades avaliativas em cursos de logica, algoritmos e programacao, com foco em reduzir carga operacional do docente e acelerar retorno pedagogico ao aluno por meio de correcao automatica assistida por IA.
