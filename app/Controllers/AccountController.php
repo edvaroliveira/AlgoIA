@@ -183,10 +183,8 @@ class AccountController
 
       return self::SUBDIR . '/' . $filename;
     } finally {
-      imagedestroy($src);
-      if (isset($dst) && $dst instanceof \GdImage) {
-        imagedestroy($dst);
-      }
+      // GdImage é liberado pelo GC (imagedestroy é no-op desde o PHP 8.0).
+      unset($src, $dst);
     }
   }
 
