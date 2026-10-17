@@ -107,6 +107,20 @@ function app_url(string $path = ''): string
 }
 
 /**
+ * Política de senha forte do AlgoIA: de 10 a 72 caracteres, com maiúscula,
+ * minúscula e número. Teto de 72 bytes porque o bcrypt (password_hash) trunca
+ * silenciosamente além disso. Usada pelo app e pelos seeds.
+ */
+function password_is_strong(string $password): bool
+{
+    return strlen($password) >= 10
+      && strlen($password) <= 72
+      && preg_match('/[A-Z]/', $password) === 1
+      && preg_match('/[a-z]/', $password) === 1
+      && preg_match('/\d/', $password) === 1;
+}
+
+/**
  * Valida um caminho de retorno vindo da requisição.
  *
  * Aceita só caminho interno ("/algo"). Recusa "//host" e "/\host": o parser de

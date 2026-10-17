@@ -95,7 +95,7 @@ Construída em **PHP puro** (sem framework, sem Composer), com um mini-framework
    ```
    > Instalação limpa: aplique **apenas** o `001`. As migrations `002`–`021` existem só para atualizar bases antigas. Detalhes em [docs/deploy_operacional.md](docs/deploy_operacional.md).
 
-3. **Popular usuários iniciais** (professor/admin):
+3. **Popular usuários iniciais** (professor/admin). Defina antes `SEED_TEACHER_*` e `SEED_ADMIN_*` no `.env`. Não há senha padrão: os seeds recusam senha vazia, o placeholder do `.env.example` ou senha fraca, e marcam troca obrigatória no primeiro acesso.
    ```bash
    php database/seeds/001_seed_teacher.php
    php database/seeds/002_seed_admin.php

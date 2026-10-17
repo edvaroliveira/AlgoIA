@@ -6,3 +6,7 @@
 Thumbs.db
 .claude/settings.json
 .claude/settings.local.json
+
+# Dumps de banco nunca vão para o repo (repo público; AU-01). Migrations ficam em database/migrations/.
+database/*.sql
+*.sql.gz

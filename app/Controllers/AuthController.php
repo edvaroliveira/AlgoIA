@@ -454,12 +454,7 @@ class AuthController
 
   private function isStrongPassword(string $password): bool
   {
-    // Teto de 72 bytes: bcrypt (password_hash) trunca silenciosamente além disso.
-    return strlen($password) >= 10
-      && strlen($password) <= 72
-      && preg_match('/[A-Z]/', $password) === 1
-      && preg_match('/[a-z]/', $password) === 1
-      && preg_match('/\d/', $password) === 1;
+    return \Core\password_is_strong($password);
   }
 
   private function isLoginLocked(string $email = ''): bool

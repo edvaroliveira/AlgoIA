@@ -306,6 +306,30 @@ foreach ($viewIterator as $viewFile) {
 }
 same([], $inlineHandlerViews, 'RS-01: nenhuma view usa handler inline (CSP bloqueia; use data-confirm)');
 
+// ── AU-10: política de senha forte compartilhada (app e seeds) ───────────────
+same(true, \Core\password_is_strong('SenhaForte1'), 'AU-10: 10+ chars com maiúscula, minúscula e número é forte');
+same(false, \Core\password_is_strong('Curta1A'), 'AU-10: menos de 10 caracteres é fraca');
+same(false, \Core\password_is_strong('semmaiuscula1'), 'AU-10: sem maiúscula é fraca');
+same(false, \Core\password_is_strong('SEMMINUSCULA1'), 'AU-10: sem minúscula é fraca');
+same(false, \Core\password_is_strong('SemNumeroAqui'), 'AU-10: sem número é fraca');
+same(false, \Core\password_is_strong('A1' . str_repeat('a', 71)), 'AU-10: acima de 72 bytes é recusada (bcrypt trunca)');
+
+// ── AU-10: seed exige senha forte vinda do ambiente, nunca um padrão ─────────
+require_once ROOT_PATH . '/database/seeds/seed_password.php';
+$seedRejects = static function (?string $value): bool {
+  try {
+    seed_password('SEED_TEST_PASSWORD', $value);
+    return false;
+  } catch (\RuntimeException $e) {
+    return true;
+  }
+};
+check($seedRejects(null), 'AU-10: seed recusa senha ausente no ambiente');
+check($seedRejects(''), 'AU-10: seed recusa senha vazia');
+check($seedRejects('defina_uma_senha_forte'), 'AU-10: seed recusa o placeholder do .env.example');
+check($seedRejects('fraca'), 'AU-10: seed recusa senha fraca');
+same('OutraSenha9x', seed_password('SEED_TEST_PASSWORD', 'OutraSenha9x'), 'AU-10: seed aceita senha forte do ambiente');
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];
