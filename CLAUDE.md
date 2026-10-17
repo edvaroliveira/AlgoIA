@@ -141,3 +141,17 @@ Se houver erro: mostre a mensagem completa e sugira como corrigir manualmente.
 - Nunca force push sem avisar sobre os riscos
 - Se a branch já existir no remote, pergunte se deve reutilizá-la ou criar outra
 - Não inclua arquivos listados no `.gitignore`
+
+## Agent skills
+
+### Issue tracker
+
+Issues e specs ficam no GitHub Issues de `edvaroliveira/AlgoIA`, via `gh`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Cinco labels canônicas com os nomes padrão (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` + `docs/adr/` na raiz. See `docs/agents/domain.md`.
