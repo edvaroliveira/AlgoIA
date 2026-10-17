@@ -69,7 +69,10 @@ function newRawConnection(array $cfg): PDO
     // Os testes de lock abaixo usam ->query()->fetch() diretamente (fora
     // dos helpers de Core\Database); sem query buffered, um cursor aberto
     // e não totalmente consumido quebra a próxima chamada na mesma conexão.
-    PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
+    // Pdo\Mysql::ATTR_* existe desde o PHP 8.4; as constantes MYSQL_ATTR_* da classe PDO são deprecated no 8.5.
+    (defined('Pdo\Mysql::ATTR_USE_BUFFERED_QUERY')
+      ? constant('Pdo\Mysql::ATTR_USE_BUFFERED_QUERY')
+      : constant('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) => true,
   ]);
 }
 
@@ -598,7 +601,6 @@ function httpGet(string $url, bool $followRedirects = false): array
   $raw = curl_exec($ch);
   $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
   $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-  curl_close($ch);
 
   if ($raw === false) {
     return ['code' => 0, 'headers' => '', 'body' => ''];
@@ -731,7 +733,6 @@ if (!extension_loaded('curl')) {
       ]);
       $csrfRaw = curl_exec($ch);
       $csrfCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-      curl_close($ch);
       check($csrfCode === 403, 'HTTP: POST /login sem token CSRF responde 403');
 
       // ── RP-23-03 — autorização negativa autenticada ─────────────────────

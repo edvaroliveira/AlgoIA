@@ -145,7 +145,7 @@ depois do login, perde a sessão.
 
 ### RNF-04 Operação
 
-- PHP 8 sem dependências externas (ADR 0001). Funciona em subpasta.
+- PHP 8.0 ou mais novo, sem dependências externas (ADR 0001). A CI testa no 8.3 e no 8.5, e o smoke estático proíbe as APIs deprecated no 8.5. Funciona em subpasta.
 - Banco de produção: Percona Server 5.7, com `sql_mode` não estrito. A CI de integração usa o mesmo motor e o mesmo modo.
 - Instalação limpa: aplicar só `001_create_tables.sql`. Bases existentes: migrations incrementais na ordem de `docs/deploy_operacional.md`.
 
