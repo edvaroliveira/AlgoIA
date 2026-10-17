@@ -10,7 +10,7 @@ passaram, mas não cobrem a transição de uma turma ativa para inativa.
 |----|-----------|------|--------|
 | RP-23-01 | 🔴 Alto | Turma inativa ainda libera acesso e envio de exercícios | ✅ Corrigido |
 | RP-23-02 | 🟠 Médio | Docente ainda publica e administra turma inativa | ✅ Corrigido |
-| RP-23-03 | 🟠 Médio | Falta de testes negativos autenticados por papel e turma | 🟡 Testes adicionados; integração pendente |
+| RP-23-03 | 🟠 Médio | Falta de testes negativos autenticados por papel e turma | ✅ Corrigido (issue #39) |
 
 ## RP-23-01 — Turma inativa ainda libera acesso e envio
 
@@ -87,6 +87,20 @@ para:
 **Aceite:** os cenários negativos retornam o código esperado e nenhuma
 alteração indevida é persistida; todos rodam na CI com MariaDB real quando a
 suíte de integração estiver habilitada.
+
+**Fechamento (2026-10-17, issue #39):** a suíte de integração ganhou uma seam
+HTTP autenticada. O servidor embutido serve o app real e o harness faz login
+pelo fluxo de verdade (página de login, token CSRF, cookie de sessão). Cobre
+dois Docentes, dois Alunos e duas Turmas: IDOR entre Docentes (Turma,
+Exercício, resultado) e entre Alunos (abrir/iniciar Exercício, salvar Resposta,
+ver resultado), papel errado, Turma inativada pelo Admin depois da Matrícula e
+da Publicação, e a Auditoria de Recusar/Desvincular (`reject_denied`,
+`detach_turma`, `*.blocked`). Cada negação confirma também que nada foi
+persistido, e os controles positivos garantem que o 403 vem da regra de
+propriedade, não de CSRF inválido. A capacidade de falhar foi provada com seis
+mutações temporárias (checagem de dono da Turma, dono do Exercício, dono da
+Tentativa, bloqueio de Turma inativa, auditoria de recusa, papel em rota de
+Docente): todas derrubaram os testes correspondentes.
 
 ## Validações realizadas
 
