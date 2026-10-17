@@ -38,41 +38,32 @@ class Attempt extends Model
     }
   }
 
-  public function getInProgress(int $studentId, int $exerciseId, ?int $turmaId = null): array|false
+  public function getInProgress(int $studentId, int $exerciseId, int $turmaId): array|false
   {
-    $turmaFilter = $turmaId !== null ? "AND turma_id = ?" : "AND turma_id IS NULL";
-    $params = $turmaId !== null ? [$studentId, $exerciseId, $turmaId] : [$studentId, $exerciseId];
-
     return $this->db->fetchOne(
       "SELECT * FROM attempts
-             WHERE student_id = ? AND exercise_id = ? AND status = 'in_progress' {$turmaFilter}
+             WHERE student_id = ? AND exercise_id = ? AND status = 'in_progress' AND turma_id = ?
              ORDER BY started_at DESC LIMIT 1",
-      $params
+      [$studentId, $exerciseId, $turmaId]
     );
   }
 
-  public function countUsedAttempts(int $studentId, int $exerciseId, ?int $turmaId = null): int
+  public function countUsedAttempts(int $studentId, int $exerciseId, int $turmaId): int
   {
-    $turmaFilter = $turmaId !== null ? "AND turma_id = ?" : "AND turma_id IS NULL";
-    $params = $turmaId !== null ? [$studentId, $exerciseId, $turmaId] : [$studentId, $exerciseId];
-
     $row = $this->db->fetchOne(
       "SELECT COUNT(*) AS c FROM attempts
-             WHERE student_id = ? AND exercise_id = ? AND status IN ('submitted', 'graded') {$turmaFilter}",
-      $params
+             WHERE student_id = ? AND exercise_id = ? AND status IN ('submitted', 'graded') AND turma_id = ?",
+      [$studentId, $exerciseId, $turmaId]
     );
     return (int) ($row['c'] ?? 0);
   }
 
-  public function getBestScore(int $studentId, int $exerciseId, ?int $turmaId = null): ?float
+  public function getBestScore(int $studentId, int $exerciseId, int $turmaId): ?float
   {
-    $turmaFilter = $turmaId !== null ? "AND turma_id = ?" : "AND turma_id IS NULL";
-    $params = $turmaId !== null ? [$studentId, $exerciseId, $turmaId] : [$studentId, $exerciseId];
-
     $row = $this->db->fetchOne(
       "SELECT MAX(total_score) AS best FROM attempts
-             WHERE student_id = ? AND exercise_id = ? AND status = 'graded' {$turmaFilter}",
-      $params
+             WHERE student_id = ? AND exercise_id = ? AND status = 'graded' AND turma_id = ?",
+      [$studentId, $exerciseId, $turmaId]
     );
     return $row['best'] !== null ? (float) $row['best'] : null;
   }
@@ -163,7 +154,7 @@ class Attempt extends Model
              {$where}
              ORDER BY COALESCE(a.submitted_at, a.started_at) ASC
              LIMIT {$safeLimit} OFFSET {$safeOffset}",
-      $params
+      [$studentId, $exerciseId, $turmaId]
     );
   }
 
@@ -185,7 +176,7 @@ class Attempt extends Model
              {$where}
              ORDER BY COALESCE(a.submitted_at, a.started_at) ASC
              LIMIT {$safeLimit} OFFSET {$safeOffset}",
-      $params
+      [$studentId, $exerciseId, $turmaId]
     );
   }
 
@@ -201,7 +192,7 @@ class Attempt extends Model
              JOIN users teacher ON teacher.id = e.teacher_id
              LEFT JOIN turmas t ON t.id = a.turma_id
              {$where}",
-      $params
+      [$studentId, $exerciseId, $turmaId]
     );
 
     return (int) ($row['total'] ?? 0);

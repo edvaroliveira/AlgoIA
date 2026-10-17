@@ -57,7 +57,7 @@ $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pe
                 ⏱ Janela definida para sua turma ativa
               <?php endif; ?>
             </p>
-            <p class="deadline">Tentativas: <?= ((string) ($ex['max_attempts'] ?? '0')) === '0' ? 'Ilimitadas' : (int) $ex['max_attempts'] ?></p>
+            <p class="deadline">Tentativas: <?= ($ex['max_attempts'] ?? null) === null ? '—' : (((string) $ex['max_attempts']) === '0' ? 'Ilimitadas' : (int) $ex['max_attempts']) ?></p>
           </div>
           <div class="card-footer">
             <a href="<?= \Core\app_url('/student/exercises/' . $ex['id']) ?>" class="btn btn--primary btn--sm">Acessar</a>

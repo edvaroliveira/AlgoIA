@@ -250,8 +250,8 @@ class AttemptController
     $isClosed   = !empty($attempt['closes_at']) && strtotime($attempt['closes_at']) < time();
     $maxScore   = $this->questions->getTotalMaxScore((int) $attempt['exercise_id']);
     $attemptTurmaId = !empty($attempt['turma_id']) ? (int) $attempt['turma_id'] : null;
-    $bestScore  = $this->attempts->getBestScore((int) $attempt['student_id'], (int) $attempt['exercise_id'], $attemptTurmaId);
-    $usedTries  = $this->attempts->countUsedAttempts((int) $attempt['student_id'], (int) $attempt['exercise_id'], $attemptTurmaId);
+    $bestScore  = $attemptTurmaId !== null ? $this->attempts->getBestScore((int) $attempt['student_id'], (int) $attempt['exercise_id'], $attemptTurmaId) : null;
+    $usedTries  = $attemptTurmaId !== null ? $this->attempts->countUsedAttempts((int) $attempt['student_id'], (int) $attempt['exercise_id'], $attemptTurmaId) : 0;
     $maxTries   = (int) ($attempt['max_attempts'] ?? 0);
     $showReferenceAnswer = $internalReview || $isClosed || ($maxTries > 0 && $usedTries >= $maxTries);
     $showDeductionReasons = $internalReview;

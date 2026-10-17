@@ -99,8 +99,34 @@ class TurmaController
     Request::validateCsrf();
     $this->ensureActiveTurma($this->getOwnedTurma((int) $id), 'teacher.student.reject');
 
-    $this->turmas->rejectStudent((int) $studentId, (int) $id);
+    global $session;
+
+    if (!$this->turmas->rejectStudent((int) $studentId, (int) $id)) {
+      AuditService::record('teacher.student.reject_denied', 'student', (int) $studentId, ['turma_id' => (int) $id]);
+      $session->flash('error', 'Solicitação pendente não encontrada para esta turma. Para remover um aluno aprovado, use Desvincular.');
+      View::redirect("/teacher/turmas/{$id}");
+    }
+
     AuditService::record('teacher.student.reject', 'student', (int) $studentId, ['turma_id' => (int) $id]);
+    $session->flash('success', 'Solicitação recusada.');
+    View::redirect("/teacher/turmas/{$id}");
+  }
+
+  public function detachStudent(string $id, string $studentId): void
+  {
+    Request::validateCsrf();
+    $this->ensureActiveTurma($this->getOwnedTurma((int) $id), 'teacher.student.detach_turma');
+
+    global $session;
+
+    if (!$this->turmas->detachStudent((int) $studentId, (int) $id)) {
+      AuditService::record('teacher.student.detach_turma_denied', 'student', (int) $studentId, ['turma_id' => (int) $id]);
+      $session->flash('error', 'Aluno ativo não encontrado para esta turma.');
+      View::redirect("/teacher/turmas/{$id}");
+    }
+
+    AuditService::record('teacher.student.detach_turma', 'student', (int) $studentId, ['turma_id' => (int) $id]);
+    $session->flash('success', 'Aluno desvinculado da turma. O cadastro e o histórico foram preservados.');
     View::redirect("/teacher/turmas/{$id}");
   }
 

@@ -68,8 +68,8 @@ class DashboardController
       $publication = $exModel->findCurrentPublicationForStudent((int) $ex['id'], $studentId);
       $ex = $exModel->applyPublicationContext($ex, $publication);
       $turmaId = !empty($ex['turma_id']) ? (int) $ex['turma_id'] : null;
-      $ex['best_score']     = $attModel->getBestScore($studentId, (int) $ex['id'], $turmaId);
-      $ex['attempt_count']  = $attModel->countUsedAttempts($studentId, (int) $ex['id'], $turmaId);
+      $ex['best_score']     = $turmaId !== null ? $attModel->getBestScore($studentId, (int) $ex['id'], $turmaId) : null;
+      $ex['attempt_count']  = $turmaId !== null ? $attModel->countUsedAttempts($studentId, (int) $ex['id'], $turmaId) : 0;
     }
     unset($ex);
 
