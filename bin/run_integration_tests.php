@@ -20,7 +20,9 @@ declare(strict_types=1);
  * fila), AP-05 (consumo atômico do token de reset), AP-06 (lock do último
  * admin), AP-07 (INSERT concorrente com e-mail duplicado). HTTP smoke
  * (headers, redirect de rota protegida, CSRF) via `php -S` servindo public/
- * de verdade.
+ * de verdade, e autorização negativa autenticada (RP-23-03): login pelo fluxo
+ * real como Docentes, Alunos e Admin, cobrindo IDOR, papel errado, Turma
+ * inativa e a Auditoria de Recusar/Desvincular.
  *
  * SEGURANÇA: só roda contra um banco cujo nome contenha "test"/"ci", ou com
  * INTEGRATION_TESTS_CONFIRM=1 explícito — o script TRUNCA todas as tabelas
@@ -609,6 +611,68 @@ function httpGet(string $url, bool $followRedirects = false): array
   ];
 }
 
+/**
+ * Requisição HTTP com o cookie jar de um ator (sessão real do app).
+ * Retorna código, headers, corpo e destino do redirect, sem segui-lo.
+ */
+function httpAs(string $jar, string $method, string $url, array $fields = []): array
+{
+  $ch = curl_init($url);
+  $opts = [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HEADER         => true,
+    CURLOPT_FOLLOWLOCATION => false,
+    CURLOPT_TIMEOUT        => 10,
+    CURLOPT_COOKIEJAR      => $jar,
+    CURLOPT_COOKIEFILE     => $jar,
+  ];
+  if ($method === 'POST') {
+    $opts[CURLOPT_POST] = true;
+    $opts[CURLOPT_POSTFIELDS] = http_build_query($fields);
+  }
+  curl_setopt_array($ch, $opts);
+  $raw = curl_exec($ch);
+  $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+  $location = (string) curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+
+  if ($raw === false) {
+    return ['code' => 0, 'headers' => '', 'body' => '', 'location' => ''];
+  }
+
+  return [
+    'code'     => $code,
+    'headers'  => substr((string) $raw, 0, $headerSize),
+    'body'     => substr((string) $raw, $headerSize),
+    'location' => $location,
+  ];
+}
+
+function extractCsrf(string $html): string
+{
+  return preg_match('/name="_csrf_token" value="([^"]+)"/', $html, $m) ? html_entity_decode($m[1]) : '';
+}
+
+/** Faz login pelo fluxo real (GET /login → token CSRF → POST) e devolve o cookie jar do ator. */
+function loginAs(string $base, string $email, string $password): string
+{
+  $jar = tempnam(sys_get_temp_dir(), 'algoia_jar_');
+  $page = httpAs($jar, 'GET', "{$base}/login");
+  httpAs($jar, 'POST', "{$base}/login", [
+    '_csrf_token' => extractCsrf($page['body']),
+    'email'       => $email,
+    'password'    => $password,
+  ]);
+  return $jar;
+}
+
+/** POST autenticado com o token CSRF da sessão do ator (lido da página de conta). */
+function postAs(string $base, string $jar, string $path, array $fields = []): array
+{
+  $page = httpAs($jar, 'GET', "{$base}/conta");
+  return httpAs($jar, 'POST', "{$base}{$path}", ['_csrf_token' => extractCsrf($page['body'])] + $fields);
+}
+
 if (!extension_loaded('curl')) {
   echo "curl indisponível — smoke HTTP pulado.\n";
 } else {
@@ -617,7 +681,8 @@ if (!extension_loaded('curl')) {
 
   $descriptors = [1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
   $serverProcess = proc_open(
-    ['php', '-S', $host, '-t', ROOT_PATH . '/public', ROOT_PATH . '/public/index.php'],
+    // Mesmo fuso do processo de teste: a janela da Publicação precisa bater com o banco.
+    ['php', '-d', 'date.timezone=' . date_default_timezone_get(), '-S', $host, '-t', ROOT_PATH . '/public', ROOT_PATH . '/public/index.php'],
     $descriptors,
     $pipes,
     ROOT_PATH
@@ -668,6 +733,196 @@ if (!extension_loaded('curl')) {
       $csrfCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
       curl_close($ch);
       check($csrfCode === 403, 'HTTP: POST /login sem token CSRF responde 403');
+
+      // ── RP-23-03 — autorização negativa autenticada ─────────────────────
+      $base = "http://{$host}";
+      $pw = 'SenhaForte1';
+      $pwHash = password_hash($pw, PASSWORD_BCRYPT);
+      $sfx = bin2hex(random_bytes(4));
+      $mkUser = function (string $name, string $role) use ($pdoA, $pwHash, $sfx): array {
+        $email = strtolower(str_replace(' ', '.', $name)) . ".{$sfx}@test.local";
+        $pdoA->exec("INSERT INTO users (name, email, password_hash, role, status) VALUES ('{$name}', '{$email}', '{$pwHash}', '{$role}', 'active')");
+        return ['id' => (int) $pdoA->lastInsertId(), 'email' => $email];
+      };
+      $docenteA = $mkUser('Docente A', 'teacher');
+
+      $jarDocenteA = loginAs($base, $docenteA['email'], $pw);
+      $dash = httpAs($jarDocenteA, 'GET', "{$base}/teacher/dashboard");
+      check($dash['code'] === 200, 'RP-23-03: Docente logado pelo fluxo real acessa o próprio painel');
+
+      $docenteB = $mkUser('Docente B', 'teacher');
+      $alunoA = $mkUser('Aluno A', 'student');
+      $alunoB = $mkUser('Aluno B', 'student');
+      $alunoPendente = $mkUser('Aluno Pendente HTTP', 'student');
+
+      $mkTurma = function (int $teacherId, string $name) use ($pdoA): array {
+        $key = strtoupper(bin2hex(random_bytes(3)));
+        $pdoA->exec("INSERT INTO turmas (teacher_id, name, access_key) VALUES ({$teacherId}, '{$name}', '{$key}')");
+        return ['id' => (int) $pdoA->lastInsertId(), 'key' => $key];
+      };
+      $turmaA = $mkTurma($docenteA['id'], 'Turma HTTP A');
+      $turmaB = $mkTurma($docenteB['id'], 'Turma HTTP B');
+      $pdoA->exec("INSERT INTO student_turma (student_id, turma_id, status) VALUES
+                   ({$alunoA['id']}, {$turmaA['id']}, 'active'),
+                   ({$alunoB['id']}, {$turmaB['id']}, 'active'),
+                   ({$alunoPendente['id']}, {$turmaA['id']}, 'pending')");
+
+      $enrollmentState = fn(): string => implode(',', array_map(
+        fn($r) => "{$r['student_id']}:{$r['turma_id']}:{$r['status']}",
+        $pdoA->query("SELECT student_id, turma_id, status FROM student_turma ORDER BY student_id, turma_id")->fetchAll()
+      ));
+      $turmaKey = fn(int $id): string => (string) $pdoA->query("SELECT access_key FROM turmas WHERE id = {$id}")->fetchColumn();
+
+      // Linha 1 — Docente B não opera na Turma A
+      $jarDocenteB = loginAs($base, $docenteB['email'], $pw);
+      check(
+        httpAs($jarDocenteB, 'GET', "{$base}/teacher/turmas/{$turmaA['id']}")['code'] === 403,
+        'RP-23-03: Docente não vê Turma de outro Docente (403)'
+      );
+
+      $before = $enrollmentState();
+      $idorPosts = [
+        "/teacher/turmas/{$turmaA['id']}/key",
+        "/teacher/turmas/{$turmaA['id']}/approve/{$alunoPendente['id']}",
+        "/teacher/turmas/{$turmaA['id']}/reject/{$alunoPendente['id']}",
+        "/teacher/turmas/{$turmaA['id']}/detach/{$alunoA['id']}",
+      ];
+      foreach ($idorPosts as $path) {
+        check(postAs($base, $jarDocenteB, $path)['code'] === 403, "RP-23-03: Docente recebe 403 em POST {$path} de outra Turma");
+      }
+      check($turmaKey($turmaA['id']) === $turmaA['key'], 'RP-23-03: Chave de acesso não muda por outro Docente');
+      check($enrollmentState() === $before, 'RP-23-03: Matrículas não mudam por outro Docente');
+
+      // Controle positivo: o 403 acima é de propriedade, não de CSRF inválido.
+      $ownKey = postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaA['id']}/key");
+      check(
+        $ownKey['code'] === 302 && $turmaKey($turmaA['id']) !== $turmaA['key'],
+        'RP-23-03: dono da Turma gera nova Chave de acesso com o mesmo helper (CSRF válido)'
+      );
+      $turmaA['key'] = $turmaKey($turmaA['id']);
+
+      // Exercício A publicado só na Turma A; Aluno A com uma Tentativa corrigida e uma em andamento.
+      $pdoA->exec("INSERT INTO exercises (teacher_id, title, status) VALUES ({$docenteA['id']}, 'Exercício HTTP A', 'active')");
+      $exA = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO exercise_turmas (exercise_id, turma_id, opens_at, closes_at, max_attempts)
+                   VALUES ({$exA}, {$turmaA['id']}, NOW() - INTERVAL 1 HOUR, NOW() + INTERVAL 1 HOUR, 0)");
+      $pdoA->exec("INSERT INTO questions (exercise_id, text, expected_answer_hint, max_score, order_index) VALUES ({$exA}, 'Explique pilha.', 'LIFO.', 10.0, 1)");
+      $qA = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, turma_id, status, total_score, submitted_at) VALUES ({$exA}, {$alunoA['id']}, {$turmaA['id']}, 'graded', 7.0, NOW())");
+      $attGradedA = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, turma_id, status) VALUES ({$exA}, {$alunoA['id']}, {$turmaA['id']}, 'in_progress')");
+      $attOpenA = (int) $pdoA->lastInsertId();
+      $countRows = fn(string $sql): int => (int) $pdoA->query($sql)->fetchColumn();
+
+      // Linha 2 — Docente B não vê Exercício nem resultado do Docente A
+      check(
+        httpAs($jarDocenteB, 'GET', "{$base}/teacher/exercises/{$exA}")['code'] === 403,
+        'RP-23-03: Docente não vê Exercício de outro Docente (403)'
+      );
+      check(
+        httpAs($jarDocenteB, 'GET', "{$base}/teacher/attempts/{$attGradedA}/result")['code'] === 403,
+        'RP-23-03: Docente não vê resultado de Tentativa de Aluno de outro Docente (403)'
+      );
+
+      // Linha 3 — Aluno B não abre nem inicia Exercício só publicado na Turma A
+      $jarAlunoA = loginAs($base, $alunoA['email'], $pw);
+      $jarAlunoB = loginAs($base, $alunoB['email'], $pw);
+      $showB = httpAs($jarAlunoB, 'GET', "{$base}/student/exercises/{$exA}");
+      check(in_array($showB['code'], [403, 404], true), "RP-23-03: Aluno de outra Turma não abre o Exercício (recebeu {$showB['code']})");
+      $startB = postAs($base, $jarAlunoB, "/student/exercises/{$exA}/start");
+      check(in_array($startB['code'], [403, 404], true), "RP-23-03: Aluno de outra Turma não inicia Tentativa (recebeu {$startB['code']})");
+      check(
+        $countRows("SELECT COUNT(*) FROM attempts WHERE student_id = {$alunoB['id']}") === 0,
+        'RP-23-03: nenhuma Tentativa é criada para Aluno de outra Turma'
+      );
+
+      // Linha 4 — Aluno B não escreve nem lê a Tentativa do Aluno A
+      $answerB = postAs($base, $jarAlunoB, "/student/attempts/{$attOpenA}/answer", ['question_id' => $qA, 'answer' => 'resposta forjada']);
+      check($answerB['code'] === 403, "RP-23-03: Aluno não salva Resposta na Tentativa de outro Aluno (recebeu {$answerB['code']})");
+      check(
+        $countRows("SELECT COUNT(*) FROM answers WHERE attempt_id = {$attOpenA}") === 0,
+        'RP-23-03: Resposta forjada não é gravada'
+      );
+      check(
+        httpAs($jarAlunoB, 'GET', "{$base}/student/attempts/{$attGradedA}/result")['code'] === 403,
+        'RP-23-03: Aluno não vê resultado da Tentativa de outro Aluno (403)'
+      );
+
+      // Controle positivo da linha 4: o dono salva a própria Resposta.
+      $answerA = postAs($base, $jarAlunoA, "/student/attempts/{$attOpenA}/answer", ['question_id' => $qA, 'answer' => 'LIFO: último a entrar, primeiro a sair.']);
+      check(
+        $answerA['code'] === 200 && $countRows("SELECT COUNT(*) FROM answers WHERE attempt_id = {$attOpenA}") === 1,
+        "RP-23-03: dono da Tentativa salva a própria Resposta (recebeu {$answerA['code']})"
+      );
+
+      // Linha 5 — papel errado volta para o próprio painel
+      $wrongRole = httpAs($jarAlunoA, 'GET', "{$base}/teacher/dashboard");
+      check(
+        $wrongRole['code'] === 302 && str_ends_with($wrongRole['location'], '/student/dashboard'),
+        'RP-23-03: Aluno em rota de Docente é redirecionado ao painel do Aluno'
+      );
+      $wrongRole = httpAs($jarDocenteA, 'GET', "{$base}/admin/dashboard");
+      check(
+        $wrongRole['code'] === 302 && str_ends_with($wrongRole['location'], '/teacher/dashboard'),
+        'RP-23-03: Docente em rota de Admin é redirecionado ao painel do Docente'
+      );
+
+      $auditCount = fn(string $action, int $entityId): int =>
+        $countRows("SELECT COUNT(*) FROM audit_logs WHERE action = " . $pdoA->quote($action) . " AND entity_id = {$entityId}");
+
+      // Linha 8 — Auditoria de Recusar/Desvincular pela interface (Turma ativa)
+      $approve = postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaA['id']}/approve/{$alunoPendente['id']}");
+      check($approve['code'] === 302, 'RP-23-03: Docente aprova Matrícula pendente da própria Turma');
+      $rejectActive = postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaA['id']}/reject/{$alunoA['id']}");
+      check(
+        $rejectActive['code'] === 302
+          && $auditCount('teacher.student.reject_denied', $alunoA['id']) === 1
+          && $auditCount('teacher.student.reject', $alunoA['id']) === 0
+          && $countRows("SELECT COUNT(*) FROM student_turma WHERE student_id = {$alunoA['id']} AND turma_id = {$turmaA['id']} AND status = 'active'") === 1,
+        'RP-23-03: recusar Matrícula ativa pela interface audita reject_denied e preserva a Matrícula'
+      );
+      $detach = postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaA['id']}/detach/{$alunoPendente['id']}");
+      check(
+        $detach['code'] === 302
+          && $auditCount('teacher.student.detach_turma', $alunoPendente['id']) === 1
+          && $countRows("SELECT COUNT(*) FROM student_turma WHERE student_id = {$alunoPendente['id']}") === 0,
+        'RP-23-03: desvincular da Turma pela interface audita detach_turma e remove só aquela Matrícula'
+      );
+
+      // Linha 6 — Admin inativa a Turma A; Aluno A perde o acesso ao Exercício
+      $admin = $mkUser('Admin HTTP', 'admin');
+      $jarAdmin = loginAs($base, $admin['email'], $pw);
+      check(
+        $countRows("SELECT COUNT(*) FROM exercise_turmas WHERE exercise_id = {$exA}") === 1
+          && httpAs($jarAlunoA, 'GET', "{$base}/student/exercises/{$exA}")['code'] === 200,
+        'RP-23-03: Aluno da Turma ativa abre o Exercício (controle)'
+      );
+      postAs($base, $jarAdmin, "/admin/turmas/{$turmaA['id']}/deactivate");
+      check(
+        $countRows("SELECT active FROM turmas WHERE id = {$turmaA['id']}") === 0,
+        'RP-23-03: Admin inativa a Turma pela interface'
+      );
+      $showInactive = httpAs($jarAlunoA, 'GET', "{$base}/student/exercises/{$exA}");
+      check(in_array($showInactive['code'], [403, 404], true), "RP-23-03: Aluno não abre Exercício de Turma inativa (recebeu {$showInactive['code']})");
+
+      // Linha 7 — Docente não altera Turma inativa; cada tentativa fica auditada como bloqueada
+      $pdoA->exec("INSERT INTO student_turma (student_id, turma_id, status) VALUES ({$alunoPendente['id']}, {$turmaA['id']}, 'pending')");
+      $before = $enrollmentState();
+      $blocked = [
+        ["/teacher/turmas/{$turmaA['id']}/key", 'teacher.turma.regenerate_key.blocked'],
+        ["/teacher/turmas/{$turmaA['id']}/approve/{$alunoPendente['id']}", 'teacher.student.approve.blocked'],
+        ["/teacher/turmas/{$turmaA['id']}/reject/{$alunoPendente['id']}", 'teacher.student.reject.blocked'],
+        ["/teacher/turmas/{$turmaA['id']}/detach/{$alunoA['id']}", 'teacher.student.detach_turma.blocked'],
+      ];
+      foreach ($blocked as [$path, $action]) {
+        $r = postAs($base, $jarDocenteA, $path);
+        check(
+          $r['code'] === 302 && str_ends_with($r['location'], "/teacher/turmas/{$turmaA['id']}") && $auditCount($action, $turmaA['id']) === 1,
+          "RP-23-03: Turma inativa bloqueia POST {$path} e audita {$action}"
+        );
+      }
+      check($turmaKey($turmaA['id']) === $turmaA['key'], 'RP-23-03: Chave de acesso não muda em Turma inativa');
+      check($enrollmentState() === $before, 'RP-23-03: Matrículas não mudam em Turma inativa');
     }
 
     proc_terminate($serverProcess);
