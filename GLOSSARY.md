@@ -37,8 +37,16 @@ Código da Turma que o Aluno informa para pedir Matrícula.
 _Evitar_: Código de convite, senha da turma
 
 **Matrícula** (`student_turma`):
-Vínculo entre um Aluno e uma Turma. Está *pendente* até o Docente aprovar e *ativa* depois disso. Recusar ou desvincular remove a Matrícula. Não existe Matrícula recusada.
+Vínculo entre um Aluno e uma Turma. Está *pendente* até o Docente aprovar e *ativa* depois disso. Não existe Matrícula recusada.
 _Evitar_: Inscrição, vínculo
+
+**Recusar**:
+Remover uma Matrícula *pendente*. O Aluno pode pedir de novo com a Chave de acesso.
+_Evitar_: Rejeitar aluno, remover (para pendentes)
+
+**Desvincular**:
+Remover uma Matrícula *ativa*, preservando o cadastro e o histórico do Aluno. Pode valer para uma Turma só ou para todas as Turmas do Docente.
+_Evitar_: Expulsar, excluir aluno, recusar (para ativos)
 
 ## Exercícios
 

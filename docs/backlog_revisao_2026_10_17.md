@@ -10,9 +10,9 @@ Linha de base: `php bin/run_tests.php` (63 testes) e `php bin/smoke_static.php` 
 
 | ID | Severidade | Tema | Status |
 |----|-----------|------|--------|
-| RD-01 | 🟠 Médio | "Recusar" apaga Matrícula ativa e audita mesmo sem efeito | ⬜ Aberto |
-| RD-02 | 🟡 Baixo | Colunas legadas de janela/limite em `exercises` | ⬜ Aberto |
-| RD-03 | 🟡 Baixo | Caminho de Tentativa sem Turma (`turma_id IS NULL`) ainda ativo | ⬜ Aberto |
+| RD-01 | 🟠 Médio | "Recusar" apaga Matrícula ativa e audita mesmo sem efeito | ✅ Corrigido (issue #35) |
+| RD-02 | 🟡 Baixo | Colunas legadas de janela/limite em `exercises` | ✅ Corrigido (issue #35, migration 021) |
+| RD-03 | 🟡 Baixo | Caminho de Tentativa sem Turma (`turma_id IS NULL`) ainda ativo | ✅ Corrigido (issue #35) |
 | RD-04 | 🟡 Baixo | SPEC/PRD de 05-27 desatualizadas em relação ao glossário | ⬜ Aberto |
 
 ## RD-01 — "Recusar" apaga Matrícula ativa
@@ -38,6 +38,13 @@ docente, no mesmo padrão de `approveStudent`.
 
 **Aceite:** um teste de integração recusa uma Matrícula ativa e verifica que ela
 continua existindo e que a auditoria registra `reject_denied`.
+
+**Achado na implementação:** o botão "Remover" da lista de alunos ativos da
+Turma usava a rota de recusa para desvincular de uma Turma só, já que o
+*Desvincular* existente remove de todas as Turmas do Docente. Decisão: criar uma
+ação própria, *Desvincular da turma* (`POST /teacher/turmas/{id}/detach/{studentId}`),
+que remove só Matrícula ativa, é auditada como `teacher.student.detach_turma` /
+`detach_turma_denied` e fica bloqueada em Turma inativa.
 
 ## RD-02 — Colunas legadas em `exercises`
 
