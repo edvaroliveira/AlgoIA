@@ -143,6 +143,7 @@ function applySchema(array $cfg, string $path): void
 try {
   applySchema($cfg, ROOT_PATH . '/database/migrations/001_create_tables.sql');
   applySchema($cfg, ROOT_PATH . '/database/migrations/020_admin_reviewed_by_fk.sql');
+  applySchema($cfg, ROOT_PATH . '/database/migrations/021_drop_exercise_legacy_window.sql');
 } catch (\Throwable $e) {
   echo 'Não foi possível aplicar o schema (' . $e->getMessage() . ") — testes de integração pulados.\n";
   exit(0);
@@ -203,7 +204,7 @@ function seedScenario(PDO $pdo): array
 
   $pdo->exec("INSERT INTO student_turma (student_id, turma_id, status) VALUES ({$studentId}, {$turmaId}, 'active')");
 
-  $pdo->exec("INSERT INTO exercises (teacher_id, turma_id, title, status) VALUES ({$teacherId}, {$turmaId}, 'Exercício IT', 'active')");
+  $pdo->exec("INSERT INTO exercises (teacher_id, title, status) VALUES ({$teacherId}, 'Exercício IT', 'active')");
   $exerciseId = (int) $pdo->lastInsertId();
 
   $opensAt  = $now->modify('-1 hour')->format('Y-m-d H:i:s');
@@ -475,6 +476,109 @@ check(
   (string) ($inactiveExercise['status'] ?? '') === 'ready',
   'RP-23-02: exercício permanece pronto após publicação rejeitada'
 );
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RD-01 — Recusar vale só para Matrícula pendente
+// ═══════════════════════════════════════════════════════════════════════════
+
+$rejectScenario = seedScenario($pdoA); // Matrícula ativa
+$rejectTurmas = new App\Models\Turma($dbA);
+
+check(
+  $rejectTurmas->rejectStudent($rejectScenario['studentId'], $rejectScenario['turmaId']) === false,
+  'RD-01: recusar Matrícula ativa informa que nada foi recusado'
+);
+check(
+  count($rejectTurmas->getActiveStudents($rejectScenario['turmaId'])) === 1,
+  'RD-01: Matrícula ativa continua ativa após tentativa de recusa'
+);
+
+$pendingStudentId = $users->create('Aluno Pendente', 'pendente.' . bin2hex(random_bytes(4)) . '@test.local', 'SenhaForte1', 'student', 'pending');
+$pdoA->exec("INSERT INTO student_turma (student_id, turma_id, status) VALUES ({$pendingStudentId}, {$rejectScenario['turmaId']}, 'pending')");
+check(
+  $rejectTurmas->rejectStudent($pendingStudentId, $rejectScenario['turmaId']) === true,
+  'RD-01: recusar Matrícula pendente informa sucesso'
+);
+check(
+  $rejectTurmas->getPendingStudents($rejectScenario['turmaId']) === [],
+  'RD-01: Matrícula pendente recusada deixa de existir'
+);
+check(
+  $rejectTurmas->rejectStudent($pendingStudentId, $rejectScenario['turmaId']) === false,
+  'RD-01: recusar Matrícula inexistente informa que nada foi recusado'
+);
+
+$detachPendingId = $users->create('Aluno Pendente 2', 'pendente2.' . bin2hex(random_bytes(4)) . '@test.local', 'SenhaForte1', 'student', 'pending');
+$pdoA->exec("INSERT INTO student_turma (student_id, turma_id, status) VALUES ({$detachPendingId}, {$rejectScenario['turmaId']}, 'pending')");
+check(
+  $rejectTurmas->detachStudent($detachPendingId, $rejectScenario['turmaId']) === false,
+  'RD-01: desvincular da turma não remove Matrícula pendente'
+);
+check(
+  count($rejectTurmas->getPendingStudents($rejectScenario['turmaId'])) === 1,
+  'RD-01: Matrícula pendente continua pendente após tentativa de desvínculo'
+);
+check(
+  $rejectTurmas->detachStudent($rejectScenario['studentId'], $rejectScenario['turmaId']) === true,
+  'RD-01: desvincular da turma remove Matrícula ativa'
+);
+check(
+  $rejectTurmas->getActiveStudents($rejectScenario['turmaId']) === [],
+  'RD-01: Aluno desvinculado deixa de ser ativo na turma'
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RD-02/RD-03 — Tentativa sempre no contexto de uma Publicação
+// ═══════════════════════════════════════════════════════════════════════════
+
+$pubScenario = seedScenario($pdoA);
+$pubExercises = new App\Models\Exercise($dbA);
+$pubExerciseRow = $pdoA->query("SELECT * FROM exercises WHERE id = {$pubScenario['exerciseId']}")->fetch();
+$noPublication = $pubExercises->applyPublicationContext($pubExerciseRow, false);
+check(
+  $noPublication['turma_id'] === null
+    && $noPublication['opens_at'] === null
+    && $noPublication['closes_at'] === null
+    && $noPublication['max_attempts'] === null,
+  'RD-02: Exercício sem Publicação não herda turma, janela nem limite'
+);
+check(
+  (int) $noPublication['has_open_publication'] === 0 && (int) $noPublication['has_future_publication'] === 0,
+  'RD-02: Exercício sem Publicação não tem Publicação aberta nem futura'
+);
+
+// Mesmo Exercício publicado em duas Turmas do mesmo Aluno; a Tentativa do seed é da Turma A.
+$pdoA->exec("UPDATE attempts SET status = 'graded', total_score = 8.0, submitted_at = NOW() WHERE id = {$pubScenario['attemptId']}");
+$pdoA->exec("INSERT INTO turmas (teacher_id, name, access_key) VALUES ({$pubScenario['teacherId']}, 'Turma IT B', '" . strtoupper(bin2hex(random_bytes(3))) . "')");
+$turmaBId = (int) $pdoA->lastInsertId();
+$pdoA->exec("INSERT INTO student_turma (student_id, turma_id, status) VALUES ({$pubScenario['studentId']}, {$turmaBId}, 'active')");
+$pdoA->exec("INSERT INTO exercise_turmas (exercise_id, turma_id, opens_at, closes_at, max_attempts)
+             SELECT exercise_id, {$turmaBId}, opens_at, closes_at, max_attempts FROM exercise_turmas
+             WHERE exercise_id = {$pubScenario['exerciseId']} AND turma_id = {$pubScenario['turmaId']}");
+
+$pubAttempts = new App\Models\Attempt($dbA);
+[$sId, $eId, $tA] = [$pubScenario['studentId'], $pubScenario['exerciseId'], $pubScenario['turmaId']];
+check(
+  $pubAttempts->countUsedAttempts($sId, $eId, $tA) === 1 && $pubAttempts->countUsedAttempts($sId, $eId, $turmaBId) === 0,
+  'RD-03: Tentativas usadas são contadas por Publicação'
+);
+check(
+  $pubAttempts->getBestScore($sId, $eId, $tA) === 8.0 && $pubAttempts->getBestScore($sId, $eId, $turmaBId) === null,
+  'RD-03: melhor Pontuação é calculada por Publicação'
+);
+$pdoA->exec("INSERT INTO attempts (exercise_id, student_id, turma_id, status) VALUES ({$eId}, {$sId}, {$tA}, 'in_progress')");
+check(
+  $pubAttempts->getInProgress($sId, $eId, $turmaBId) === false && $pubAttempts->getInProgress($sId, $eId, $tA) !== false,
+  'RD-03: Tentativa em andamento só é retomada na mesma Publicação'
+);
+
+$nullTurmaRejected = false;
+try {
+  $pubAttempts->countUsedAttempts($sId, $eId, null);
+} catch (\TypeError $e) {
+  $nullTurmaRejected = true;
+}
+check($nullTurmaRejected, 'RD-03: consulta de Tentativa sem Turma é rejeitada');
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Smoke HTTP — servidor embutido do PHP servindo public/ de verdade

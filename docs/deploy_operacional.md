@@ -10,7 +10,7 @@ Para um ambiente novo, use o schema consolidado:
 
 1. Criar o banco vazio com charset `utf8mb4`.
 2. Executar `database/migrations/001_create_tables.sql`.
-3. Nao executar as migrations incrementais `002` a `020` em seguida, pois elas existem para atualizar bases antigas.
+3. Nao executar as migrations incrementais `002` a `021` em seguida, pois elas existem para atualizar bases antigas.
 
 O arquivo `001_create_tables.sql` contem o schema atual consolidado, incluindo auditoria, configuracoes, cadastro docente, contexto de turma em tentativas, reset por token e motivos de desconto da IA.
 
@@ -38,8 +38,11 @@ Para um ambiente que ja foi criado com schema antigo, nao reexecute `001_create_
 18. `018_attempts_start_index.sql`
 19. `019_users_password_changed_at.sql`
 20. `020_admin_reviewed_by_fk.sql`
+21. `021_drop_exercise_legacy_window.sql`
 
 Observacao: existem dois arquivos iniciados por `002` por historico do projeto. A ordem acima e a referencia oficial.
+
+A migration `021` remove de `exercises` as colunas legadas `turma_id`, `opens_at`, `closes_at` e `max_attempts` (e a FK `fk_ex_turma`): janela e limite pertencem a Publicacao (`exercise_turmas`, ver `docs/adr/0003`). Antes de aplicar, confirme `SELECT COUNT(*) FROM attempts WHERE turma_id IS NULL;` igual a 0. Ela e idempotente e pode ser aplicada antes ou depois do deploy do codigo, pois nenhuma versao atual grava essas colunas.
 
 A migration `020` adiciona as FKs `exercises.admin_reviewed_by -> users(id)` e `questions.admin_reviewed_by -> users(id)`, presentes nos schemas de teste (`000_reset_test_*_hostgator.sql`) desde sempre mas ausentes do `001_create_tables.sql` ate esta migration. Se alguma linha tiver `admin_reviewed_by` apontando para um `id` de usuario que nao existe mais, o `ALTER TABLE` falha — nesse caso, zere os valores orfaos antes de reaplicar.
 

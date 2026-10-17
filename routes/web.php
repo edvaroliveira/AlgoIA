@@ -86,6 +86,7 @@ $router->get('/teacher/turmas/{id}',                              'TurmaControll
 $router->post('/teacher/turmas/{id}/key',                         'TurmaController@regenerateKey', ['teacher']);
 $router->post('/teacher/turmas/{id}/approve/{studentId}',         'TurmaController@approveStudent', ['teacher']);
 $router->post('/teacher/turmas/{id}/reject/{studentId}',          'TurmaController@rejectStudent', ['teacher']);
+$router->post('/teacher/turmas/{id}/detach/{studentId}',          'TurmaController@detachStudent', ['teacher']);
 
 // Exercises
 $router->get('/teacher/exercises',             'ExerciseController@index', ['teacher']);
