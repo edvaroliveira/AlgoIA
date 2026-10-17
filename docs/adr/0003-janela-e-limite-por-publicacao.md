@@ -4,5 +4,5 @@ Abertura, encerramento e limite de tentativas ficam em `exercise_turmas` (a Publ
 
 ## Consequences
 
-- As colunas `exercises.turma_id`, `opens_at`, `closes_at` e `max_attempts`, assim como Tentativas com `turma_id NULL`, são resíduo do modelo anterior (migration 003) e não devem receber código novo. A remoção está registrada em `docs/backlog_revisao_2026_10_17.md`.
+- As colunas `exercises.turma_id`, `opens_at`, `closes_at` e `max_attempts`, resíduo do modelo anterior (migration 003), foram removidas na migration 021. As consultas de Tentativa exigem uma Turma: não existe Tentativa fora de uma Publicação (issue #35).
 - Toda consulta de acesso do aluno precisa partir da Publicação e da Turma ativa, nunca só do Exercício.
