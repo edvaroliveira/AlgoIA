@@ -16,8 +16,19 @@
   </FilesMatch>
 </IfModule>
 
-# Desliga handlers/engine de script se disponiveis.
-php_flag engine off
+# Desliga a engine do PHP so quando o PHP roda como modulo do Apache. Com PHP
+# via CGI/FPM (comum em hospedagem compartilhada) a diretiva php_flag nao existe
+# e, fora do IfModule, derrubaria a pasta inteira com 500 (AU-04). Nesse caso a
+# protecao fica com o FilesMatch acima e o RemoveHandler abaixo.
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+  php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+  php_flag engine off
+</IfModule>
 RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .pht
 RemoveType .php .phtml .php3 .php4 .php5 .php7 .pht
 Options -ExecCGI -Indexes

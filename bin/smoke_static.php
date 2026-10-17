@@ -4,6 +4,30 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $checks = [
+  // AU-04: php_flag fora de IfModule derruba a pasta (500) com PHP via CGI/FPM.
+  [
+    'file' => 'public/assets/uploads/.htaccess',
+    'mustContain' => ['<IfModule mod_php8.c>', 'Require all denied'],
+  ],
+  // AU-09/AU-10: nenhuma credencial conhecida em seeds e scripts de reset (repo público).
+  [
+    'file' => 'database/seeds/002_seed_admin.php',
+    'mustContain' => ['seed_password(', 'must_change_password'],
+    'mustNotContain' => ['AdminAlgoIA123', '"  Senha : '],
+  ],
+  [
+    'file' => 'database/seeds/001_seed_teacher.php',
+    'mustContain' => ['seed_password(', 'must_change_password'],
+    'mustNotContain' => ['"  Senha : '],
+  ],
+  [
+    'file' => 'database/migrations/000_reset_test_database_full_schema_hostgator.sql',
+    'mustNotContain' => ['$2y$', 'admin@algoia.test'],
+  ],
+  [
+    'file' => 'database/migrations/000_reset_test_tables_full_schema_hostgator.sql',
+    'mustNotContain' => ['$2y$', 'admin@algoia.test'],
+  ],
   [
     'file' => 'app/Models/Turma.php',
     'mustContain' => [

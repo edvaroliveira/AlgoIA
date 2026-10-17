@@ -279,28 +279,7 @@ CREATE TABLE system_settings (
 INSERT INTO system_settings (setting_key, setting_value)
 VALUES ('teacher_registration_enabled', '0');
 
--- Admin inicial de teste
--- Email: admin@algoia.test
--- Senha temporaria: <senha-removida>
--- O sistema exigira troca de senha no primeiro acesso.
-INSERT INTO users (
-    name,
-    email,
-    password_hash,
-    must_change_password,
-    role,
-    status,
-    registration_source,
-    created_at,
-    updated_at
-) VALUES (
-    'Administrador Teste',
-    'admin@algoia.test',
-    '$2y$12$zj85OG.MwFGQJZ3L28KBnuk9Ofq/PDaGwpejdFYyc6q2jsrrlsc62',
-    1,
-    'admin',
-    'active',
-    'manual',
-    NOW(),
-    NOW()
-);
+-- Admin inicial: não é semeado aqui. Uma senha (ou hash) versionada num repo
+-- público vira credencial conhecida (AU-09). Depois de aplicar este script,
+-- crie o Admin com SEED_ADMIN_* definidos no .env:
+--   php database/seeds/002_seed_admin.php

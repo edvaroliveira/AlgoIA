@@ -13,12 +13,18 @@ require ROOT_PATH . '/core/Env.php';
 (new Core\Env(ROOT_PATH . '/.env'))->load();
 
 require ROOT_PATH . '/autoload.php';
+require __DIR__ . '/seed_password.php';
 
 $db = Core\Database::getInstance();
 
 $name     = \Core\env('SEED_TEACHER_NAME', 'Professor Admin');
 $email    = \Core\env('SEED_TEACHER_EMAIL', 'admin@example.com');
-$password = \Core\env('SEED_TEACHER_PASSWORD', 'defina_uma_senha_forte');
+try {
+  $password = seed_password('SEED_TEACHER_PASSWORD', \Core\env('SEED_TEACHER_PASSWORD'));
+} catch (\RuntimeException $e) {
+  fwrite(STDERR, $e->getMessage() . "\n");
+  exit(1);
+}
 
 $existing = $db->fetchOne('SELECT id FROM users WHERE email = ?', [$email]);
 
@@ -29,11 +35,10 @@ if ($existing) {
 
 $hash = password_hash($password, PASSWORD_BCRYPT);
 $db->execute(
-  "INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, 'teacher', 'active')",
+  "INSERT INTO users (name, email, password_hash, must_change_password, role, status) VALUES (?, ?, ?, 1, 'teacher', 'active')",
   [$name, $email, $hash]
 );
 
 echo "Docente criado com sucesso:\n";
 echo "  E-mail: {$email}\n";
-echo "  Senha : {$password}\n";
-echo "Altere a senha após o primeiro acesso.\n";
+echo "A senha é a definida em SEED_TEACHER_PASSWORD; a troca é obrigatória no primeiro acesso.\n";
