@@ -35,6 +35,43 @@ jobs:
       - name: Testes da camada de dados (SQLite em memória)
         run: php bin/run_db_tests.php
 
+  # Job separado (não matrix): o nome do job acima é check obrigatório da
+  # branch protection e não pode mudar. Este pega regressões e depreciações
+  # na versão mais nova do PHP; o smoke estático já proíbe as APIs deprecated.
+  test-php-latest:
+    name: Lint + testes PHP 8.5 (sem banco)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo, pdo_mysql, pdo_sqlite, gd, mbstring, fileinfo
+          ini-values: error_reporting=E_ALL, display_errors=On
+          coverage: none
+
+      - name: Lint de sintaxe (php -l em todos os .php)
+        run: |
+          find . -name '*.php' -not -path './.git/*' -print0 \
+            | xargs -0 -n1 -P4 php -l
+
+      - name: Smoke estático (invariantes de código)
+        run: php bin/smoke_static.php
+
+      - name: Testes unitários (falha em Deprecated)
+        run: |
+          php bin/run_tests.php 2>&1 | tee /tmp/unit.log
+          ! grep -q "Deprecated:" /tmp/unit.log
+
+      - name: Testes da camada de dados (falha em Deprecated)
+        run: |
+          php bin/run_db_tests.php 2>&1 | tee /tmp/db.log
+          ! grep -q "Deprecated:" /tmp/db.log
+
   integration:
     name: Testes de integração (MySQL + HTTP)
     runs-on: ubuntu-latest

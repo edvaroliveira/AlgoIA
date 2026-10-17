@@ -285,6 +285,31 @@ foreach ($lintFiles as $file) {
   }
 }
 
+// PHP 8.5 deprecou chamadas que já eram no-op desde o 8.0 e as constantes
+// PDO::MYSQL_ATTR_* (substituídas por Pdo\Mysql::ATTR_* no 8.4). Referência
+// por string (fallback via constant()) é permitida.
+$deprecatedPatterns = [
+  '/\bimagedestroy\s*\(/'         => 'imagedestroy() (no-op desde PHP 8.0, deprecated no 8.5)',
+  '/\bcurl_close\s*\(/'           => 'curl_close() (no-op desde PHP 8.0, deprecated no 8.5)',
+  '/\bfinfo_close\s*\(/'          => 'finfo_close() (no-op desde PHP 8.1, deprecated no 8.5)',
+  '/(?<![\'"])\bPDO::MYSQL_ATTR_/' => 'PDO::MYSQL_ATTR_* (use Pdo\Mysql::ATTR_*, deprecated no 8.5)',
+];
+
+$phpFiles = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS));
+foreach ($phpFiles as $file) {
+  $relative = substr($file->getPathname(), strlen($root) + 1);
+  if ($file->getExtension() !== 'php' || str_starts_with($relative, '.git/') || $relative === 'bin/smoke_static.php') {
+    continue;
+  }
+
+  $content = (string) file_get_contents($file->getPathname());
+  foreach ($deprecatedPatterns as $pattern => $label) {
+    if (preg_match($pattern, $content)) {
+      $failures[] = "{$relative} usa {$label}";
+    }
+  }
+}
+
 if ($failures !== []) {
   fwrite(STDERR, "Smoke static falhou:\n- " . implode("\n- ", $failures) . "\n");
   exit(1);
