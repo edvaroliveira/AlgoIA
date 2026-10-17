@@ -56,12 +56,8 @@ CREATE TABLE IF NOT EXISTS student_turma (
 CREATE TABLE IF NOT EXISTS exercises (
     id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     teacher_id   INT UNSIGNED NOT NULL,
-    turma_id     INT UNSIGNED NULL,
     title        VARCHAR(200) NOT NULL,
     description  TEXT,
-    opens_at     DATETIME     NULL,
-    closes_at    DATETIME     NULL,
-    max_attempts INT          NULL COMMENT 'legado: configuração movida para a publicação por turma',
     status       ENUM('draft','ready','active') NOT NULL DEFAULT 'draft',
     admin_review_status ENUM('approved','flagged','blocked') NOT NULL DEFAULT 'approved',
     admin_review_note TEXT NULL,
@@ -70,7 +66,6 @@ CREATE TABLE IF NOT EXISTS exercises (
     created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_ex_teacher FOREIGN KEY (teacher_id) REFERENCES users(id),
-    CONSTRAINT fk_ex_turma   FOREIGN KEY (turma_id)   REFERENCES turmas(id) ON DELETE SET NULL,
     CONSTRAINT fk_ex_admin_reviewed_by FOREIGN KEY (admin_reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

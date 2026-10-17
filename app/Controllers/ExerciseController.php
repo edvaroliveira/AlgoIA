@@ -229,8 +229,8 @@ class ExerciseController
       $publication = $this->exercises->findCurrentPublicationForStudent((int) $ex['id'], $studentId);
       $ex = $this->exercises->applyPublicationContext($ex, $publication);
       $turmaId = !empty($ex['turma_id']) ? (int) $ex['turma_id'] : null;
-      $ex['best_score']    = $attModel->getBestScore($studentId, (int) $ex['id'], $turmaId);
-      $ex['attempt_count'] = $attModel->countUsedAttempts($studentId, (int) $ex['id'], $turmaId);
+      $ex['best_score']    = $turmaId !== null ? $attModel->getBestScore($studentId, (int) $ex['id'], $turmaId) : null;
+      $ex['attempt_count'] = $turmaId !== null ? $attModel->countUsedAttempts($studentId, (int) $ex['id'], $turmaId) : 0;
       $ex['is_open']       = $this->exercises->isOpen($ex);
       $ex['is_closed']     = $this->exercises->isClosed($ex);
     }
@@ -249,11 +249,12 @@ class ExerciseController
     $turmaId = !empty($exercise['turma_id']) ? (int) $exercise['turma_id'] : null;
 
     $attempts     = $attModel->findByStudentAndExercise($studentId, (int) $id);
-    $attCount     = $attModel->countUsedAttempts($studentId, (int) $id, $turmaId);
-    $inProgress   = $attModel->getInProgress($studentId, (int) $id, $turmaId);
-    $bestScore    = $attModel->getBestScore($studentId, (int) $id, $turmaId);
+    // Sem Publicação não há contexto de Tentativa (ADR 0003).
+    $attCount     = $turmaId !== null ? $attModel->countUsedAttempts($studentId, (int) $id, $turmaId) : 0;
+    $inProgress   = $turmaId !== null ? $attModel->getInProgress($studentId, (int) $id, $turmaId) : false;
+    $bestScore    = $turmaId !== null ? $attModel->getBestScore($studentId, (int) $id, $turmaId) : null;
     $maxAttempts  = (int) $exercise['max_attempts'];
-    $canAttempt   = $maxAttempts === 0 || $attCount < $maxAttempts;
+    $canAttempt   = $turmaId !== null && ($maxAttempts === 0 || $attCount < $maxAttempts);
     $isOpen       = $this->exercises->isOpen($exercise);
     $attemptId    = (int) Request::get('attempt', 0);
     $attemptQuestions = [];

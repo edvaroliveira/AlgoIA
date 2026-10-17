@@ -204,12 +204,22 @@ class Turma extends Model
     }
   }
 
-  public function rejectStudent(int $studentId, int $turmaId): void
+  /** Recusar vale só para Matrícula pendente; Matrícula ativa sai por desvínculo. */
+  public function rejectStudent(int $studentId, int $turmaId): bool
   {
-    $this->db->execute(
-      "DELETE FROM student_turma WHERE student_id = ? AND turma_id = ?",
+    return $this->db->execute(
+      "DELETE FROM student_turma WHERE student_id = ? AND turma_id = ? AND status = 'pending'",
       [$studentId, $turmaId]
-    );
+    ) > 0;
+  }
+
+  /** Desvincula o Aluno só desta Turma; vale apenas para Matrícula ativa. */
+  public function detachStudent(int $studentId, int $turmaId): bool
+  {
+    return $this->db->execute(
+      "DELETE FROM student_turma WHERE student_id = ? AND turma_id = ? AND status = 'active'",
+      [$studentId, $turmaId]
+    ) > 0;
   }
 
   public function getPendingStudents(int $turmaId): array

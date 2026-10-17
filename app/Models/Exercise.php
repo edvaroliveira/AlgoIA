@@ -520,6 +520,14 @@ class Exercise extends Model
   public function applyPublicationContext(array $exercise, array|false $publication): array
   {
     if ($publication === false) {
+      // Janela e limite pertencem à Publicação (ADR 0003): sem ela, nada é herdado do Exercício.
+      $exercise['turma_id'] = null;
+      $exercise['opens_at'] = null;
+      $exercise['closes_at'] = null;
+      $exercise['max_attempts'] = null;
+      $exercise['has_open_publication'] = 0;
+      $exercise['has_future_publication'] = 0;
+
       return $exercise;
     }
 

@@ -125,10 +125,10 @@ global $session;
                 <td><?= \Core\View::e($s['email']) ?></td>
                 <td><?= date('d/m/Y', strtotime($s['joined_at'])) ?></td>
                 <td>
-                  <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/reject/' . $s['id']) ?>"
-                    data-confirm="Remover este aluno da turma?">
+                  <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/detach/' . $s['id']) ?>"
+                    data-confirm="Desvincular este aluno da turma? O cadastro e o histórico serão preservados.">
                     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                    <button class="btn btn--danger btn--sm">Remover</button>
+                    <button class="btn btn--danger btn--sm">Desvincular</button>
                   </form>
                 </td>
               </tr>

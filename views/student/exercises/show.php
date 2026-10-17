@@ -26,7 +26,7 @@ global $session;
     <div><strong>Turmas:</strong> <?= \Core\View::e($exercise['turma_label'] ?? $exercise['turma_name']) ?></div>
     <div><strong>Abre:</strong> <?= !empty($exercise['opens_at']) ? date('d/m/Y H:i', strtotime($exercise['opens_at'])) : '—' ?></div>
     <div><strong>Fecha:</strong> <?= !empty($exercise['closes_at']) ? date('d/m/Y H:i', strtotime($exercise['closes_at'])) : '—' ?></div>
-    <div><strong>Tentativas:</strong> <?= ((string) ($exercise['max_attempts'] ?? '0')) === '0' ? 'Ilimitadas' : $exercise['max_attempts'] ?></div>
+    <div><strong>Tentativas:</strong> <?= ($exercise['max_attempts'] ?? null) === null ? '—' : (((string) $exercise['max_attempts']) === '0' ? 'Ilimitadas' : (int) $exercise['max_attempts']) ?></div>
     <div><strong>Suas tentativas:</strong> <?= $attCount ?></div>
     <?php if ($bestScore !== null): ?>
       <div><strong>Melhor nota:</strong> <?= number_format((float) $bestScore, 1) ?> pts</div>
@@ -51,7 +51,10 @@ if ($successFlash):
   <div class="alert alert--success"><?= \Core\View::e($successFlash) ?></div>
 <?php endif; ?>
 
-<?php if (!$isOpen && !empty($exercise['has_future_publication'])): ?>
+<?php if (empty($exercise['turma_id'])): ?>
+  <div class="alert alert--neutral">Este exercício não tem publicação disponível para você.</div>
+
+<?php elseif (!$isOpen && !empty($exercise['has_future_publication'])): ?>
   <div class="alert alert--info">Este exercício ainda não está aberto.</div>
 
 <?php elseif (!empty($exercise['closes_at']) && empty($exercise['has_future_publication']) && !$isOpen): ?>
