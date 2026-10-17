@@ -148,7 +148,8 @@ O cadastro público de docentes **nasce desabilitado**. Um administrador habilit
 
 - [GLOSSARY.md](GLOSSARY.md) — linguagem do domínio (termos canônicos: Turma, Matrícula, Publicação, Tentativa…)
 - [docs/adr/](docs/adr/) — decisões arquiteturais registradas
-- [docs/spec_sistema_2026_05_27.md](docs/spec_sistema_2026_05_27.md) — especificação técnica e requisitos funcionais (histórico)
+- [docs/spec_sistema_2026_10_17.md](docs/spec_sistema_2026_10_17.md) — especificação técnica e requisitos funcionais (atual)
+- [docs/spec_sistema_2026_05_27.md](docs/spec_sistema_2026_05_27.md) — especificação anterior (histórico)
 - [docs/prd_sistema_2026_05_27.md](docs/prd_sistema_2026_05_27.md) — PRD (histórico)
 - [docs/deploy_operacional.md](docs/deploy_operacional.md) — deploy, migrations e operação
 - [docs/smoke_test_multinivel.md](docs/smoke_test_multinivel.md) — plano de smoke test
