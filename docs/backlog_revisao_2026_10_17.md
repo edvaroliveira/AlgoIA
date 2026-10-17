@@ -13,7 +13,7 @@ Linha de base: `php bin/run_tests.php` (63 testes) e `php bin/smoke_static.php` 
 | RD-01 | 🟠 Médio | "Recusar" apaga Matrícula ativa e audita mesmo sem efeito | ✅ Corrigido (issue #35) |
 | RD-02 | 🟡 Baixo | Colunas legadas de janela/limite em `exercises` | ✅ Corrigido (issue #35, migration 021) |
 | RD-03 | 🟡 Baixo | Caminho de Tentativa sem Turma (`turma_id IS NULL`) ainda ativo | ✅ Corrigido (issue #35) |
-| RD-04 | 🟡 Baixo | SPEC/PRD de 05-27 desatualizadas em relação ao glossário | ⬜ Aberto |
+| RD-04 | 🟡 Baixo | SPEC/PRD de 05-27 desatualizadas em relação ao glossário | ✅ Corrigido (SPEC 2026-10-17) |
 
 ## RD-01 — "Recusar" apaga Matrícula ativa
 
@@ -94,5 +94,8 @@ Desvincular, e usa "teacher/student" no lugar de Docente/Aluno.
 **Feito agora:** aviso de documento histórico no topo da SPEC e do PRD, e links
 para GLOSSARY e ADRs no README.
 
-**Pendente:** reescrever a SPEC com a terminologia do glossário quando houver
-mudança funcional relevante. Não vale reescrever só por reescrever.
+**Concluído:** com a mudança funcional da issue #35 (Recusar/Desvincular,
+Tentativa sempre na Publicação), a SPEC foi reescrita em
+`docs/spec_sistema_2026_10_17.md` com o vocabulário do glossário. A SPEC de
+05-27 ficou como histórico. O PRD continua histórico, sem reescrita, porque
+trata de visão de produto e não de comportamento.
