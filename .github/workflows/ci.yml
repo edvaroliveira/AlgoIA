@@ -40,15 +40,17 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      # MariaDB, não MySQL: é o motor real do HostGator (produção), conforme
-      # 001_create_tables.sql. MySQL 8 recusa `TEXT ... DEFAULT ''`
-      # (system_settings.setting_value) que MariaDB aceita — usar MySQL aqui
-      # geraria falso negativo para um schema que roda bem em produção.
+      # Mesmo motor do HostGator (produção): Percona Server 5.7.44, conferido
+      # com SELECT @@version_comment em 2026-10-17. Não é MariaDB, como este
+      # comentário dizia antes. O servidor roda com sql_mode não estrito
+      # (ver o passo "Alinhar sql_mode"): é por isso que `TEXT ... DEFAULT ''`
+      # em system_settings.setting_value é aceito lá (o default é descartado
+      # com um warning), enquanto um MySQL estrito recusaria o schema.
       mysql:
-        image: mariadb:10.11
+        image: percona:5.7.44
         env:
-          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
-          MARIADB_DATABASE: algoia_ci
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: algoia_ci
         ports:
           - 3306:3306
         options: >-
@@ -73,6 +75,12 @@ jobs:
           php-version: '8.3'
           extensions: pdo, pdo_mysql, curl, mbstring, fileinfo
           coverage: none
+
+      # Services do GitHub Actions não aceitam argumentos de linha de comando
+      # para o mysqld, então o sql_mode de produção é aplicado em tempo de execução.
+      # Vale para todas as conexões abertas depois deste passo.
+      - name: Alinhar sql_mode com produção (HostGator)
+        run: mysql -h 127.0.0.1 -u root -e "SET GLOBAL sql_mode = 'NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';"
 
       - name: Testes de integração reais (AP-08 / RP-07)
         run: php bin/run_integration_tests.php
