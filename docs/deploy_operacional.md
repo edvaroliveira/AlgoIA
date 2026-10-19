@@ -44,6 +44,10 @@ traz de volta, se algum banco anterior a essa data aparecer).
 |---|---|
 | `023_bank_exercises.sql` | Cria as tabelas do Banco de exercicios (`bank_exercises`, `bank_questions`, `bank_themes`, `bank_exercise_themes`). Idempotente (`CREATE TABLE IF NOT EXISTS`). |
 
+### Dados de teste (seed 003)
+
+`php database/seeds/003_seed_banco_algoritmos.php --teacher-id=N` carrega a populacao minima de teste: 6 topicos de algoritmos x 10 Exercicios x 5 Questoes (300 Questoes), com tres niveis de rigidez de correcao (flexivel, padrao e rigida) e Pontuacao de 1 a 3. Cria 60 itens ativos no Banco de exercicios (o topico e o Tema) e, com `--teacher-id`, 60 Exercicios Concluidos do Docente. E idempotente: titulos ja existentes sao pulados. Os dados ficam em `database/seeds/data/banco_algoritmos/`, e `bin/run_tests.php` valida unicidade, formato e a coerencia da rigidez com a regra da Correcao por IA.
+
 ### Mudancas de schema (a partir da linha de base)
 
 Toda mudanca de schema precisa de **duas** coisas no mesmo PR:

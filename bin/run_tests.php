@@ -364,6 +364,65 @@ rewind($csvOut);
 same([], $csvDeprecations, 'AU-05: escrever linha CSV não emite Deprecated');
 same("\"a;b\";\"c\"\"d\";=1+1\n", stream_get_contents($csvOut), 'AU-05: linha CSV no formato RFC 4180 com ";"');
 
+// ── Seed do banco de algoritmos: 6 tópicos × 10 Exercícios × 5 Questões ──────
+// A rigidez declarada precisa bater com a regra real da Correção por IA: só
+// questões "rígidas" ativam questionRequiresEfficiencyOrSpecificApproach (que
+// desliga a promoção à Pontuação máxima por abordagem diferente).
+require_once ROOT_PATH . '/database/seeds/data/banco_algoritmos.php';
+$seedTopics = banco_algoritmos_dados();
+$rigorCheck = new ReflectionMethod($oai, 'questionRequiresEfficiencyOrSpecificApproach');
+same(
+  ['Variáveis', 'Estruturas de Decisão', 'Estruturas de Repetição', 'Vetores', 'Matrizes', 'Modularização'],
+  array_column($seedTopics, 'tema'),
+  'SEED-ALG: os 6 tópicos pedidos, nesta ordem'
+);
+$seedTexts = [];
+$seedTitles = [];
+$seedProblems = [];
+$seedRigor = ['flexivel' => 0, 'padrao' => 0, 'rigida' => 0];
+foreach ($seedTopics as $topic) {
+  if (count($topic['exercicios']) !== 10) {
+    $seedProblems[] = "{$topic['tema']}: " . count($topic['exercicios']) . ' exercícios (esperado 10)';
+  }
+  foreach ($topic['exercicios'] as $exercise) {
+    $seedTitles[] = $exercise['titulo'];
+    if (count($exercise['questoes']) !== 5) {
+      $seedProblems[] = "{$exercise['titulo']}: " . count($exercise['questoes']) . ' questões (esperado 5)';
+    }
+    foreach ($exercise['questoes'] as $i => $q) {
+      $where = "{$exercise['titulo']} Q" . ($i + 1);
+      $seedTexts[] = mb_strtolower(preg_replace('/\s+/', ' ', trim($q['enunciado'])));
+      if (!in_array($q['pontos'], [1.0, 2.0, 3.0], true)) {
+        $seedProblems[] = "{$where}: Pontuação {$q['pontos']} fora de 1, 2 ou 3";
+      }
+      if (!isset($seedRigor[$q['rigidez']])) {
+        $seedProblems[] = "{$where}: rigidez desconhecida '{$q['rigidez']}'";
+        continue;
+      }
+      $seedRigor[$q['rigidez']]++;
+      $strict = $rigorCheck->invoke($oai, $q['enunciado'], $q['referencia']);
+      if ($strict !== ($q['rigidez'] === 'rigida')) {
+        $seedProblems[] = "{$where}: rigidez '{$q['rigidez']}' não bate com a regra da IA (" . ($strict ? 'rígida' : 'não rígida') . ')';
+      }
+      if ($q['rigidez'] !== 'flexivel'
+        && !preg_match('/^Algoritmo \S+.*\nVAR\b.*\nINICIO\b.*\nFIM\./s', trim($q['referencia']))) {
+        $seedProblems[] = "{$where}: Resposta de referência sem a estrutura Algoritmo/VAR/INICIO/FIM.";
+      }
+      if (trim($q['referencia']) === '' || trim($q['enunciado']) === '') {
+        $seedProblems[] = "{$where}: enunciado ou referência vazio";
+      }
+    }
+  }
+}
+same([], $seedProblems, 'SEED-ALG: estrutura, Pontuação, rigidez e formato das 300 questões');
+same(300, count($seedTexts), 'SEED-ALG: 300 questões no total');
+same(count($seedTexts), count(array_unique($seedTexts)), 'SEED-ALG: nenhuma questão repetida');
+same(count($seedTitles), count(array_unique($seedTitles)), 'SEED-ALG: títulos de Exercício únicos');
+check(
+  $seedRigor['flexivel'] >= 100 && $seedRigor['padrao'] >= 80 && $seedRigor['rigida'] >= 60,
+  'SEED-ALG: os 3 níveis de rigidez aparecem em proporção (obtido ' . json_encode($seedRigor) . ')'
+);
+
 // ── AU-10: política de senha forte compartilhada (app e seeds) ───────────────
 same(true, \Core\password_is_strong('SenhaForte1'), 'AU-10: 10+ chars com maiúscula, minúscula e número é forte');
 same(false, \Core\password_is_strong('Curta1A'), 'AU-10: menos de 10 caracteres é fraca');

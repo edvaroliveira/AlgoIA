@@ -108,6 +108,7 @@ Construída em **PHP puro** (sem framework, sem Composer), com um mini-framework
    php database/seeds/001_seed_teacher.php
    php database/seeds/002_seed_admin.php
    ```
+   Opcional, para testes: `php database/seeds/003_seed_banco_algoritmos.php --teacher-id=N` carrega 300 Questões de algoritmos (Variáveis, Decisão, Repetição, Vetores, Matrizes e Modularização) no Banco de exercícios e, com `--teacher-id`, como Exercícios Concluídos desse Docente. É idempotente.
 
 4. **Servidor web.** O ideal é apontar o document root para `public/`. Em hospedagem compartilhada, com o repositório inteiro dentro do `public_html` (ex.: `public_html/algoia`), o `.htaccess` da raiz serve só `public/` e responde 403 para todo o resto. O app fica em `https://seu-dominio/algoia/public/`. **Não remova esse arquivo**: sem ele, `.env`, `docs/` e `database/` ficam legíveis, e os `.php` de `bin/` e `database/seeds/` são executados por qualquer visitante. Detalhes, inclusive o cron de deploy (`git fetch` + `git reset --hard`, nunca `git pull`), em [docs/deploy_operacional.md](docs/deploy_operacional.md).
 
