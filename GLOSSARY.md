@@ -156,6 +156,10 @@ _Evitar_: Calendário, cronograma
 Treino do Aluno com Questões do Banco de exercícios, fora de Turma e de Publicação, sem valer nota. Cada resposta recebe Correção por IA na hora, com Pontuação, Feedback e Motivos de desconto, dentro de um limite diário de correções. Não gera Tentativa.
 _Evitar_: Simulado, treino livre, Tentativa de prática
 
+**Progresso por Tema**:
+Média percentual do Aluno em cada Tema, somando as correções da Prática e as Respostas corrigidas de Tentativas cujas Questões vieram do Banco de exercícios. Classifica o Tema como ponto forte, em evolução ou a melhorar quando há correções suficientes.
+_Evitar_: Boletim, ranking, nota do Tema
+
 **Suspeita de injeção** (`injection_logs`):
 Registro de que uma Resposta continha um padrão de tentativa de manipular a Correção por IA.
 _Evitar_: Fraude, ataque

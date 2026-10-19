@@ -132,6 +132,7 @@ $router->get('/student/dashboard',                  'DashboardController@student
 $router->get('/student/exercises',                  'ExerciseController@studentIndex', ['student']);
 $router->get('/student/agenda',                     'ExerciseController@studentAgenda', ['student']);
 $router->get('/student/pratica',                    'PracticeController@index', ['student']);
+$router->get('/student/progresso',                  'ProgressController@student', ['student']);
 $router->get('/student/pratica/sortear',            'PracticeController@draw', ['student']);
 $router->get('/student/pratica/questao/{id}',       'PracticeController@show', ['student']);
 $router->post('/student/pratica/questao/{id}',      'PracticeController@answer', ['student']);

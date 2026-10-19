@@ -1382,6 +1382,83 @@ if (!extension_loaded('curl')) {
         && $countRows("SELECT COUNT(*) FROM practice_answers WHERE student_id = {$alunoPratica['id']}") === 10,
         'PRA-03: no limite diário a IA não é chamada');
 
+      // PROG-01 — Progresso por Tema: Prática + Tentativas de Questões vindas do banco
+      $alunoProg = $mkUser('Aluno Progresso', 'student');
+      $jarProg = loginAs($base, $alunoProg['email'], $pw);
+      $progImport = postAs($base, $jarDocenteA, '/teacher/bank/import', [
+        'source' => 'bank',
+        'source_id' => $praticaList,
+        'question_ids' => [$praticaQ1, $praticaQ2],
+        'title' => 'Prova importada do banco',
+      ]);
+      $progExercise = $draftIdFrom($progImport);
+      $progQuestions = array_map('intval', array_column(
+        $pdoA->query("SELECT id FROM questions WHERE exercise_id = {$progExercise} ORDER BY order_index")->fetchAll(), 'id'
+      ));
+      $pdoA->exec("UPDATE exercises SET status = 'active' WHERE id = {$progExercise}");
+      $ownCopy = $draftIdFrom(postAs($base, $jarDocenteA, '/teacher/bank/import', [
+        'source' => 'own', 'source_id' => $progExercise, 'question_ids' => $progQuestions, 'title' => 'Cópia da prova',
+      ]));
+      check(
+        $countRows("SELECT COUNT(*) FROM questions WHERE exercise_id = {$ownCopy} AND bank_question_id IN ({$praticaQ1}, {$praticaQ2})") === 2,
+        'PROG-01: copiar de um Exercício próprio mantém a origem no banco'
+      );
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, status, total_score) VALUES ({$progExercise}, {$alunoProg['id']}, 'graded', 17)");
+      $progAttempt = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO answers (attempt_id, question_id, student_answer, ai_score, evaluated_at)
+                   VALUES ({$progAttempt}, {$progQuestions[0]}, 'r1', 9, NOW()), ({$progAttempt}, {$progQuestions[1]}, 'r2', 8, NOW())");
+      $pdoA->exec("INSERT INTO practice_answers (student_id, bank_question_id, student_answer, score, max_score, feedback)
+                   VALUES ({$alunoProg['id']}, {$praticaQ1}, 'p', 9, 10, 'f')");
+      // Correção pela metade (Tentativa ainda Enviada) não conta.
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, status) VALUES ({$progExercise}, {$alunoProg['id']}, 'submitted')");
+      $halfAttempt = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO answers (attempt_id, question_id, student_answer, ai_score, evaluated_at)
+                   VALUES ({$halfAttempt}, {$progQuestions[0]}, 'r', 0, NOW())");
+
+      $mkThemeList = function (string $theme, string $questionText) use ($pdoA): int {
+        $pdoA->exec("INSERT INTO bank_themes (name) VALUES (" . $pdoA->quote($theme) . ")");
+        $themeId = (int) $pdoA->lastInsertId();
+        $pdoA->exec("INSERT INTO bank_exercises (title, status) VALUES (" . $pdoA->quote("Lista {$theme}") . ", 'active')");
+        $listId = (int) $pdoA->lastInsertId();
+        $pdoA->exec("INSERT INTO bank_exercise_themes (bank_exercise_id, theme_id) VALUES ({$listId}, {$themeId})");
+        $pdoA->exec("INSERT INTO bank_questions (bank_exercise_id, text, expected_answer_hint, max_score, order_index)
+                     VALUES ({$listId}, " . $pdoA->quote($questionText) . ", 'ref', 10, 1)");
+        return (int) $pdoA->lastInsertId();
+      };
+      $weakQ = $mkThemeList('Tema Fraco', 'Questao do tema fraco');
+      for ($i = 0; $i < 3; $i++) {
+        $pdoA->exec("INSERT INTO practice_answers (student_id, bank_question_id, student_answer, score, max_score, feedback)
+                     VALUES ({$alunoProg['id']}, {$weakQ}, 'p', 2, 10, 'f')");
+      }
+      $newQ = $mkThemeList('Tema Novo', 'Questao do tema novo');
+      $pdoA->exec("INSERT INTO practice_answers (student_id, bank_question_id, student_answer, score, max_score, feedback)
+                   VALUES ({$alunoProg['id']}, {$newQ}, 'p', 10, 10, 'f')");
+
+      $progRow = static function (string $html, string $theme): string {
+        return preg_match('#<tr>(?:(?!</tr>).)*' . preg_quote($theme, '#') . '(?:(?!</tr>).)*</tr>#s', $html, $m) ? $m[0] : '';
+      };
+      $progress = httpAs($jarProg, 'GET', "{$base}/student/progresso");
+      $strong = $progRow($progress['body'], 'Tema de Pratica');
+      check($progress['code'] === 200 && str_contains($strong, '87%') && str_contains($strong, '3 respostas corrigidas') && str_contains($strong, 'Ponto forte'),
+        'PROG-01: Tema junta Prática e Tentativas de Questões importadas do banco (ponto forte ≥ 70%)');
+      $weak = $progRow($progress['body'], 'Tema Fraco');
+      check(str_contains($weak, '20%') && str_contains($weak, 'A melhorar') && str_contains($weak, '/student/pratica/sortear?tema=Tema%20Fraco'),
+        'PROG-01: Tema abaixo de 50% aparece como "A melhorar", com atalho para praticar');
+      check(str_contains($progRow($progress['body'], 'Tema Novo'), 'Poucos dados'), 'PROG-01: menos de 3 respostas corrigidas não classifica');
+      check($page($jarDocenteA, '/student/progresso')['code'] === 302, 'PROG-01: progresso é só do Aluno');
+
+      // PROG-02 — Migration liga Questões importadas antes da origem existir (texto idêntico)
+      $legacy = $mkExercise($docenteA['id'], 'Exercício antigo', 'active', ['Questao do tema fraco']);
+      $pdoA->exec("UPDATE questions SET expected_answer_hint = 'ref', bank_question_id = NULL WHERE id = {$legacy['questions'][0]}");
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, status, total_score) VALUES ({$legacy['id']}, {$alunoProg['id']}, 'graded', 10)");
+      $legacyAttempt = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO answers (attempt_id, question_id, student_answer, ai_score, evaluated_at)
+                   VALUES ({$legacyAttempt}, {$legacy['questions'][0]}, 'r', 10, NOW())");
+      applySchema($cfg, ROOT_PATH . '/database/migrations/027_questions_bank_origin.sql');
+      $weak = $progRow(httpAs($jarProg, 'GET', "{$base}/student/progresso")['body'], 'Tema Fraco');
+      check(str_contains($weak, '40%') && str_contains($weak, '4 respostas corrigidas'),
+        'PROG-02: migration liga Questão importada antes (texto idêntico) e ela entra no progresso');
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);

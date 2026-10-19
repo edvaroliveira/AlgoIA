@@ -159,6 +159,12 @@ depois do login, perde a sessão.
 - Limite de 10 correções por Aluno por dia, para conter o custo da IA. Só correções bem-sucedidas contam. Se a IA falhar, o Aluno é avisado e o texto da resposta é mantido para reenviar.
 - A detecção de injeção também vale para a prática.
 
+### RF-20 Progresso por Tema
+
+- O Aluno vê, para cada Tema do banco, quantas respostas já teve corrigidas e a média percentual, somando a Prática e as Tentativas Corrigidas com Questões vindas do banco. Questões criadas do zero não têm Tema e ficam fora.
+- Classificação: com menos de 3 respostas corrigidas, "Poucos dados"; com média de 70% ou mais, "Ponto forte"; abaixo de 50%, "A melhorar"; entre as duas, "Em evolução". Cada Tema tem atalho para praticar.
+- Importar guarda a Questão de origem no banco (também ao copiar de um Exercício próprio que veio do banco). Importações anteriores foram ligadas pela migration 027 por enunciado e Resposta de referência idênticos.
+
 ## Requisitos não funcionais
 
 ### RNF-01 Segurança

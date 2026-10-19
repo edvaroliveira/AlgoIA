@@ -45,6 +45,7 @@ $content = $content ?? '';
           <a href="<?= \Core\app_url('/student/exercises') ?>" class="nav-link <?= str_contains($currentPath, 'exercises') ? 'active' : '' ?>">Exercícios</a>
           <a href="<?= \Core\app_url('/student/agenda') ?>" class="nav-link <?= str_contains($currentPath, 'student/agenda') ? 'active' : '' ?>">Agenda</a>
           <a href="<?= \Core\app_url('/student/pratica') ?>" class="nav-link <?= str_contains($currentPath, 'student/pratica') ? 'active' : '' ?>">Prática</a>
+          <a href="<?= \Core\app_url('/student/progresso') ?>" class="nav-link <?= str_contains($currentPath, 'student/progresso') ? 'active' : '' ?>">Progresso</a>
         <?php endif; ?>
       </nav>
 

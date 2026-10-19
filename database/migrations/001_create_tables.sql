@@ -98,11 +98,13 @@ CREATE TABLE IF NOT EXISTS questions (
     expected_answer_hint TEXT         NOT NULL COMMENT 'Conceitos esperados — visível ao aluno apenas após fechamento',
     max_score            DECIMAL(4,1) NOT NULL DEFAULT 10.0,
     order_index          INT          NOT NULL DEFAULT 0,
+    bank_question_id     INT UNSIGNED NULL COMMENT 'Questão do Banco de exercícios de origem (Importar); dá o Tema',
     admin_review_status  ENUM('approved','flagged','blocked') NOT NULL DEFAULT 'approved',
     admin_review_note    TEXT NULL,
     admin_reviewed_at    DATETIME NULL,
     admin_reviewed_by    INT UNSIGNED NULL,
     created_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_questions_bank_question (bank_question_id),
     INDEX idx_questions_exercise_order (exercise_id, order_index),
     INDEX idx_questions_review (admin_review_status),
     CONSTRAINT fk_q_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
@@ -329,3 +331,15 @@ CREATE TABLE IF NOT EXISTS practice_answers (
     CONSTRAINT fk_practice_student FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_practice_question FOREIGN KEY (bank_question_id) REFERENCES bank_questions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Origem das Questões importadas (migration 027). A chave estrangeira vem por
+-- último porque bank_questions é criada depois de questions. Num banco antigo
+-- (questions sem a coluna), quem acrescenta coluna e chave é a 027.
+SET @has_col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'questions' AND COLUMN_NAME = 'bank_question_id');
+SET @has_fk := (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'questions' AND CONSTRAINT_NAME = 'fk_questions_bank_question');
+SET @sql := IF(@has_col = 1 AND @has_fk = 0,
+  'ALTER TABLE questions ADD CONSTRAINT fk_questions_bank_question FOREIGN KEY (bank_question_id) REFERENCES bank_questions(id) ON DELETE SET NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
