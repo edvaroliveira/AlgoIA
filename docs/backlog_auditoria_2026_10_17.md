@@ -19,6 +19,7 @@ sistemáticas de CSRF, SQL e saída. A linguagem segue o `GLOSSARY.md`.
 | AU-08 | 🟡 Baixo | Promoção automática à Pontuação máxima quando só há descontos não bloqueantes | ✅ Corrigido |
 | AU-09 | 🔴 Alto | Admin de teste com senha conhecida semeado pelos scripts de reset | ✅ Corrigido (PR #43) + histórico reescrito |
 | AU-10 | 🔴 Alto | Seed de Admin com senha padrão publicada quando `SEED_ADMIN_PASSWORD` falta | ✅ Corrigido (PR #43) |
+| AU-11 | 🔴 Crítico | No servidor, tudo fora de `public/` é servido e os `.php` de `bin/` e `database/seeds/` são executados pela web | ✅ `.htaccess` de raiz; servidor precisa ser realinhado |
 
 ## AU-01 — Dump SQL com Usuários reais em repo público
 
@@ -142,6 +143,36 @@ HostGator.
 **Correção (PR #43):** `seed_password()` exige senha forte no ambiente e recusa
 o placeholder. Os seeds marcam troca obrigatória e não imprimem a senha. A
 política de senha foi extraída para `Core\password_is_strong()`.
+
+## AU-11 — Projeto inteiro exposto no servidor (2026-10-19)
+
+**Evidência:** no HostGator o repositório fica todo dentro de `public_html/algoia`
+e o app responde em `/algoia/public/`. Sem um `.htaccess` na raiz, `README.md`,
+`docs/`, `.env.example` (com a senha antiga) e `docs/smoke_test_multinivel.md`
+(com a senha antiga) eram servidos como texto. O `.env` e o dump só não vazaram
+porque o mod_security respondia 406 para eles. Pior: os `.php` de `bin/` e
+`database/seeds/` eram **executados** por qualquer GET. O seed antigo de Admin
+cria um Admin com senha padrão publicada, e o worker pode ser disparado à vontade.
+
+**Incidente durante a auditoria:** um GET de verificação em
+`/algoia/database/seeds/001_seed_teacher.php` executou o seed antigo e criou o
+usuário id 1 (Docente, senha publicada, sem troca obrigatória) às 09:58 de
+2026-10-19 (horário do servidor). A exclusão precisa ser feita pelo responsável
+(`DELETE FROM users WHERE id = 1 AND role = 'teacher' AND created_at = '2026-10-19 09:58:21';`).
+
+**Agravante:** o deploy automático (cron com `git pull` a cada 15 min) parou em
+2026-10-17, porque o `pull` falha depois da reescrita do histórico. O servidor
+continuava com o código e o histórico antigos, inclusive o dump.
+
+**Correção:** `.htaccess` na raiz do projeto, que libera só `public/`,
+redireciona a raiz do app para `public/` e responde 403 para o resto (falha
+fechada sem `mod_rewrite`). Testado num Apache 2.4 local, com o layout do
+HostGator, em duas subpastas diferentes. Protegido por invariante no
+`smoke_static`. O guia `deploy_operacional.md` documenta o layout e troca o
+`git pull` do cron por `git fetch` + `git reset --hard`.
+
+**Pendente no servidor:** realinhar a cópia (`git fetch` + `reset --hard` +
+`gc`), trocar o comando do cron e apagar o usuário id 1.
 
 ## Reescrita do histórico (AU-01, AU-02, AU-09)
 

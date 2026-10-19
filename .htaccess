@@ -1,0 +1,32 @@
+# Raiz do projeto. Em hospedagem compartilhada o repositório inteiro fica dentro
+# do public_html (ex.: public_html/algoia), então TUDO aqui seria acessível pela
+# web: .env, docs/, bin/ e database/seeds/ — e os .php fora de public/ seriam
+# EXECUTADOS por qualquer visitante (seeds, worker, testes).
+# Só public/ pode ser servido; o resto responde 403.
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Raiz do app → front controller em public/. %{REQUEST_URI} mantém a subpasta
+  # (ex.: /algoia/) sem precisar fixar RewriteBase.
+  RewriteRule ^$ %{REQUEST_URI}public/ [R=302,L]
+
+  # public/ segue para o public/.htaccess (front controller).
+  RewriteRule ^public(/|$) - [L]
+
+  # Qualquer outro caminho do projeto: proibido.
+  RewriteRule ^ - [F,L]
+</IfModule>
+
+# Sem mod_rewrite não há como liberar só public/: nega tudo (falha fechada).
+<IfModule !mod_rewrite.c>
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</IfModule>

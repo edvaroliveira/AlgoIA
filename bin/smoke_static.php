@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $checks = [
+  // AU-11: com o repo inteiro no public_html, só public/ pode ser servido.
+  [
+    'file' => '.htaccess',
+    'mustContain' => ['RewriteRule ^public(/|$) - [L]', 'RewriteRule ^ - [F,L]', 'Require all denied'],
+  ],
   // AU-04: php_flag fora de IfModule derruba a pasta (500) com PHP via CGI/FPM.
   [
     'file' => 'public/assets/uploads/.htaccess',

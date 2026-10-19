@@ -2,6 +2,29 @@
 
 Este documento resume os passos operacionais para subir ou atualizar o AlgoIA.
 
+## Servidor (HostGator, deploy em subpasta)
+
+O repositório inteiro fica dentro do `public_html` (ex.: `public_html/algoia`), e o
+app responde em `https://<domínio>/algoia/public/`. O `.htaccess` da raiz do projeto
+libera só `public/`, redireciona `/algoia/` para `/algoia/public/` e responde 403
+para todo o resto. Sem ele, qualquer visitante leria `.env`, docs e
+`database/`, e **executaria** pela web os `.php` de `bin/` e `database/seeds/`
+(AU-11). Não remova esse arquivo.
+
+O deploy é feito por um cron no servidor que atualiza a cópia a partir da `main`
+do GitHub. Use `fetch` + `reset`, nunca `git pull`: depois de uma reescrita de
+histórico (como a de 2026-10-17), o `pull` falha e o servidor fica parado na
+versão antiga sem aviso.
+
+```bash
+cd ~/public_html/algoia && git fetch origin main && git reset --hard origin/main
+```
+
+O `reset --hard` preserva o que não é versionado (`.env` e
+`public/assets/uploads/`). Para conferir de fora se está tudo bloqueado, só
+arquivos que não são `.php` (um GET em `.php` executaria o script):
+`/algoia/.env.example` e `/algoia/README.md` devem responder 403.
+
 ## Banco de Dados
 
 ### Instalacao limpa
