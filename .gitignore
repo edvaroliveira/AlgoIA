@@ -13,3 +13,6 @@ database/*.sql
 
 # Configuração local do editor (pode conter auto-approve de comandos); nunca vai ao repo público.
 .vscode/
+
+# Saída local do navegador de testes (Playwright MCP)
+.playwright-mcp/

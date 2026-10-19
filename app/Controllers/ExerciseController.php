@@ -31,9 +31,13 @@ class ExerciseController
 
   public function index(): void
   {
-    View::render('teacher/exercises/index', [
-      'exercises' => $this->exercises->findByTeacher(Auth::id()),
-    ]);
+    $exercises = $this->exercises->findByTeacher(Auth::id());
+    foreach ($exercises as &$exercise) {
+      $exercise['can_delete'] = $this->exercises->canDelete($exercise);
+    }
+    unset($exercise);
+
+    View::render('teacher/exercises/index', ['exercises' => $exercises]);
   }
 
   public function create(): void
@@ -81,6 +85,7 @@ class ExerciseController
       'turmas'    => $this->turmas->findByTeacher(Auth::id()),
       'publicationDefaults' => $this->publicationDefaults(),
       'bankStatus' => (new \App\Models\BankExercise())->latestForExercise((int) $id),
+      'canDelete' => $this->exercises->canDelete($exercise),
     ]);
   }
 
@@ -205,7 +210,7 @@ class ExerciseController
         'status' => $exercise['status'] ?? null,
       ]);
       global $session;
-      $session->flash('error', 'Este exercício não pode ser excluído: já foi publicado ou possui tentativas registradas.');
+      $session->flash('error', 'Este exercício não pode ser excluído porque já foi publicado para uma turma ou tem tentativas registradas. Para tirá-lo do ar, encerre as publicações.');
       View::redirect("/teacher/exercises/{$id}");
       return;
     }
@@ -215,6 +220,8 @@ class ExerciseController
       'title'  => $exercise['title']  ?? null,
       'status' => $exercise['status'] ?? null,
     ]);
+    global $session;
+    $session->flash('success', 'Exercício excluído: "' . ($exercise['title'] ?? '') . '".');
     View::redirect('/teacher/exercises');
   }
 

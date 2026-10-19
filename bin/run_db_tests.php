@@ -133,8 +133,23 @@ $pdo->exec("
   )
 ");
 
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS exercise_turmas (
+    exercise_id INTEGER NOT NULL,
+    turma_id INTEGER NOT NULL,
+    PRIMARY KEY (exercise_id, turma_id)
+  )
+");
+
 $pdo->exec("INSERT INTO exercises (teacher_id, title, status) VALUES (1, 'Ex Draft', 'draft')");
 $rp01DraftId = (int) $pdo->lastInsertId();
+
+$pdo->exec("INSERT INTO exercises (teacher_id, title, status) VALUES (1, 'Ex Ready', 'ready')");
+$rp01ReadyId = (int) $pdo->lastInsertId();
+
+$pdo->exec("INSERT INTO exercises (teacher_id, title, status) VALUES (1, 'Ex Ready+Publicação', 'ready')");
+$rp01ReadyPublishedId = (int) $pdo->lastInsertId();
+$pdo->exec("INSERT INTO exercise_turmas (exercise_id, turma_id) VALUES ($rp01ReadyPublishedId, 1)");
 
 $pdo->exec("INSERT INTO exercises (teacher_id, title, status) VALUES (1, 'Ex Active', 'active')");
 $rp01ActiveId = (int) $pdo->lastInsertId();
@@ -151,6 +166,8 @@ check($exModel->hasAttempts($rp01DraftWithAttemptId), 'RP-01: hasAttempts retorn
 check($exModel->canDelete(['id' => $rp01DraftId, 'status' => 'draft']), 'RP-01: rascunho sem tentativas pode ser excluído');
 check(!$exModel->canDelete(['id' => $rp01ActiveId, 'status' => 'active']), 'RP-01: exercício ativo não pode ser excluído');
 check(!$exModel->canDelete(['id' => $rp01DraftWithAttemptId, 'status' => 'draft']), 'RP-01: rascunho com tentativa não pode ser excluído');
+check($exModel->canDelete(['id' => $rp01ReadyId, 'status' => 'ready']), 'RP-01: Concluído sem Publicação nem tentativas pode ser excluído');
+check(!$exModel->canDelete(['id' => $rp01ReadyPublishedId, 'status' => 'ready']), 'RP-01: Exercício com Publicação não pode ser excluído');
 
 // ── AP-02: bloqueio derivado por questão (models reais, SQLite) ──────────────
 $pdo->exec("

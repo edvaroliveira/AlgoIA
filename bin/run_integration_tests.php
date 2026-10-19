@@ -1140,6 +1140,46 @@ if (!extension_loaded('curl')) {
       $adminExercise = $page($jarAdmin, "/admin/exercises/{$ownSource['id']}");
       check($adminExercise['code'] === 200 && str_contains($adminExercise['body'], 'Adicionar ao banco'), 'BANCO-06: Admin pode incluir Exercício direto no banco');
       check($page($jarDocenteA, '/admin/bank')['code'] === 302, 'BANCO-06: Docente não acessa a curadoria');
+
+      // EXC-01 — Excluir Exercício: Rascunho e Concluído sem Publicação podem; Publicado não
+      $exists = fn(int $id): bool => (int) $pdoA->query("SELECT COUNT(*) FROM exercises WHERE id = {$id}")->fetchColumn() === 1;
+      $readyToDelete = $mkExercise($docenteA['id'], 'Concluído para excluir', 'ready', ['QX1', 'QX2']);
+      $readyPage = $page($jarDocenteA, "/teacher/exercises/{$readyToDelete['id']}");
+      check(str_contains($readyPage['body'], 'Excluir exercício'), 'EXC-01: Concluído sem Publicação mostra o botão de excluir');
+      $del = postAs($base, $jarDocenteA, "/teacher/exercises/{$readyToDelete['id']}/delete");
+      check(
+        $del['code'] === 302 && str_ends_with($del['location'], '/teacher/exercises') && !$exists($readyToDelete['id'])
+          && $countRows("SELECT COUNT(*) FROM questions WHERE exercise_id = {$readyToDelete['id']}") === 0,
+        'EXC-01: Docente exclui o próprio Exercício Concluído, com as Questões'
+      );
+
+      $publishedPage = $page($jarDocenteA, "/teacher/exercises/{$exA}");
+      check(!str_contains($publishedPage['body'], 'Excluir exercício'), 'EXC-01: Exercício Publicado não mostra o botão de excluir');
+      $del = postAs($base, $jarDocenteA, "/teacher/exercises/{$exA}/delete");
+      check($exists($exA), 'EXC-01: Exercício Publicado não é excluído mesmo com POST direto');
+
+      $foreignReady = $mkExercise($docenteB['id'], 'Concluído do B para excluir', 'ready', ['QXB']);
+      $del = postAs($base, $jarDocenteA, "/teacher/exercises/{$foreignReady['id']}/delete");
+      check($del['code'] === 403 && $exists($foreignReady['id']), 'EXC-01: Docente não exclui Exercício de outro Docente (403)');
+
+      // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
+      $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
+      $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);
+      $list = $page($jarDocenteA, '/teacher/exercises');
+      $deleteAction = fn(int $id): string => "/teacher/exercises/{$id}/delete";
+      $rowOf = static function (string $html, string $title): string {
+        return preg_match('#<tr>(?:(?!</tr>).)*' . preg_quote($title, '#') . '(?:(?!</tr>).)*</tr>#s', $html, $m) ? $m[0] : '';
+      };
+      check(
+        str_contains($list['body'], $deleteAction($listReady['id'])) && str_contains($list['body'], $deleteAction($listDraft['id'])),
+        'EXC-02: lista mostra "Excluir" para Rascunho e Pronto para publicar sem Publicação'
+      );
+      check(!str_contains($list['body'], $deleteAction($exA)), 'EXC-02: lista não mostra "Excluir" para Exercício Publicado');
+      check(str_contains($rowOf($list['body'], 'Pronto na lista'), 'Aguardando publicação'), 'EXC-02: Pronto para publicar mostra "Aguardando publicação" na coluna Turmas');
+      check(str_contains($rowOf($list['body'], 'Rascunho na lista'), 'Pendente de finalização'), 'EXC-02: Rascunho continua "Pendente de finalização"');
+      $del = postAs($base, $jarDocenteA, $deleteAction($listReady['id']));
+      $after = httpAs($jarDocenteA, 'GET', "{$base}/teacher/exercises");
+      check(!$exists($listReady['id']) && str_contains($after['body'], 'Exercício excluído'), 'EXC-02: excluir pela lista confirma com mensagem de sucesso');
     }
 
     proc_terminate($serverProcess);
