@@ -159,6 +159,7 @@ try {
 }
 
 $allTables = [
+  'score_reviews',
   'bank_exercise_themes',
   'bank_themes',
   'bank_questions',
@@ -1181,6 +1182,59 @@ if (!extension_loaded('curl')) {
         'ENG-01: códigos internos e motivos desconhecidos não aparecem para o Aluno');
       $teacherResult = httpAs($jarDocenteA, 'GET', "{$base}/teacher/attempts/{$attGradedA}/result");
       check(str_contains($teacherResult['body'], \App\Models\DeductionReason::label('logic_error')), 'ENG-01: Docente continua vendo os motivos');
+
+      // REV — Revisão de nota: ajuste pelo Docente e pedido de revisão pelo Aluno
+      $answerA = (int) $pdoA->query("SELECT id FROM answers WHERE attempt_id = {$attGradedA} AND question_id = {$qA}")->fetchColumn();
+      $scoreOf = fn(): string => (string) $pdoA->query("SELECT ai_score FROM answers WHERE id = {$answerA}")->fetchColumn();
+      $totalOf = fn(): string => (string) $pdoA->query("SELECT total_score FROM attempts WHERE id = {$attGradedA}")->fetchColumn();
+      $reviews = fn(): array => $pdoA->query("SELECT status, previous_score, new_score, justification, request_message FROM score_reviews WHERE answer_id = {$answerA} ORDER BY id")->fetchAll();
+
+      // REV-01 — Docente ajusta a nota com justificativa; a Tentativa é recalculada
+      $r = postAs($base, $jarDocenteA, "/teacher/answers/{$answerA}/review", ['score' => '6.5', 'justification' => 'A ordem LIFO foi explicada corretamente.']);
+      $reviewRows = $reviews();
+      check(
+        $r['code'] === 302 && $scoreOf() === '6.5' && (float) $totalOf() === 6.5,
+        "REV-01: ajuste do Docente muda a Pontuação e recalcula a nota da Tentativa (score={$scoreOf()} total={$totalOf()})"
+      );
+      check(
+        count($reviewRows) === 1 && $reviewRows[0]['status'] === 'adjusted' && $reviewRows[0]['previous_score'] === '1.0'
+          && $reviewRows[0]['new_score'] === '6.5' && $reviewRows[0]['justification'] === 'A ordem LIFO foi explicada corretamente.',
+        'REV-01: a Revisão de nota guarda a nota anterior, a nova e a justificativa'
+      );
+      check($auditCount('teacher.score.adjust', $answerA) === 1, 'REV-01: ajuste é auditado');
+
+      // REV-02 — Validações e permissões do ajuste
+      postAs($base, $jarDocenteA, "/teacher/answers/{$answerA}/review", ['score' => '11', 'justification' => 'Acima do máximo']);
+      postAs($base, $jarDocenteA, "/teacher/answers/{$answerA}/review", ['score' => '3', 'justification' => '']);
+      check($scoreOf() === '6.5' && count($reviews()) === 1, 'REV-02: nota acima do máximo ou sem justificativa é recusada');
+      $r = postAs($base, $jarDocenteB, "/teacher/answers/{$answerA}/review", ['score' => '0', 'justification' => 'Tentativa indevida']);
+      check($r['code'] === 403 && $scoreOf() === '6.5', 'REV-02: outro Docente não revisa a nota (403)');
+
+      // REV-03 — Aluno vê a nota revisada e pede revisão uma única vez
+      $studentView = httpAs($jarAlunoA, 'GET', "{$base}/student/attempts/{$attGradedA}/result");
+      check(str_contains($studentView['body'], 'Nota revisada pelo Docente') && str_contains($studentView['body'], 'A ordem LIFO foi explicada corretamente.'),
+        'REV-03: Aluno vê que a nota foi revisada, com a justificativa');
+      $r = postAs($base, $jarAlunoA, "/student/answers/{$answerA}/review-request", ['message' => 'Acredito que expliquei também o caso de pilha vazia.']);
+      postAs($base, $jarAlunoA, "/student/answers/{$answerA}/review-request", ['message' => 'Segundo pedido.']);
+      $requested = array_values(array_filter($reviews(), static fn(array $row): bool => $row['status'] === 'requested'));
+      check(
+        $r['code'] === 302 && count($requested) === 1 && $requested[0]['request_message'] === 'Acredito que expliquei também o caso de pilha vazia.',
+        'REV-03: Aluno pede revisão uma única vez por Resposta'
+      );
+      $r = postAs($base, $jarAlunoB, "/student/answers/{$answerA}/review-request", ['message' => 'Pedido indevido']);
+      check($r['code'] === 403 && count($reviews()) === 2, 'REV-03: outro Aluno não pede revisão da Resposta alheia (403)');
+      check(str_contains(httpAs($jarAlunoA, 'GET', "{$base}/student/attempts/{$attGradedA}/result")['body'], 'Revisão pedida'),
+        'REV-03: Aluno acompanha que o pedido está aguardando o Docente');
+
+      // REV-04 — Pedido aparece para o Docente, que mantém a nota com justificativa
+      $dashboard = httpAs($jarDocenteA, 'GET', "{$base}/teacher/dashboard");
+      check(str_contains($dashboard['body'], 'Revisões pedidas') && str_contains($dashboard['body'], 'Aluno A'), 'REV-04: painel do Docente lista o pedido de revisão');
+      $requestId = (int) $pdoA->query("SELECT id FROM score_reviews WHERE answer_id = {$answerA} AND status = 'requested'")->fetchColumn();
+      $r = postAs($base, $jarDocenteA, "/teacher/score-reviews/{$requestId}/keep", ['justification' => 'O caso de pilha vazia não aparece na resposta.']);
+      $kept = $pdoA->query("SELECT status, justification FROM score_reviews WHERE id = {$requestId}")->fetch();
+      check($r['code'] === 302 && $kept['status'] === 'kept' && $scoreOf() === '6.5', 'REV-04: Docente mantém a nota, que não muda');
+      check(str_contains(httpAs($jarAlunoA, 'GET', "{$base}/student/attempts/{$attGradedA}/result")['body'], 'O caso de pilha vazia não aparece na resposta.'),
+        'REV-04: Aluno vê a resposta do Docente ao pedido');
 
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
