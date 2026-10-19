@@ -8,6 +8,7 @@ use Core\Database;
 
 class OpenAIService
 {
+  private string $apiUrl;
   private string $apiKey;
   private string $model;
   private int    $timeout;
@@ -62,6 +63,7 @@ class OpenAIService
   public function __construct(?Database $db = null)
   {
     $cfg = require ROOT_PATH . '/config/openai.php';
+    $this->apiUrl     = $cfg['api_url'];
     $this->apiKey     = $cfg['api_key'];
     $this->model      = $cfg['model'];
     $this->timeout    = $cfg['timeout'];
@@ -85,7 +87,7 @@ class OpenAIService
     string $expectedAnswerHint,
     string $studentAnswer,
     float  $maxScore,
-    int    $answerId,
+    ?int   $answerId,
     int    $studentId
   ): array {
     // Falha rápida: sem chave, os 3 retries só queimariam tempo e acabariam
@@ -193,7 +195,7 @@ PROMPT;
 
   // ── Injection detection ──────────────────────────────────────────────────
 
-  private function detectInjection(string $studentAnswer, int $answerId, int $studentId): void
+  private function detectInjection(string $studentAnswer, ?int $answerId, int $studentId): void
   {
     $pattern = $this->matchInjectionPattern($studentAnswer);
     if ($pattern === null) {
@@ -253,7 +255,7 @@ PROMPT;
     ]);
 
     for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
-      $ch = curl_init('https://api.openai.com/v1/chat/completions');
+      $ch = curl_init($this->apiUrl);
       curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,

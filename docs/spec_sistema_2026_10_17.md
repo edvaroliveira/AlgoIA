@@ -151,6 +151,14 @@ depois do login, perde a sessão.
 - O Aluno vê, numa única lista, as Publicações abertas e futuras de todas as Turmas ativas em que tem Matrícula ativa, ordenadas pelo prazo, com os mesmos filtros de acesso da lista de Exercícios (Moderação e Questão Bloqueada).
 - Cada item mostra a Turma, o prazo (ou a data de abertura, se futura) e os destaques: "Vence em menos de 24 h", "Ainda não tentado", "Tentativa em andamento" e "X de Y tentativas usadas" (Tentativas Enviadas ou Corrigidas).
 
+### RF-19 Prática
+
+- O Aluno escolhe um Tema do Banco de exercícios e recebe uma Questão sorteada entre os itens ativos, de preferência uma que ainda não praticou. Pode pedir outra Questão a qualquer momento.
+- Ao enviar a resposta, a Correção por IA acontece na hora (sem a Fila de correção), e o Aluno vê a Pontuação, o Feedback e os Motivos de desconto com dica de estudo. As correções anteriores da mesma Questão ficam listadas.
+- Não vale nota, não cria Tentativa e não é vista pelo Docente.
+- Limite de 10 correções por Aluno por dia, para conter o custo da IA. Só correções bem-sucedidas contam. Se a IA falhar, o Aluno é avisado e o texto da resposta é mantido para reenviar.
+- A detecção de injeção também vale para a prática.
+
 ## Requisitos não funcionais
 
 ### RNF-01 Segurança

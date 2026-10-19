@@ -467,6 +467,19 @@ check($seedRejects('defina_uma_senha_forte'), 'AU-10: seed recusa o placeholder 
 check($seedRejects('fraca'), 'AU-10: seed recusa senha fraca');
 same('OutraSenha9x', seed_password('SEED_TEST_PASSWORD', 'OutraSenha9x'), 'AU-10: seed aceita senha forte do ambiente');
 
+// PRA — endereço da IA só aceita https ou máquina local (a chave nunca vai a outro host)
+$openAiUrl = static function (string $value): string {
+  putenv("OPENAI_API_URL={$value}");
+  unset($_ENV['OPENAI_API_URL']);
+  $cfg = require ROOT_PATH . '/config/openai.php';
+  putenv('OPENAI_API_URL');
+  return $cfg['api_url'];
+};
+same('https://api.openai.com/v1/chat/completions', $openAiUrl(''), 'PRA: sem OPENAI_API_URL usa o endereço oficial');
+same('http://127.0.0.1:9999/v1/chat/completions', $openAiUrl('http://127.0.0.1:9999/v1/chat/completions'), 'PRA: aceita IA falsa local');
+same('https://api.openai.com/v1/chat/completions', $openAiUrl('http://exemplo.com/v1/chat/completions'), 'PRA: recusa http fora da máquina local');
+same('https://api.openai.com/v1/chat/completions', $openAiUrl('http://127.0.0.1.exemplo.com/x'), 'PRA: recusa host que só começa com 127.0.0.1');
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];

@@ -159,6 +159,7 @@ try {
 }
 
 $allTables = [
+  'practice_answers',
   'notifications',
   'score_reviews',
   'bank_exercise_themes',
@@ -692,6 +693,21 @@ if (!extension_loaded('curl')) {
   $host = "127.0.0.1:{$port}";
 
   $descriptors = [1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+
+  // IA falsa local: a Correção na hora da prática fala com ela, nunca com a OpenAI.
+  $fakeAiPort = $port + 1000;
+  $fakeAiLog = tempnam(sys_get_temp_dir(), 'fake_openai_');
+  putenv("FAKE_OPENAI_LOG={$fakeAiLog}");
+  putenv("OPENAI_API_URL=http://127.0.0.1:{$fakeAiPort}/v1/chat/completions");
+  putenv('OPENAI_API_KEY=chave-de-teste');
+  putenv('OPENAI_MAX_RETRIES=1');
+  $fakeAiProcess = proc_open(
+    ['php', '-d', 'variables_order=EGPCS', '-S', "127.0.0.1:{$fakeAiPort}", ROOT_PATH . '/bin/fixtures/fake_openai_server.php'],
+    [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+    $fakeAiPipes,
+    ROOT_PATH
+  );
+
   $serverProcess = proc_open(
     // Mesmo fuso do processo de teste: a janela da Publicação precisa bater com o banco.
     // Mesmas variáveis de ambiente do processo de teste (EGPCS): o servidor filho
@@ -1304,6 +1320,68 @@ if (!extension_loaded('curl')) {
       check(str_contains($agenda['body'], '2 de 2 tentativas usadas'), 'AGE-01: Tentativa Enviada (ainda sem correção) conta como usada');
       check($page($jarDocenteA, '/student/agenda')['code'] === 302, 'AGE-01: agenda é só do Aluno');
 
+      // PRA-01 — Modo prática: Temas do banco e correções do dia
+      $alunoPratica = $mkUser('Aluno Pratica', 'student');
+      $jarPratica = loginAs($base, $alunoPratica['email'], $pw);
+      $pdoA->exec("INSERT INTO bank_themes (name) VALUES ('Tema de Pratica')");
+      $praticaTheme = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO bank_exercises (title, status) VALUES ('Lista de pratica', 'active')");
+      $praticaList = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO bank_exercise_themes (bank_exercise_id, theme_id) VALUES ({$praticaList}, {$praticaTheme})");
+      $pdoA->exec("INSERT INTO bank_questions (bank_exercise_id, text, expected_answer_hint, max_score, order_index)
+                   VALUES ({$praticaList}, 'Some os elementos de um vetor de inteiros', 'Percorrer o vetor acumulando', 10, 1),
+                          ({$praticaList}, 'Encontre o maior elemento de um vetor', 'Guardar o maior visto', 10, 2)");
+      $praticaQ1 = (int) $pdoA->lastInsertId(); // INSERT de várias linhas devolve o id da primeira
+      $praticaQ2 = $praticaQ1 + 1;
+      $pdoA->exec("INSERT INTO bank_exercises (title, status) VALUES ('Lista arquivada', 'archived')");
+      $archivedList = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO bank_questions (bank_exercise_id, text, expected_answer_hint, max_score, order_index)
+                   VALUES ({$archivedList}, 'Questao arquivada', 'x', 10, 1)");
+      $archivedQ = (int) $pdoA->lastInsertId();
+
+      $home = httpAs($jarPratica, 'GET', "{$base}/student/pratica");
+      check($home['code'] === 200 && str_contains($home['body'], 'Tema de Pratica') && str_contains($home['body'], '0 de 10 correções hoje'),
+        'PRA-01: Aluno vê os Temas do banco e as correções do dia');
+      check($page($jarDocenteA, '/student/pratica')['code'] === 302, 'PRA-01: prática é só do Aluno');
+      check(httpAs($jarPratica, 'GET', "{$base}/student/pratica/questao/{$archivedQ}")['code'] === 404, 'PRA-01: Questão de item arquivado não abre');
+
+      // PRA-02 — Sortear Questão do Tema e corrigir na hora
+      $draw = httpAs($jarPratica, 'GET', "{$base}/student/pratica/sortear?tema=" . rawurlencode('Tema de Pratica'));
+      check($draw['code'] === 302 && preg_match('#Location: [^\r\n]*/student/pratica/questao/(\d+)#i', $draw['headers'], $m) === 1
+        && in_array((int) $m[1], [$praticaQ1, $praticaQ2], true), 'PRA-02: sortear leva a uma Questão do Tema');
+      $qPage = httpAs($jarPratica, 'GET', "{$base}/student/pratica/questao/{$praticaQ1}");
+      check($qPage['code'] === 200 && str_contains($qPage['body'], 'Some os elementos de um vetor de inteiros'), 'PRA-02: página mostra o enunciado');
+      file_put_contents($fakeAiLog, '');
+      postAs($base, $jarPratica, "/student/pratica/questao/{$praticaQ1}", ['answer' => 'para cada elemento soma no acumulador']);
+      $qPage = httpAs($jarPratica, 'GET', "{$base}/student/pratica/questao/{$praticaQ1}");
+      $sent = (string) file_get_contents($fakeAiLog);
+      check(str_contains($sent, 'Some os elementos de um vetor de inteiros') && str_contains($sent, 'para cada elemento soma no acumulador'),
+        'PRA-02: a IA recebe o enunciado e a resposta');
+      check(str_contains($qPage['body'], '6,0') && str_contains($qPage['body'], 'Faltou tratar o vetor vazio.')
+        && str_contains($qPage['body'], 'Faltou um conceito essencial'),
+        'PRA-02: Aluno vê na hora a Pontuação, o Feedback e os Motivos de desconto');
+      check(str_contains(httpAs($jarPratica, 'GET', "{$base}/student/pratica")['body'], '1 de 10 correções hoje'), 'PRA-02: correção conta no limite do dia');
+      $draw = httpAs($jarPratica, 'GET', "{$base}/student/pratica/sortear?tema=" . rawurlencode('Tema de Pratica'));
+      check(str_contains($draw['headers'], "/student/pratica/questao/{$praticaQ2}"), 'PRA-02: sorteio prefere Questão ainda não praticada');
+      check($countRows("SELECT COUNT(*) FROM attempts WHERE student_id = {$alunoPratica['id']}") === 0, 'PRA-02: prática não cria Tentativa');
+
+      // PRA-03 — Falha da IA e limite diário
+      $fail = postAs($base, $jarPratica, "/student/pratica/questao/{$praticaQ2}", ['answer' => 'FALHA_SIMULADA resposta guardada']);
+      $qPage = httpAs($jarPratica, 'GET', "{$base}/student/pratica/questao/{$praticaQ2}");
+      check(str_contains($qPage['body'], 'Não foi possível corrigir agora') && str_contains($qPage['body'], 'FALHA_SIMULADA resposta guardada')
+        && $countRows("SELECT COUNT(*) FROM practice_answers WHERE student_id = {$alunoPratica['id']}") === 1,
+        'PRA-03: falha da IA avisa, mantém o texto e não conta no limite');
+      for ($i = 0; $i < 9; $i++) {
+        $pdoA->exec("INSERT INTO practice_answers (student_id, bank_question_id, student_answer, score, max_score, feedback)
+                     VALUES ({$alunoPratica['id']}, {$praticaQ1}, 'x', 1, 10, 'f')");
+      }
+      file_put_contents($fakeAiLog, '');
+      postAs($base, $jarPratica, "/student/pratica/questao/{$praticaQ2}", ['answer' => 'decima primeira']);
+      $qPage = httpAs($jarPratica, 'GET', "{$base}/student/pratica/questao/{$praticaQ2}");
+      check(str_contains($qPage['body'], 'limite de 10 correções') && (string) file_get_contents($fakeAiLog) === ''
+        && $countRows("SELECT COUNT(*) FROM practice_answers WHERE student_id = {$alunoPratica['id']}") === 10,
+        'PRA-03: no limite diário a IA não é chamada');
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);
@@ -1327,6 +1405,12 @@ if (!extension_loaded('curl')) {
     proc_terminate($serverProcess);
     proc_close($serverProcess);
   }
+
+  if (is_resource($fakeAiProcess)) {
+    proc_terminate($fakeAiProcess);
+    proc_close($fakeAiProcess);
+  }
+  @unlink($fakeAiLog);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

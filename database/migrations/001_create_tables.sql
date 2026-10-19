@@ -312,3 +312,20 @@ CREATE TABLE IF NOT EXISTS system_settings (
 INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES ('teacher_registration_enabled', '0');
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- Modo prática (migration 026): só correções bem-sucedidas; base do limite diário.
+CREATE TABLE IF NOT EXISTS practice_answers (
+    id                     INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    student_id             INT UNSIGNED NOT NULL,
+    bank_question_id       INT UNSIGNED NOT NULL,
+    student_answer         TEXT         NOT NULL,
+    score                  DECIMAL(4,1) NOT NULL,
+    max_score              DECIMAL(4,1) NOT NULL,
+    feedback               TEXT         NOT NULL,
+    deduction_reasons_json JSON         NULL,
+    created_at             DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_practice_student_created (student_id, created_at),
+    INDEX idx_practice_student_question (student_id, bank_question_id),
+    CONSTRAINT fk_practice_student FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_practice_question FOREIGN KEY (bank_question_id) REFERENCES bank_questions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
