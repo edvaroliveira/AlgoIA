@@ -136,6 +136,14 @@ _Evitar_: Job, tarefa de correção
 Nova Correção por IA de uma Tentativa que ainda está Enviada, depois de uma falha. Não existe Reprocessamento de Tentativa Corrigida.
 _Evitar_: Recorreção, regrade, revisão de nota
 
+**Revisão de nota** (`score_reviews`):
+Alteração, pelo Docente, da Pontuação que a Correção por IA deu a uma Resposta, sempre com justificativa mostrada ao Aluno. A nota anterior fica registrada, e a Pontuação da Tentativa é recalculada. Também é a resposta do Docente a um Pedido de revisão, que pode alterar ou manter a nota.
+_Evitar_: Correção manual, override, Reprocessamento (que é refazer a Correção por IA)
+
+**Pedido de revisão**:
+Solicitação do Aluno, com uma explicação, para que o Docente reveja a Pontuação de uma Resposta que não tirou a Pontuação máxima. Um por Resposta.
+_Evitar_: Recurso, contestação, reclamação
+
 **Suspeita de injeção** (`injection_logs`):
 Registro de que uma Resposta continha um padrão de tentativa de manipular a Correção por IA.
 _Evitar_: Fraude, ataque

@@ -133,6 +133,12 @@ depois do login, perde a sessão.
 - O Admin aprova a Sugestão (definindo os Temas) ou a recusa (com motivo mostrado ao Docente). Ele também pode incluir qualquer Exercício direto no banco, editar Temas e arquivar itens. Só Sugestões podem ser aprovadas. Tudo é auditado.
 - Cada item do banco é uma cópia independente, feita no momento da Sugestão ou da inclusão direta. Apagar o Exercício de origem não afeta o banco. O banco não guarda janela nem Limite de tentativas, que continuam sendo da Publicação (ADR 0003).
 
+### RF-16 Revisão de nota
+
+- Na página de resultado, o Docente pode revisar a Pontuação de qualquer Resposta corrigida dos próprios Exercícios: nova Pontuação de 0 até o máximo da Questão e justificativa obrigatória, mostrada ao Aluno. A Pontuação da Tentativa é recalculada, a nota anterior fica registrada e a ação é auditada.
+- O Aluno pode enviar um Pedido de revisão, com uma explicação, para cada Resposta própria que não tirou a Pontuação máxima, uma única vez por Resposta. Ele acompanha o pedido (aguardando, nota revisada ou nota mantida) e a justificativa do Docente.
+- Os pedidos em aberto aparecem no painel do Docente ("Revisões pedidas"). O Docente responde alterando a nota ou mantendo-a com uma justificativa.
+
 ## Requisitos não funcionais
 
 ### RNF-01 Segurança

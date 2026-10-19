@@ -121,6 +121,8 @@ $router->post('/teacher/students/{id}/detach', 'StudentController@destroy', ['te
 $router->get('/teacher/attempts/pending', 'AttemptController@pendingTeacher', ['teacher']);
 $router->get('/teacher/attempts/{id}/result', 'AttemptController@resultTeacher', ['teacher']);
 $router->post('/teacher/attempts/{id}/regrade',     'AttemptController@regradeTeacher', ['teacher']);
+$router->post('/teacher/answers/{id}/review',       'AttemptController@reviewScore', ['teacher']);
+$router->post('/teacher/score-reviews/{id}/keep',   'AttemptController@keepScore', ['teacher']);
 
 // ── Student ───────────────────────────────────────────────────────────────────
 $router->get('/student/dashboard',                  'DashboardController@student', ['student']);
@@ -130,4 +132,5 @@ $router->post('/student/exercises/{id}/start',      'AttemptController@start', [
 $router->post('/student/attempts/{id}/answer',      'AttemptController@saveAnswer', ['student']);
 $router->post('/student/attempts/{id}/submit',      'AttemptController@submit', ['student']);
 $router->get('/student/attempts/{id}/result',       'AttemptController@result', ['student']);
+$router->post('/student/answers/{id}/review-request', 'AttemptController@requestReview', ['student']);
 $router->post('/student/turma/join',                'TurmaController@join', ['student']);

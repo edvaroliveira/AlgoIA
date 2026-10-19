@@ -200,7 +200,77 @@ class AttemptController
   public function resultTeacher(string $id): void
   {
     Auth::ensure($this->attempts->belongsToTeacher((int) $id, (int) Auth::id()));
-    $this->renderResult((int) $id, true, '/teacher/exercises/');
+    $this->renderResult((int) $id, true, '/teacher/exercises/', true);
+  }
+
+  /** POST /teacher/answers/{id}/review — Docente ajusta a Pontuação com justificativa. */
+  public function reviewScore(string $id): void
+  {
+    Request::validateCsrf();
+    global $session;
+
+    $reviews = new \App\Models\ScoreReview();
+    $answer = $reviews->findGradedAnswer((int) $id);
+    Auth::ensure($answer && (int) $answer['teacher_id'] === (int) Auth::id());
+
+    $rawScore = str_replace(',', '.', trim((string) Request::post('score', '')));
+    try {
+      if ($rawScore === '' || !is_numeric($rawScore)) {
+        throw new \RuntimeException('Informe a nova Pontuação.');
+      }
+      $reviews->adjust((int) $id, (int) Auth::id(), (float) $rawScore, Request::text('justification'));
+      AuditService::record('teacher.score.adjust', 'answer', (int) $id, [
+        'attempt_id' => (int) $answer['attempt_id'],
+        'previous_score' => $answer['ai_score'],
+        'new_score' => round((float) $rawScore, 1),
+      ]);
+      $session->flash('success', 'Nota revisada. A nota da tentativa foi recalculada.');
+    } catch (\RuntimeException $e) {
+      $session->flash('error', $e->getMessage());
+    }
+
+    View::redirect('/teacher/attempts/' . (int) $answer['attempt_id'] . '/result');
+  }
+
+  /** POST /teacher/score-reviews/{id}/keep — Docente responde ao pedido mantendo a nota. */
+  public function keepScore(string $id): void
+  {
+    Request::validateCsrf();
+    global $session;
+
+    $reviews = new \App\Models\ScoreReview();
+    try {
+      $kept = $reviews->keep((int) $id, (int) Auth::id(), Request::text('justification'));
+    } catch (\RuntimeException $e) {
+      $session->flash('error', $e->getMessage());
+      View::redirect(\Core\app_safe_path((string) Request::post('return_to', ''), '/teacher/dashboard'));
+    }
+
+    Auth::ensure($kept);
+    AuditService::record('teacher.score.keep', 'score_review', (int) $id, []);
+    $session->flash('success', 'Pedido respondido: nota mantida.');
+    View::redirect(\Core\app_safe_path((string) Request::post('return_to', ''), '/teacher/dashboard'));
+  }
+
+  /** POST /student/answers/{id}/review-request — Aluno pede revisão de uma Resposta. */
+  public function requestReview(string $id): void
+  {
+    Request::validateCsrf();
+    global $session;
+
+    $reviews = new \App\Models\ScoreReview();
+    $answer = $reviews->findGradedAnswer((int) $id);
+    Auth::ensure($answer && (int) $answer['student_id'] === (int) Auth::id());
+
+    try {
+      $reviews->request((int) $id, (int) Auth::id(), Request::text('message'));
+      AuditService::record('student.score.request', 'answer', (int) $id, ['attempt_id' => (int) $answer['attempt_id']]);
+      $session->flash('success', 'Pedido de revisão enviado ao Docente.');
+    } catch (\RuntimeException $e) {
+      $session->flash('error', $e->getMessage());
+    }
+
+    View::redirect('/student/attempts/' . (int) $answer['attempt_id'] . '/result');
   }
 
   public function pendingTeacher(): void
@@ -230,7 +300,7 @@ class AttemptController
     $this->renderResult((int) $id, false);
   }
 
-  private function renderResult(int $attemptId, bool $internalReview = false, string $internalBasePath = ''): void
+  private function renderResult(int $attemptId, bool $internalReview = false, string $internalBasePath = '', bool $canReviewScores = false): void
   {
     $attempt    = $this->attempts->getWithExercise($attemptId);
     if (!$attempt) {
@@ -256,6 +326,7 @@ class AttemptController
     $showReferenceAnswer = $internalReview || $isClosed || ($maxTries > 0 && $usedTries >= $maxTries);
     $resultBackUrl = $internalReview ? $internalBasePath . (int) $attempt['exercise_id'] : "/student/exercises/{$attempt['exercise_id']}";
     $resultAnswerLabel = $internalReview ? 'Resposta do aluno:' : 'Sua resposta:';
+    $scoreReviews = (new \App\Models\ScoreReview())->byAnswerForAttempt($attemptId);
 
     View::render('student/results/show', compact(
       'attempt',
@@ -265,6 +336,8 @@ class AttemptController
       'bestScore',
       'showReferenceAnswer',
       'internalReview',
+      'canReviewScores',
+      'scoreReviews',
       'resultBackUrl',
       'resultAnswerLabel'
     ));

@@ -77,6 +77,45 @@ $gradingJobFailures = $gradingJobFailures ?? [];
   </div>
 <?php endif; ?>
 
+<?php if (!empty($openScoreReviews)): ?>
+  <div class="section">
+    <section class="surface-block">
+      <div class="surface-block__header">
+        <div>
+          <h2 class="surface-title">Revisões pedidas <span class="badge badge--warning"><?= count($openScoreReviews) ?></span></h2>
+          <p class="surface-copy">Alunos que pediram revisão da nota de uma questão. Abra o resultado para ajustar a nota ou mantê-la com uma justificativa.</p>
+        </div>
+      </div>
+      <div class="surface-block__body">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Aluno</th>
+              <th>Exercício</th>
+              <th>Questão</th>
+              <th>Pedido</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($openScoreReviews as $request): ?>
+              <tr>
+                <td><?= \Core\View::e($request['student_name']) ?></td>
+                <td><?= \Core\View::e($request['exercise_title']) ?></td>
+                <td>Q<?= (int) $request['order_index'] ?></td>
+                <td><?= \Core\View::e(mb_strimwidth((string) $request['request_message'], 0, 120, '…')) ?></td>
+                <td class="td-actions">
+                  <a href="<?= \Core\app_url('/teacher/attempts/' . (int) $request['attempt_id'] . '/result') ?>" class="btn btn--sm">Revisar</a>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+<?php endif; ?>
+
 <?php if (!empty($pendingGradingAttempts)): ?>
   <div class="section">
     <section class="surface-block">

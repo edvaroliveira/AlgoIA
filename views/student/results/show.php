@@ -5,6 +5,9 @@ $maxScore = $maxScore ?? 0;
 $answers = $answers ?? [];
 $showReferenceAnswer = $showReferenceAnswer ?? false;
 $internalReview = $internalReview ?? false;
+$canReviewScores = $canReviewScores ?? false;
+$scoreReviews = $scoreReviews ?? [];
+global $session;
 $resultBackUrl = $resultBackUrl ?? '/student/exercises/' . ($attempt['exercise_id'] ?? 0);
 $resultAnswerLabel = $resultAnswerLabel ?? 'Sua resposta:';
 $pageTitle = 'Resultado — ' . ($attempt['exercise_title'] ?? 'Exercício');
@@ -115,6 +118,95 @@ $isBest    = $bestScore !== null
               <?php endforeach; ?>
             </ul>
           <?php endif; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php
+        // Revisão de nota: histórico, pedido do Aluno e ações do Docente.
+        $answerId = (int) ($ans['id'] ?? 0);
+        $answerReviews = $answerId > 0 ? ($scoreReviews[$answerId] ?? []) : [];
+        $openRequest = null;
+        $studentAlreadyRequested = false;
+        foreach ($answerReviews as $review) {
+          if ($review['status'] === 'requested') {
+            $openRequest = $review;
+          }
+          if (!empty($review['requested_by'])) {
+            $studentAlreadyRequested = true;
+          }
+        }
+      ?>
+      <?php foreach ($answerReviews as $review): ?>
+        <div class="feedback-block">
+          <?php if (!empty($review['request_message'])): ?>
+            <p><strong><?= $internalReview ? 'Pedido de revisão do aluno:' : 'Seu pedido de revisão:' ?></strong> <?= nl2br(\Core\View::e($review['request_message'])) ?></p>
+          <?php endif; ?>
+          <?php if ($review['status'] === 'requested'): ?>
+            <p><span class="badge badge--warning">Revisão pedida</span> Aguardando a resposta do Docente.</p>
+          <?php elseif ($review['status'] === 'adjusted'): ?>
+            <p><span class="badge badge--info">Nota revisada pelo Docente</span>
+              <?= number_format((float) $review['previous_score'], 1) ?> → <?= number_format((float) $review['new_score'], 1) ?> pts</p>
+            <p><?= nl2br(\Core\View::e((string) $review['justification'])) ?></p>
+          <?php else: ?>
+            <p><span class="badge badge--neutral">Nota mantida pelo Docente</span></p>
+            <p><?= nl2br(\Core\View::e((string) $review['justification'])) ?></p>
+          <?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+
+      <?php if (!$internalReview && $answerId > 0 && $lostPoints && !$studentAlreadyRequested): ?>
+        <div class="feedback-block">
+        <details class="hint-details">
+          <summary>Pedir revisão da nota</summary>
+          <form method="POST" action="<?= \Core\app_url('/student/answers/' . $answerId . '/review-request') ?>" class="form">
+            <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+            <div class="form-group">
+              <label class="form-label" for="review-message-<?= $answerId ?>">Por que a nota deve ser revista? <span class="hint">(um pedido por questão)</span></label>
+              <textarea id="review-message-<?= $answerId ?>" name="message" class="form-input form-textarea" rows="3" maxlength="1000" required></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn--ghost btn--sm">Enviar pedido ao Docente</button>
+            </div>
+          </form>
+        </details>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($canReviewScores && $answerId > 0 && $ans['ai_score'] !== null): ?>
+        <div class="feedback-block">
+        <details class="hint-details" <?= $openRequest ? 'open' : '' ?>>
+          <summary><?= $openRequest ? 'Responder ao pedido de revisão' : 'Revisar nota' ?></summary>
+          <form method="POST" action="<?= \Core\app_url('/teacher/answers/' . $answerId . '/review') ?>" class="form">
+            <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="review-score-<?= $answerId ?>">Nova pontuação (0 a <?= number_format((float) $ans['max_score'], 1) ?>)</label>
+                <input id="review-score-<?= $answerId ?>" name="score" class="form-input" type="number" min="0" max="<?= (float) $ans['max_score'] ?>" step="0.1"
+                  value="<?= \Core\View::e((string) $ans['ai_score']) ?>" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="review-justification-<?= $answerId ?>">Justificativa <span class="hint">(mostrada ao aluno)</span></label>
+              <textarea id="review-justification-<?= $answerId ?>" name="justification" class="form-input form-textarea" rows="2" maxlength="1000" required></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary btn--sm">Salvar nova nota</button>
+            </div>
+          </form>
+          <?php if ($openRequest): ?>
+            <form method="POST" action="<?= \Core\app_url('/teacher/score-reviews/' . (int) $openRequest['id'] . '/keep') ?>" class="form">
+              <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+              <input type="hidden" name="return_to" value="/teacher/attempts/<?= (int) ($attempt['id'] ?? 0) ?>/result">
+              <div class="form-group">
+                <label class="form-label" for="keep-justification-<?= $answerId ?>">Ou mantenha a nota, explicando ao aluno</label>
+                <textarea id="keep-justification-<?= $answerId ?>" name="justification" class="form-input form-textarea" rows="2" maxlength="1000" required></textarea>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn--ghost btn--sm">Manter nota</button>
+              </div>
+            </form>
+          <?php endif; ?>
+        </details>
         </div>
       <?php endif; ?>
 

@@ -43,6 +43,7 @@ traz de volta, se algum banco anterior a essa data aparecer).
 | Migration | O que faz |
 |---|---|
 | `023_bank_exercises.sql` | Cria as tabelas do Banco de exercicios (`bank_exercises`, `bank_questions`, `bank_themes`, `bank_exercise_themes`). Idempotente (`CREATE TABLE IF NOT EXISTS`). |
+| `024_score_reviews.sql` | Cria `score_reviews` (Revisao de nota pelo Docente e Pedido de revisao do Aluno). Idempotente. |
 
 ### Dados de teste (seed 003)
 

@@ -25,6 +25,7 @@ $requiredTables = [
   'bank_questions',
   'bank_themes',
   'bank_exercise_themes',
+  'score_reviews',
 ];
 
 $requiredColumns = [
@@ -38,6 +39,7 @@ $requiredColumns = [
   'bank_questions' => ['id', 'bank_exercise_id', 'text', 'expected_answer_hint', 'max_score', 'order_index'],
   'bank_themes' => ['id', 'name'],
   'bank_exercise_themes' => ['bank_exercise_id', 'theme_id'],
+  'score_reviews' => ['answer_id', 'status', 'request_message', 'requested_by', 'previous_score', 'new_score', 'justification', 'reviewed_by'],
 ];
 
 try {
