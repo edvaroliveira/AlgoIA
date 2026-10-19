@@ -92,6 +92,8 @@ $router->get('/teacher/turmas',                                   'TurmaControll
 $router->get('/teacher/turmas/create',                            'TurmaController@create', ['teacher']);
 $router->post('/teacher/turmas',                                  'TurmaController@store', ['teacher']);
 $router->get('/teacher/turmas/{id}',                              'TurmaController@show', ['teacher']);
+$router->get('/teacher/turmas/{id}/desempenho',                   'TurmaController@performance', ['teacher']);
+$router->get('/teacher/turmas/{id}/desempenho/csv',               'TurmaController@performanceCsv', ['teacher']);
 $router->post('/teacher/turmas/{id}/key',                         'TurmaController@regenerateKey', ['teacher']);
 $router->post('/teacher/turmas/{id}/approve/{studentId}',         'TurmaController@approveStudent', ['teacher']);
 $router->post('/teacher/turmas/{id}/reject/{studentId}',          'TurmaController@rejectStudent', ['teacher']);

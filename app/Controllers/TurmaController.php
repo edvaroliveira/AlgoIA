@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Models\LoginAttempt;
 use App\Models\Turma;
+use App\Models\TurmaPerformance;
 use App\Services\AuditService;
 use Core\Auth;
 use Core\Request;
@@ -61,6 +62,67 @@ class TurmaController
       'pending'  => $this->turmas->getPendingStudents((int) $id),
       'students' => $this->turmas->getActiveStudents((int) $id),
     ]);
+  }
+
+  // ── Teacher: desempenho ──────────────────────────────────────────────────
+
+  /** GET /teacher/turmas/{id}/desempenho[?exercicio=] */
+  public function performance(string $id): void
+  {
+    $turma = $this->getOwnedTurma((int) $id);
+    $performance = new TurmaPerformance();
+    $grid = $performance->grid((int) $id);
+
+    $selected = null;
+    $exerciseId = (int) Request::get('exercicio', 0);
+    foreach ($grid['exercises'] as $exercise) {
+      if ((int) $exercise['id'] === $exerciseId) {
+        $selected = $exercise;
+      }
+    }
+
+    View::render('teacher/turmas/performance', [
+      'turma'      => $turma,
+      'grid'       => $grid,
+      'selected'   => $selected,
+      'byQuestion' => $selected !== null ? $performance->byQuestion((int) $id, $exerciseId) : [],
+    ]);
+  }
+
+  /** GET /teacher/turmas/{id}/desempenho/csv — mesmas colunas da grade. */
+  public function performanceCsv(string $id): void
+  {
+    $turma = $this->getOwnedTurma((int) $id);
+    $grid = (new TurmaPerformance())->grid((int) $id);
+    AuditService::record('teacher.turma.export', 'turma', (int) $id, ['students' => count($grid['students'])]);
+
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="desempenho-turma-' . (int) $id . '-' . date('Ymd-His') . '.csv"');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
+    $output = fopen('php://output', 'wb');
+    if ($output === false) {
+      http_response_code(500);
+      exit('Não foi possível gerar a exportação.');
+    }
+
+    fwrite($output, "\xEF\xBB\xBF");
+    AdminBaseController::writeCsvRow($output, array_merge(
+      ['Aluno', 'E-mail'],
+      array_map(static fn(array $e): string => AdminBaseController::csvCell((string) $e['title']), $grid['exercises']),
+      ['Média']
+    ));
+    foreach ($grid['students'] as $student) {
+      $cells = [AdminBaseController::csvCell((string) $student['name']), AdminBaseController::csvCell((string) $student['email'])];
+      foreach ($grid['exercises'] as $exercise) {
+        $cells[] = TurmaPerformance::cellText($student['cells'][(int) $exercise['id']]);
+      }
+      $cells[] = TurmaPerformance::percent($student['average']);
+      AdminBaseController::writeCsvRow($output, $cells);
+    }
+
+    fclose($output);
+    exit;
   }
 
   public function regenerateKey(string $id): void
