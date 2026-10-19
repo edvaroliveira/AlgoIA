@@ -1459,6 +1459,82 @@ if (!extension_loaded('curl')) {
       check(str_contains($weak, '40%') && str_contains($weak, '4 respostas corrigidas'),
         'PROG-02: migration liga Questão importada antes (texto idêntico) e ela entra no progresso');
 
+      // DES-01 — Desempenho da Turma: grade Alunos × Exercícios publicados
+      $turmaDes = $mkTurma($docenteA['id'], 'Turma Desempenho');
+      $desAlta = $mkUser('Aluna Nota Alta', 'student');
+      $desBaixa = $mkUser('Aluno Nota Baixa', 'student');
+      $desAusente = $mkUser('Aluno Sem Tentativa', 'student');
+      $desFora = $mkUser('Aluno de Fora', 'student');
+      $pdoA->exec("INSERT INTO student_turma (student_id, turma_id, status) VALUES
+                   ({$desAlta['id']}, {$turmaDes['id']}, 'active'),
+                   ({$desBaixa['id']}, {$turmaDes['id']}, 'active'),
+                   ({$desAusente['id']}, {$turmaDes['id']}, 'active')");
+      $desEx1 = $mkExercise($docenteA['id'], 'Desempenho Prova 1', 'active', ['Questao D1', 'Questao D2']);
+      $desEx2 = $mkExercise($docenteA['id'], 'Desempenho Prova 2', 'active', ['Questao D3', 'Questao D4']);
+      $pdoA->exec("INSERT INTO exercise_turmas (exercise_id, turma_id, opens_at, closes_at, max_attempts) VALUES
+                   ({$desEx1['id']}, {$turmaDes['id']}, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 1 DAY, 0),
+                   ({$desEx2['id']}, {$turmaDes['id']}, NOW() - INTERVAL 1 DAY, NOW() + INTERVAL 5 DAY, 0)");
+      $desAttempt = function (array $student, array $exercise, string $status, ?float $total, array $answers) use ($pdoA, $turmaDes): void {
+        $totalSql = $total === null ? 'NULL' : (string) $total;
+        $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, turma_id, status, total_score)
+                     VALUES ({$exercise['id']}, {$student['id']}, {$turmaDes['id']}, '{$status}', {$totalSql})");
+        $attemptId = (int) $pdoA->lastInsertId();
+        foreach ($answers as $i => [$score, $reasons]) {
+          $pdoA->exec("INSERT INTO answers (attempt_id, question_id, student_answer, ai_score, deduction_reasons_json, evaluated_at)
+                       VALUES ({$attemptId}, {$exercise['questions'][$i]}, 'r', {$score}, " . $pdoA->quote(json_encode($reasons)) . ", NOW())");
+        }
+      };
+      $desAttempt($desAlta, $desEx1, 'graded', 4.0, [[1.0, ['missing_concept']], [3.0, []]]);
+      $desAttempt($desAlta, $desEx2, 'graded', 5.0, [[2.0, []], [3.0, []]]);
+      $desAttempt($desBaixa, $desEx1, 'graded', 1.0, [[0.0, ['missing_concept', 'logic_error']], [1.0, ['logic_error']]]);
+      $desAttempt($desBaixa, $desEx1, 'graded', 0.5, [[0.0, ['missing_concept']], [0.5, ['logic_error']]]);
+      $desAttempt($desBaixa, $desEx2, 'submitted', null, []);
+      $desAttempt($desFora, $desEx1, 'graded', 0.0, [[0.0, []], [0.0, []]]);
+      // Tentativa em outra Turma não entra no desempenho desta.
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, turma_id, status, total_score)
+                   VALUES ({$desEx1['id']}, {$desAusente['id']}, {$turmaA['id']}, 'graded', 5)");
+
+      $desRow = static function (string $html, string $needle): string {
+        return preg_match('#<tr>(?:(?!</tr>).)*' . preg_quote($needle, '#') . '(?:(?!</tr>).)*</tr>#s', $html, $m) ? $m[0] : '';
+      };
+      $des = httpAs($jarDocenteA, 'GET', "{$base}/teacher/turmas/{$turmaDes['id']}/desempenho");
+      $alta = $desRow($des['body'], 'Aluna Nota Alta');
+      $baixa = $desRow($des['body'], 'Aluno Nota Baixa');
+      check($des['code'] === 200 && str_contains($alta, '4,0') && str_contains($alta, '5,0') && str_contains($alta, '90%'),
+        'DES-01: grade mostra a melhor nota por Exercício e a média do Aluno');
+      check(str_contains($baixa, '1,0') && str_contains($baixa, 'Pendente') && str_contains($baixa, '20%') && str_contains($baixa, 'Abaixo da média'),
+        'DES-01: Tentativa pendente e Aluno abaixo da média da Turma ficam destacados');
+      check(str_contains($desRow($des['body'], 'Aluno Sem Tentativa'), 'Nunca tentou'), 'DES-01: Aluno que nunca tentou fica destacado');
+      check(str_contains($des['body'], 'Média da Turma: 55%') && !str_contains($des['body'], 'Aluno de Fora'),
+        'DES-01: média da Turma considera só os Alunos dela');
+      check(httpAs($jarDocenteB, 'GET', "{$base}/teacher/turmas/{$turmaDes['id']}/desempenho")['code'] === 403, 'DES-01: outro Docente não vê a Turma');
+      check($page($jarAlunoA, "/teacher/turmas/{$turmaDes['id']}/desempenho")['code'] === 302, 'DES-01: Aluno não acessa o desempenho');
+
+      // DES-02 — Por Questão: média e Motivos de desconto mais comuns (melhor Tentativa de cada Aluno)
+      $byQ = httpAs($jarDocenteA, 'GET', "{$base}/teacher/turmas/{$turmaDes['id']}/desempenho?exercicio={$desEx1['id']}");
+      $q1 = $desRow($byQ['body'], 'Questao D1');
+      $q2 = $desRow($byQ['body'], 'Questao D2');
+      check(str_contains($q1, '25%') && str_contains($q1, 'Faltou um conceito essencial (2)') && str_contains($q1, 'Há um erro na lógica (1)'),
+        'DES-02: Questão mostra a média e os Motivos de desconto mais comuns');
+      check(str_contains($q2, '67%'), 'DES-02: média da Questão usa a melhor Tentativa de cada Aluno da Turma');
+
+      // DES-03 — Exportar CSV das notas da Turma
+      $csv = httpAs($jarDocenteA, 'GET', "{$base}/teacher/turmas/{$turmaDes['id']}/desempenho/csv");
+      $csvRows = array_map(
+        static fn(string $line): array => str_getcsv($line, ';', '"', ''),
+        array_filter(explode("\n", str_replace("\r", '', ltrim($csv['body'], "\xEF\xBB\xBF"))))
+      );
+      check(
+        $csv['code'] === 200 && str_contains($csv['headers'], 'text/csv')
+          && in_array(['Aluno', 'E-mail', 'Desempenho Prova 1', 'Desempenho Prova 2', 'Média'], $csvRows, true)
+          && in_array(['Aluna Nota Alta', $desAlta['email'], '4,0', '5,0', '90%'], $csvRows, true)
+          && in_array(['Aluno Nota Baixa', $desBaixa['email'], '1,0', 'Pendente', '20%'], $csvRows, true)
+          && !str_contains($csv['body'], 'Aluno de Fora'),
+        'DES-03: CSV traz as notas da Turma no mesmo formato da tela'
+      );
+      check($auditCount('teacher.turma.export', $turmaDes['id']) === 1, 'DES-03: exportação é auditada');
+      check(httpAs($jarDocenteB, 'GET', "{$base}/teacher/turmas/{$turmaDes['id']}/desempenho/csv")['code'] === 403, 'DES-03: outro Docente não exporta');
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);

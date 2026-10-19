@@ -11,7 +11,10 @@ global $session;
     <h1><?= \Core\View::e($turma['name'] ?? 'Turma') ?></h1>
     <p class="subtitle">Gerencie chave de acesso, solicitações pendentes e alunos já ativos em um único fluxo.</p>
   </div>
-  <a href="<?= \Core\app_url('/teacher/turmas') ?>" class="btn btn--ghost">← Turmas</a>
+  <div class="form-actions">
+    <a href="<?= \Core\app_url('/teacher/turmas/' . (int) ($turma['id'] ?? 0) . '/desempenho') ?>" class="btn btn--primary">Desempenho</a>
+    <a href="<?= \Core\app_url('/teacher/turmas') ?>" class="btn btn--ghost">← Turmas</a>
+  </div>
 </div>
 
 <div class="overview-grid">

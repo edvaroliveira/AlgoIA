@@ -160,6 +160,10 @@ _Evitar_: Simulado, treino livre, Tentativa de prática
 Média percentual do Aluno em cada Tema, somando as correções da Prática e as Respostas corrigidas de Tentativas cujas Questões vieram do Banco de exercícios. Classifica o Tema como ponto forte, em evolução ou a melhorar quando há correções suficientes.
 _Evitar_: Boletim, ranking, nota do Tema
 
+**Desempenho da Turma**:
+Visão do Docente sobre uma Turma: a melhor nota de cada Aluno com Matrícula ativa em cada Exercício publicado nela, a média de cada Aluno e da Turma e, por Exercício, a média de cada Questão e os Motivos de desconto mais comuns.
+_Evitar_: Relatório, boletim, dashboard
+
 **Suspeita de injeção** (`injection_logs`):
 Registro de que uma Resposta continha um padrão de tentativa de manipular a Correção por IA.
 _Evitar_: Fraude, ataque
