@@ -979,6 +979,20 @@ img.topbar-user__avatar--img {
   background: rgba(34, 132, 79, 0.04);
 }
 
+/* Célula de ações: continua sendo célula de tabela. Com display:flex no próprio
+   <td> ela saía do fluxo da linha (altura, borda e fundo desalinhados). */
+.table td.td-actions {
+  display: table-cell;
+}
+
+.table td.td-actions > * {
+  margin: 0.15rem 0.55rem 0.15rem 0;
+}
+
+.table td.td-actions > *:last-child {
+  margin-right: 0;
+}
+
 .closing-list {
   display: grid;
   gap: 0.75rem;

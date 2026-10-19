@@ -1,6 +1,7 @@
 <?php
 $pageTitle = 'Exercícios';
 $exercises = $exercises ?? [];
+global $session;
 $now = time();
 $activeExercises = count(array_filter($exercises, fn($exercise) => ($exercise['status'] ?? 'active') === 'active'));
 $draftExercises = count(array_filter($exercises, fn($exercise) => ($exercise['status'] ?? 'active') === 'draft'));
@@ -78,7 +79,15 @@ $openExercises = count(array_filter($exercises, static function ($exercise) use 
           ?>
             <tr>
               <td><?= \Core\View::e($ex['title']) ?></td>
-              <td><?= \Core\View::e($ex['turma_label'] ?? 'Pendente de finalização') ?></td>
+              <td>
+                <?php if ((int) ($ex['turma_count'] ?? 0) > 0): ?>
+                  <?= \Core\View::e($ex['turma_label']) ?>
+                <?php elseif ($isReady): ?>
+                  Aguardando publicação
+                <?php else: ?>
+                  Pendente de finalização
+                <?php endif; ?>
+              </td>
               <td><?= !empty($ex['opens_at']) ? date('d/m/Y H:i', strtotime($ex['opens_at'])) : '—' ?></td>
               <td><?= !empty($ex['closes_at']) ? date('d/m/Y H:i', strtotime($ex['closes_at'])) : '—' ?></td>
               <td><?= ($ex['max_attempts'] ?? null) === null ? '—' : ((string) $ex['max_attempts'] === '0' ? '∞' : $ex['max_attempts']) ?></td>
@@ -104,6 +113,13 @@ $openExercises = count(array_filter($exercises, static function ($exercise) use 
                 <a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a>
                 <?php if ($isDraft): ?>
                   <a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id'] . '/edit') ?>" class="btn btn--sm btn--ghost">Editar</a>
+                <?php endif; ?>
+                <?php if (!empty($ex['can_delete'])): ?>
+                  <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $ex['id'] . '/delete') ?>" class="inline-form"
+                    data-confirm="Excluir o exercício &quot;<?= \Core\View::e($ex['title']) ?>&quot; e as suas questões?">
+                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                    <button type="submit" class="btn btn--sm btn--danger">Excluir</button>
+                  </form>
                 <?php endif; ?>
               </td>
             </tr>

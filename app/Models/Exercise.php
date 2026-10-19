@@ -78,9 +78,34 @@ class Exercise extends Model
     return $row !== false;
   }
 
+  /**
+   * Rascunho e Concluído podem ser excluídos enquanto não tiverem Publicação nem
+   * Tentativas: nenhum Aluno teve acesso. Publicado fica protegido, para preservar
+   * o histórico das Tentativas.
+   */
   public function canDelete(array $exercise): bool
   {
-    return $this->isDraft($exercise) && !$this->hasAttempts((int) $exercise['id']);
+    if (!$this->isDraft($exercise) && !$this->isReady($exercise)) {
+      return false;
+    }
+
+    // Listagens já trazem as contagens (findByTeacher); sem elas, consulta o banco.
+    $publications = array_key_exists('turma_count', $exercise)
+      ? (int) $exercise['turma_count'] > 0
+      : $this->hasPublications((int) $exercise['id']);
+    $attempts = array_key_exists('attempt_count', $exercise)
+      ? (int) $exercise['attempt_count'] > 0
+      : $this->hasAttempts((int) $exercise['id']);
+
+    return !$publications && !$attempts;
+  }
+
+  public function hasPublications(int $exerciseId): bool
+  {
+    return $this->db->fetchOne(
+      "SELECT 1 FROM exercise_turmas WHERE exercise_id = ? LIMIT 1",
+      [$exerciseId]
+    ) !== false;
   }
 
   public function findByTeacher(int $teacherId): array
@@ -92,7 +117,8 @@ class Exercise extends Model
                     COUNT(DISTINCT et.turma_id) AS turma_count,
                     MIN(et.opens_at) AS opens_at,
                     MAX(et.closes_at) AS closes_at,
-                    MAX(et.max_attempts) AS max_attempts
+                    MAX(et.max_attempts) AS max_attempts,
+                    (SELECT COUNT(*) FROM attempts a WHERE a.exercise_id = e.id) AS attempt_count
              FROM exercises e
              LEFT JOIN exercise_turmas et ON et.exercise_id = e.id
              LEFT JOIN turmas t ON t.id = et.turma_id

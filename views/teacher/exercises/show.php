@@ -411,16 +411,25 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
   </section>
 </div>
 
-<div class="section">
-  <section class="danger-zone">
-    <div>
-      <h2 class="danger-zone__title">Zona de perigo</h2>
-      <p class="danger-zone__copy">A exclusão remove o exercício, as questões e os registros relacionados de tentativas e respostas.</p>
+<?php if (!empty($canDelete)): ?>
+  <div class="section">
+    <section class="danger-zone">
+      <div>
+        <h2 class="danger-zone__title">Zona de perigo</h2>
+        <p class="danger-zone__copy">A exclusão remove o exercício e as suas questões. Ele ainda não foi publicado para nenhuma turma.</p>
+      </div>
+      <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/delete') ?>"
+        data-confirm="Excluir este exercício e as suas questões?">
+        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+        <button type="submit" class="btn btn--danger">Excluir exercício</button>
+      </form>
+    </section>
+  </div>
+<?php else: ?>
+  <div class="section">
+    <div class="content-note">
+      <strong>Exclusão indisponível</strong>
+      <p>Este exercício já foi publicado para uma turma ou tem tentativas registradas, e por isso é preservado. Para tirá-lo do ar, encerre as publicações.</p>
     </div>
-    <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/delete') ?>"
-      data-confirm="Excluir este exercício e todos os seus dados?">
-      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-      <button type="submit" class="btn btn--danger">Excluir exercício</button>
-    </form>
-  </section>
-</div>
+  </div>
+<?php endif; ?>
