@@ -61,6 +61,9 @@ global $session;
         <h2 class="surface-title">Adicionar questão</h2>
         <p class="surface-copy">Defina enunciado, gabarito esperado e peso da questão com precisão suficiente para a correção automatizada.</p>
       </div>
+      <?php if (($exercise['status'] ?? '') === 'draft'): ?>
+        <a href="<?= \Core\app_url('/teacher/bank?exercise=' . $exercise['id']) ?>" class="btn btn--ghost btn--sm">+ Do banco</a>
+      <?php endif; ?>
     </div>
 
     <div class="surface-block__body">

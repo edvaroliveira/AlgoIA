@@ -154,6 +154,7 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
         <?php if ($isDraft): ?>
           <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/edit') ?>" class="btn btn--ghost btn--full">Editar configuração</a>
           <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>" class="btn btn--primary btn--full">Adicionar ou revisar questões</a>
+          <a href="<?= \Core\app_url('/teacher/bank?exercise=' . $exercise['id']) ?>" class="btn btn--ghost btn--full">Importar questões do banco</a>
         <?php elseif ($isReady): ?>
           <div class="content-note">
             <strong>Conteúdo congelado</strong>
@@ -163,6 +164,32 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
           <div class="content-note">
             <strong>Edição bloqueada</strong>
             <p>Depois da vinculação com turma, este exercício fica congelado para preservar o enunciado, as regras e as questões publicadas.</p>
+          </div>
+        <?php endif; ?>
+
+        <?php if (!$isDraft):
+          $bankStatus = $bankStatus ?? false;
+          $bankState = $bankStatus ? (string) $bankStatus['status'] : '';
+        ?>
+          <div class="content-note">
+            <strong>Banco de exercícios</strong>
+            <?php if ($bankState === 'suggested'): ?>
+              <p><span class="badge badge--warning">Sugerido</span> Aguardando a curadoria da administração.</p>
+            <?php elseif ($bankState === 'active'): ?>
+              <p><span class="badge badge--success">No banco</span> Outros Docentes já podem reaproveitar estas questões.</p>
+            <?php else: ?>
+              <?php if ($bankState === 'rejected'): ?>
+                <p><span class="badge badge--error">Recusado</span> <?= \Core\View::e($bankStatus['review_note'] ?? '') ?></p>
+              <?php elseif ($bankState === 'archived'): ?>
+                <p><span class="badge badge--neutral">Arquivado</span> Saiu do banco por decisão da administração.</p>
+              <?php else: ?>
+                <p>Compartilhe com os colegas: a administração revisa e inclui no banco institucional.</p>
+              <?php endif; ?>
+              <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/suggest-bank') ?>">
+                <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                <button type="submit" class="btn btn--ghost btn--full">Sugerir para o banco</button>
+              </form>
+            <?php endif; ?>
           </div>
         <?php endif; ?>
       </div>
@@ -296,7 +323,10 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
         <p class="surface-copy">Estrutura usada na correção assistida por IA e no cálculo da nota final.</p>
       </div>
       <?php if ($isDraft): ?>
-        <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>" class="btn btn--primary btn--sm">+ Questão</a>
+        <div class="td-actions">
+          <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions/create') ?>" class="btn btn--primary btn--sm">+ Questão</a>
+          <a href="<?= \Core\app_url('/teacher/bank?exercise=' . $exercise['id']) ?>" class="btn btn--ghost btn--sm">+ Do banco</a>
+        </div>
       <?php endif; ?>
     </div>
 

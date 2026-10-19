@@ -67,6 +67,12 @@ $router->post('/admin/exercises/{id}/reopen', 'AdminExerciseController@reopenExe
 $router->post('/admin/exercises/{id}/publications/{turmaId}/close', 'AdminExerciseController@closeExercisePublication', ['admin']);
 $router->post('/admin/exercises/{id}/publications/{turmaId}/reopen', 'AdminExerciseController@reopenExercisePublication', ['admin']);
 $router->post('/admin/questions/{id}/moderate', 'AdminExerciseController@moderateQuestion', ['admin']);
+$router->get('/admin/bank', 'AdminBankController@index', ['admin']);
+$router->post('/admin/bank/{id}/approve', 'AdminBankController@approve', ['admin']);
+$router->post('/admin/bank/{id}/reject', 'AdminBankController@reject', ['admin']);
+$router->post('/admin/bank/{id}/archive', 'AdminBankController@archive', ['admin']);
+$router->post('/admin/bank/{id}/themes', 'AdminBankController@themes', ['admin']);
+$router->post('/admin/exercises/{id}/add-to-bank', 'AdminBankController@addFromExercise', ['admin']);
 $router->get('/admin/attempts/pending', 'AttemptController@pendingAdmin', ['admin']);
 $router->get('/admin/attempts/{id}/result', 'AttemptController@resultAdmin', ['admin']);
 $router->post('/admin/attempts/{id}/regrade', 'AttemptController@regradeAdmin', ['admin']);
@@ -98,6 +104,11 @@ $router->post('/teacher/exercises/{id}',       'ExerciseController@update', ['te
 $router->post('/teacher/exercises/{id}/complete', 'ExerciseController@complete', ['teacher']);
 $router->post('/teacher/exercises/{id}/activate', 'ExerciseController@activate', ['teacher']);
 $router->post('/teacher/exercises/{id}/delete', 'ExerciseController@destroy', ['teacher']);
+
+// Banco de exercícios (Docente)
+$router->get('/teacher/bank', 'BankController@index', ['teacher']);
+$router->post('/teacher/bank/import', 'BankController@import', ['teacher']);
+$router->post('/teacher/exercises/{id}/suggest-bank', 'BankController@suggest', ['teacher']);
 
 // Questions
 $router->get('/teacher/exercises/{exerciseId}/questions/create', 'QuestionController@create', ['teacher']);

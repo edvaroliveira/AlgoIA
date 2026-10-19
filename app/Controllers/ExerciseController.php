@@ -80,6 +80,7 @@ class ExerciseController
       'maxScore'  => $this->questions->getTotalMaxScore((int) $id),
       'turmas'    => $this->turmas->findByTeacher(Auth::id()),
       'publicationDefaults' => $this->publicationDefaults(),
+      'bankStatus' => (new \App\Models\BankExercise())->latestForExercise((int) $id),
     ]);
   }
 

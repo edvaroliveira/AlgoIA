@@ -124,6 +124,15 @@ depois do login, perde a sessão.
 
 - O Usuário pode enviar uma foto de perfil (JPEG, PNG ou WebP, até 2 MB) e removê-la. O envio tem limite de frequência.
 
+### RF-15 Banco de exercícios
+
+- O Docente cria um Exercício do zero ou parte do Banco de exercícios: na tela "Criar exercício", e também a partir de um Rascunho ("+ Do banco").
+- O banco tem duas abas: **Banco institucional**, com os itens ativos curados pelo Admin, e **Meus exercícios**, com os Exercícios Concluídos ou Publicados do próprio Docente. A busca cobre título, descrição e enunciado das Questões. No banco institucional também há filtro por Tema.
+- **Importar** copia só as Questões marcadas para um Rascunho novo (com título editável) ou para um Rascunho existente do Docente, depois das Questões que ele já tem. Depois disso, o Docente pode excluir Questões e acrescentar novas. A origem nunca muda, e Questões Bloqueadas não são copiadas.
+- O Docente envia uma **Sugestão ao banco** a partir de um Exercício seu Concluído ou Publicado, desde que a Moderação esteja *Aprovado*. Uma Sugestão repetida não duplica.
+- O Admin aprova a Sugestão (definindo os Temas) ou a recusa (com motivo mostrado ao Docente). Ele também pode incluir qualquer Exercício direto no banco, editar Temas e arquivar itens. Só Sugestões podem ser aprovadas. Tudo é auditado.
+- Cada item do banco é uma cópia independente, feita no momento da Sugestão ou da inclusão direta. Apagar o Exercício de origem não afeta o banco. O banco não guarda janela nem Limite de tentativas, que continuam sendo da Publicação (ADR 0003).
+
 ## Requisitos não funcionais
 
 ### RNF-01 Segurança

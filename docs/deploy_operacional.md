@@ -38,6 +38,12 @@ migrations `001`–`022`, removidas da pasta e preservadas na tag
 `schema-baseline-2026-10-19` (`git checkout schema-baseline-2026-10-19 -- database/migrations`
 traz de volta, se algum banco anterior a essa data aparecer).
 
+### Migrations incrementais aplicadas
+
+| Migration | O que faz |
+|---|---|
+| `023_bank_exercises.sql` | Cria as tabelas do Banco de exercicios (`bank_exercises`, `bank_questions`, `bank_themes`, `bank_exercise_themes`). Idempotente (`CREATE TABLE IF NOT EXISTS`). |
+
 ### Mudancas de schema (a partir da linha de base)
 
 Toda mudanca de schema precisa de **duas** coisas no mesmo PR:
