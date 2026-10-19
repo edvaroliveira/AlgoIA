@@ -1,6 +1,6 @@
 # PRD do Sistema IAProg - 2026-05-27
 
-> **Documento histórico (2026-05-27).** A terminologia canônica está em [GLOSSARY.md](../GLOSSARY.md) e as decisões arquiteturais em [docs/adr/](adr/). Em caso de divergência, prevalecem o glossário, os ADRs e o código.
+> **Documento histórico (2026-05-27).** A terminologia canônica está em [GLOSSARY.md](../../GLOSSARY.md) e as decisões arquiteturais em [docs/adr/](../adr/). Em caso de divergência, prevalecem o glossário, os ADRs e o código.
 
 ## Visao do produto
 

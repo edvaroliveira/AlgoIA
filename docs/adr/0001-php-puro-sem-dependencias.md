@@ -5,4 +5,4 @@ O AlgoIA roda em PHP puro com um mini-framework próprio em `core/` e um autoloa
 ## Consequences
 
 - Correções de segurança que uma biblioteca receberia automaticamente precisam ser feitas à mão. Por isso, CSRF, sessão, CSP e throttle de login são código do projeto e são cobertos por `bin/smoke_static.php` e `bin/run_tests.php`.
-- Reavaliar só se o app passar a integrar **vários** serviços HTTP externos. Nesse caso, a duplicação de retry e timeout por integração justificaria `symfony/http-client` ou `guzzlehttp/guzzle`. Detalhes da avaliação em `docs/backlog_arquitetura_2026_07_26.md` (A3).
+- Reavaliar só se o app passar a integrar **vários** serviços HTTP externos. Nesse caso, a duplicação de retry e timeout por integração justificaria `symfony/http-client` ou `guzzlehttp/guzzle`. Detalhes da avaliação em `docs/historico/backlog_arquitetura_2026_07_26.md` (A3).

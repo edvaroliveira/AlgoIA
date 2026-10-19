@@ -161,12 +161,10 @@ Janela e Limite de tentativas ficam na Publicação, não no Exercício ([ADR 00
 - [GLOSSARY.md](GLOSSARY.md) — linguagem do domínio (termos canônicos: Turma, Matrícula, Publicação, Tentativa…)
 - [docs/adr/](docs/adr/) — decisões arquiteturais registradas
 - [docs/spec_sistema_2026_10_17.md](docs/spec_sistema_2026_10_17.md) — especificação técnica e requisitos funcionais (atual)
-- [docs/spec_sistema_2026_05_27.md](docs/spec_sistema_2026_05_27.md) — especificação anterior (histórico)
-- [docs/prd_sistema_2026_05_27.md](docs/prd_sistema_2026_05_27.md) — PRD (histórico)
+
 - [docs/deploy_operacional.md](docs/deploy_operacional.md) — deploy, migrations e operação
-- [docs/smoke_test_multinivel.md](docs/smoke_test_multinivel.md) — plano de smoke test
 - [docs/backlog_auditoria_2026_10_17.md](docs/backlog_auditoria_2026_10_17.md) — auditoria mais recente (AU-01 a AU-11)
-- `docs/auditoria_*` e `docs/backlog_*` — auditorias e backlogs anteriores
+- [docs/historico/](docs/historico/) — SPEC e PRD de 2026-05-27, auditorias, revisões e backlogs anteriores (todos concluídos), e o relato do smoke test multinível
 
 ---
 
