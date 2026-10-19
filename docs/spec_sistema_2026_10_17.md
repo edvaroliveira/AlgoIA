@@ -94,6 +94,7 @@ depois do login, perde a sessão.
 - Cada Resposta é avaliada à luz da Questão e da Resposta de referência. O prompt do sistema fica separado do texto do Aluno.
 - O retorno precisa ser JSON válido com Pontuação, Feedback, indicador de acerto e Motivos de desconto.
 - Resposta vazia recebe Pontuação zero, com o Feedback "Questão não respondida." e Motivos de desconto padrão, sem chamada à IA.
+- Quando a Questão não exige eficiência nem abordagem específica, uma Resposta julgada correta cujos únicos Motivos de desconto sejam ineficiência ou abordagem diferente recebe a Pontuação máxima.
 - A Pontuação da Tentativa é a soma das Pontuações das Respostas. Com todas avaliadas, a Tentativa passa a *Corrigida*.
 - Texto do Aluno com padrão de manipulação gera uma Suspeita de injeção, que guarda só um resumo, não o texto completo.
 

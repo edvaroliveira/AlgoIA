@@ -31,7 +31,33 @@ class OpenAIService
     'pretend you',
     'roleplay as',
     '\\n\\nsystem',
+    // Português: os Alunos escrevem em português (AU-06).
+    'ignore as instruções',
+    'ignore as instrucoes',
+    'ignore todas as',
+    'ignore o gabarito',
+    'desconsidere',
+    'esqueça as instruções',
+    'esqueca as instrucoes',
+    'novas instruções',
+    'novas instrucoes',
+    'prompt do sistema',
+    'nota máxima',
+    'nota maxima',
+    'pontuação máxima',
+    'pontuacao maxima',
+    'atribua nota',
+    'atribua a nota',
+    'atribua a pontuação',
+    'agora você é',
+    'agora voce e',
+    'você agora é',
+    'voce agora e',
+    'finja que',
   ];
+
+  /** Marcadores que delimitam a resposta do Aluno no prompt; o Aluno não pode reproduzi-los (AU-03). */
+  private const ANSWER_MARKER_PATTERN = '/<<<\s*(?:RESPOSTA_ALUNO|FIM_RESPOSTA)\s*>>>/iu';
 
   public function __construct(?Database $db = null)
   {
@@ -158,29 +184,48 @@ PROMPT;
   private function sanitizeInput(string $input): string
   {
     // Remove null bytes and control characters (except \n, \r, \t)
-    return trim(preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $input));
+    $clean = (string) preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $input);
+
+    // Um marcador forjado fecharia o bloco da resposta antes da hora e deixaria o
+    // texto seguinte fora da área que o prompt de sistema manda ignorar.
+    return trim((string) preg_replace(self::ANSWER_MARKER_PATTERN, '[marcador removido]', $clean));
   }
 
   // ── Injection detection ──────────────────────────────────────────────────
 
   private function detectInjection(string $studentAnswer, int $answerId, int $studentId): void
   {
-    $lower = strtolower($studentAnswer);
+    $pattern = $this->matchInjectionPattern($studentAnswer);
+    if ($pattern === null) {
+      return;
+    }
 
+    try {
+      $this->db()->execute(
+        "INSERT INTO injection_logs (answer_id, student_id, flagged_pattern, student_answer)
+                     VALUES (?, ?, ?, ?)",
+        [$answerId, $studentId, $pattern, $this->buildInjectionLogSummary($studentAnswer)]
+      );
+    } catch (\Throwable $e) {
+      error_log('injection_log failed: ' . $e->getMessage());
+    }
+  }
+
+  /** Primeiro padrão de injeção encontrado na resposta, ou null (um registro por Resposta). */
+  private function matchInjectionPattern(string $studentAnswer): ?string
+  {
+    if (preg_match(self::ANSWER_MARKER_PATTERN, $studentAnswer) === 1) {
+      return 'answer_marker';
+    }
+
+    $lower = mb_strtolower($studentAnswer);
     foreach (self::INJECTION_PATTERNS as $pattern) {
       if (str_contains($lower, $pattern)) {
-        try {
-          $this->db()->execute(
-            "INSERT INTO injection_logs (answer_id, student_id, flagged_pattern, student_answer)
-                         VALUES (?, ?, ?, ?)",
-            [$answerId, $studentId, $pattern, $this->buildInjectionLogSummary($studentAnswer)]
-          );
-        } catch (\Throwable $e) {
-          error_log('injection_log failed: ' . $e->getMessage());
-        }
-        break; // one log entry per answer
+        return $pattern;
       }
     }
+
+    return null;
   }
 
   private function buildInjectionLogSummary(string $studentAnswer): string
@@ -272,11 +317,15 @@ PROMPT;
 
     $score    = max(0.0, min($maxScore, (float) $data['score']));
     $feedback = trim(strip_tags((string) $data['feedback']));
-    $correct  = (bool) ($data['correct'] ?? ($score >= $maxScore * 0.6));
+    // Só um booleano de verdade conta: (bool) "false" seria true (AU-07).
+    $correct  = is_bool($data['correct'] ?? null) ? $data['correct'] : ($score >= $maxScore * 0.6);
     $deductionReasons = $this->normalizeDeductionReasons($data['deduction_reasons'] ?? []);
 
+    // Abordagem diferente só vira nota máxima quando a resposta foi julgada correta;
+    // sem isso, uma resposta fraca rotulada só com approach_difference saltava de 0 ao máximo (AU-08).
     if (
-      $score < $maxScore
+      $correct
+      && $score < $maxScore
       && !$this->questionRequiresEfficiencyOrSpecificApproach($questionText, $expectedHint)
       && $this->hasOnlyNonBlockingReasons($deductionReasons)
     ) {
