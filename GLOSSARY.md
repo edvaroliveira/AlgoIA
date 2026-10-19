@@ -152,6 +152,10 @@ _Evitar_: Notificação push, e-mail, Mural
 Lista, para o Aluno, das Publicações abertas e futuras de todas as suas Turmas, ordenadas pelo prazo, com as Tentativas já usadas.
 _Evitar_: Calendário, cronograma
 
+**Prática** (`practice_answers`):
+Treino do Aluno com Questões do Banco de exercícios, fora de Turma e de Publicação, sem valer nota. Cada resposta recebe Correção por IA na hora, com Pontuação, Feedback e Motivos de desconto, dentro de um limite diário de correções. Não gera Tentativa.
+_Evitar_: Simulado, treino livre, Tentativa de prática
+
 **Suspeita de injeção** (`injection_logs`):
 Registro de que uma Resposta continha um padrão de tentativa de manipular a Correção por IA.
 _Evitar_: Fraude, ataque

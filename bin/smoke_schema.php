@@ -27,6 +27,7 @@ $requiredTables = [
   'bank_exercise_themes',
   'score_reviews',
   'notifications',
+  'practice_answers',
 ];
 
 $requiredColumns = [
@@ -41,6 +42,7 @@ $requiredColumns = [
   'bank_themes' => ['id', 'name'],
   'bank_exercise_themes' => ['bank_exercise_id', 'theme_id'],
   'notifications' => ['user_id', 'type', 'title', 'link', 'dedupe_key', 'read_at'],
+  'practice_answers' => ['student_id', 'bank_question_id', 'score', 'max_score', 'feedback', 'deduction_reasons_json'],
   'score_reviews' => ['answer_id', 'status', 'request_message', 'requested_by', 'previous_score', 'new_score', 'justification', 'reviewed_by'],
 ];
 

@@ -131,6 +131,10 @@ $router->post('/teacher/score-reviews/{id}/keep',   'AttemptController@keepScore
 $router->get('/student/dashboard',                  'DashboardController@student', ['student']);
 $router->get('/student/exercises',                  'ExerciseController@studentIndex', ['student']);
 $router->get('/student/agenda',                     'ExerciseController@studentAgenda', ['student']);
+$router->get('/student/pratica',                    'PracticeController@index', ['student']);
+$router->get('/student/pratica/sortear',            'PracticeController@draw', ['student']);
+$router->get('/student/pratica/questao/{id}',       'PracticeController@show', ['student']);
+$router->post('/student/pratica/questao/{id}',      'PracticeController@answer', ['student']);
 $router->get('/student/exercises/{id}',             'ExerciseController@studentShow', ['student']);
 $router->post('/student/exercises/{id}/start',      'AttemptController@start', ['student']);
 $router->post('/student/attempts/{id}/answer',      'AttemptController@saveAnswer', ['student']);
