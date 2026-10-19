@@ -43,6 +43,18 @@ abstract class AdminBaseController
     return $value;
   }
 
+  /**
+   * Única escrita de linha CSV do app: ";" como separador e $escape = ""
+   * (RFC 4180, aspas duplicadas). Sem $escape explícito o fputcsv emite
+   * Deprecated no PHP 8.4+, que vazaria para dentro do arquivo com APP_DEBUG (AU-05).
+   *
+   * @param resource $handle
+   */
+  public static function writeCsvRow($handle, array $cells): void
+  {
+    fputcsv($handle, $cells, ';', '"', '');
+  }
+
   protected function streamCsvDownload(string $filename, array $headers, array $rows, callable $mapper): void
   {
     header('Content-Type: text/csv; charset=UTF-8');
@@ -56,14 +68,14 @@ abstract class AdminBaseController
     }
 
     fwrite($output, "\xEF\xBB\xBF");
-    fputcsv($output, $headers, ';');
+    static::writeCsvRow($output, $headers);
 
     foreach ($rows as $row) {
       $cells = array_map(
         static fn($cell): string => static::csvCell((string) $cell),
         $mapper($row)
       );
-      fputcsv($output, $cells, ';');
+      static::writeCsvRow($output, $cells);
     }
 
     fclose($output);

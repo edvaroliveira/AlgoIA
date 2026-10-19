@@ -327,6 +327,12 @@ foreach ($phpFiles as $file) {
   }
 
   $content = (string) file_get_contents($file->getPathname());
+
+  // AU-05: fputcsv só via AdminBaseController::writeCsvRow (que passa $escape).
+  if ($relative !== 'app/Controllers/AdminBaseController.php' && preg_match('/\bfputcsv\s*\(/', $content)) {
+    $failures[] = "{$relative} chama fputcsv() direto; use AdminBaseController::writeCsvRow()";
+  }
+
   foreach ($deprecatedPatterns as $pattern => $label) {
     if (preg_match($pattern, $content)) {
       $failures[] = "{$relative} usa {$label}";

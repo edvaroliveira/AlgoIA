@@ -41,10 +41,10 @@ class AdminAuditController extends AdminBaseController
     }
 
     fwrite($output, "\xEF\xBB\xBF");
-    fputcsv($output, ['quando', 'ator_nome', 'ator_email', 'ator_role', 'acao', 'entidade', 'entidade_id', 'contexto', 'ip'], ';');
+    static::writeCsvRow($output, ['quando', 'ator_nome', 'ator_email', 'ator_role', 'acao', 'entidade', 'entidade_id', 'contexto', 'ip']);
 
     foreach ($logs as $log) {
-      fputcsv($output, [
+      static::writeCsvRow($output, [
         (string) ($log['created_at']  ?? ''),
         static::csvCell((string) ($log['actor_name']  ?? 'Sistema')),
         static::csvCell((string) ($log['actor_email'] ?? '')),
@@ -54,7 +54,7 @@ class AdminAuditController extends AdminBaseController
         (string) ($log['entity_id']   ?? ''),
         static::csvCell($this->buildAuditContextText($log)),
         static::csvCell((string) ($log['ip_address']  ?? '')),
-      ], ';');
+      ]);
     }
 
     fclose($output);
