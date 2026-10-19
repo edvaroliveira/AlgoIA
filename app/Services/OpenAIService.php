@@ -348,14 +348,7 @@ PROMPT;
     }
 
     $normalized = [];
-    $allowed = [
-      'logic_error',
-      'missing_concept',
-      'contradiction',
-      'inefficiency',
-      'approach_difference',
-      'incomplete_explanation',
-    ];
+    $allowed = \App\Models\DeductionReason::codes();
 
     foreach ($reasons as $reason) {
       if (!is_string($reason)) {

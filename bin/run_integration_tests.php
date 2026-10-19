@@ -1162,6 +1162,26 @@ if (!extension_loaded('curl')) {
       $del = postAs($base, $jarDocenteA, "/teacher/exercises/{$foreignReady['id']}/delete");
       check($del['code'] === 403 && $exists($foreignReady['id']), 'EXC-01: Docente não exclui Exercício de outro Docente (403)');
 
+      // ENG-01 — Aluno vê os Motivos de desconto, em linguagem amigável e com dica de estudo
+      $pdoA->exec("INSERT INTO answers (attempt_id, question_id, student_answer, ai_score, ai_feedback, deduction_reasons_json, evaluated_at)
+                   VALUES ({$attGradedA}, {$qA}, 'Pilha é uma lista.', 1.0, 'Faltou explicar a ordem de saída.',
+                           '[\"missing_concept\", \"logic_error\", \"<script>x</script>\"]', NOW())");
+      $studentResult = httpAs($jarAlunoA, 'GET', "{$base}/student/attempts/{$attGradedA}/result");
+      check(
+        $studentResult['code'] === 200 && str_contains($studentResult['body'], 'O que faltou para a nota máxima'),
+        "ENG-01: Aluno vê o bloco de Motivos de desconto no resultado (recebeu {$studentResult['code']})"
+      );
+      check(
+        str_contains($studentResult['body'], \App\Models\DeductionReason::label('missing_concept'))
+          && str_contains($studentResult['body'], \App\Models\DeductionReason::tip('missing_concept'))
+          && str_contains($studentResult['body'], \App\Models\DeductionReason::label('logic_error')),
+        'ENG-01: cada motivo aparece com rótulo amigável e dica de estudo'
+      );
+      check(!str_contains($studentResult['body'], '<script>x</script>') && !str_contains($studentResult['body'], 'missing_concept'),
+        'ENG-01: códigos internos e motivos desconhecidos não aparecem para o Aluno');
+      $teacherResult = httpAs($jarDocenteA, 'GET', "{$base}/teacher/attempts/{$attGradedA}/result");
+      check(str_contains($teacherResult['body'], \App\Models\DeductionReason::label('logic_error')), 'ENG-01: Docente continua vendo os motivos');
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);
