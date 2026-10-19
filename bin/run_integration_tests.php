@@ -159,6 +159,10 @@ try {
 }
 
 $allTables = [
+  'bank_exercise_themes',
+  'bank_themes',
+  'bank_questions',
+  'bank_exercises',
   'injection_logs',
   'answers',
   'grading_jobs',
@@ -688,7 +692,9 @@ if (!extension_loaded('curl')) {
   $descriptors = [1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
   $serverProcess = proc_open(
     // Mesmo fuso do processo de teste: a janela da Publicação precisa bater com o banco.
-    ['php', '-d', 'date.timezone=' . date_default_timezone_get(), '-S', $host, '-t', ROOT_PATH . '/public', ROOT_PATH . '/public/index.php'],
+    // Mesmas variáveis de ambiente do processo de teste (EGPCS): o servidor filho
+    // precisa falar com o MESMO banco, não com o do .env.
+    ['php', '-d', 'variables_order=EGPCS', '-d', 'date.timezone=' . date_default_timezone_get(), '-S', $host, '-t', ROOT_PATH . '/public', ROOT_PATH . '/public/index.php'],
     $descriptors,
     $pipes,
     ROOT_PATH
@@ -928,6 +934,212 @@ if (!extension_loaded('curl')) {
       }
       check($turmaKey($turmaA['id']) === $turmaA['key'], 'RP-23-03: Chave de acesso não muda em Turma inativa');
       check($enrollmentState() === $before, 'RP-23-03: Matrículas não mudam em Turma inativa');
+
+      // ── Banco de exercícios ──────────────────────────────────────────────
+      $mkExercise = function (int $teacherId, string $title, string $status, array $questionTexts) use ($pdoA): array {
+        $pdoA->exec("INSERT INTO exercises (teacher_id, title, description, status) VALUES ({$teacherId}, " . $pdoA->quote($title) . ", 'Descrição de origem', '{$status}')");
+        $id = (int) $pdoA->lastInsertId();
+        $qids = [];
+        foreach ($questionTexts as $i => $text) {
+          $score = 2.0 + $i;
+          $pdoA->exec("INSERT INTO questions (exercise_id, text, expected_answer_hint, max_score, order_index)
+                       VALUES ({$id}, " . $pdoA->quote($text) . ", " . $pdoA->quote("Ref: {$text}") . ", {$score}, " . ($i + 1) . ")");
+          $qids[] = (int) $pdoA->lastInsertId();
+        }
+        return ['id' => $id, 'questions' => $qids];
+      };
+      $questionsOf = fn(int $exerciseId): array => $pdoA->query(
+        "SELECT text, expected_answer_hint, max_score, order_index FROM questions WHERE exercise_id = {$exerciseId} ORDER BY order_index"
+      )->fetchAll();
+      $draftIdFrom = static function (array $response): int {
+        return preg_match('#/teacher/exercises/(\d+)/questions/create$#', $response['location'], $m) ? (int) $m[1] : 0;
+      };
+
+      // BANCO-01 — Docente importa Questões escolhidas de um Exercício próprio para um Rascunho novo
+      $ownSource = $mkExercise($docenteA['id'], 'Recursão (origem)', 'ready', ['Q1 base', 'Q2 meio', 'Q3 fim']);
+      $originalQuestions = $questionsOf($ownSource['id']);
+      $import = postAs($base, $jarDocenteA, '/teacher/bank/import', [
+        'source' => 'own',
+        'source_id' => $ownSource['id'],
+        'question_ids' => [$ownSource['questions'][0], $ownSource['questions'][2]],
+        'title' => 'Recursão (cópia)',
+      ]);
+      $newDraftId = $draftIdFrom($import);
+      check($import['code'] === 302 && $newDraftId > 0, "BANCO-01: importação redireciona para as Questões do Rascunho novo (recebeu {$import['code']} {$import['location']})");
+      $newDraft = $newDraftId > 0 ? $pdoA->query("SELECT teacher_id, title, status FROM exercises WHERE id = {$newDraftId}")->fetch() : false;
+      check(
+        $newDraft !== false && (int) $newDraft['teacher_id'] === $docenteA['id'] && $newDraft['status'] === 'draft' && $newDraft['title'] === 'Recursão (cópia)',
+        'BANCO-01: Rascunho novo pertence ao Docente, com o título informado'
+      );
+      check(
+        $newDraftId > 0 && $questionsOf($newDraftId) === [
+          ['text' => 'Q1 base', 'expected_answer_hint' => 'Ref: Q1 base', 'max_score' => '2.0', 'order_index' => 1],
+          ['text' => 'Q3 fim', 'expected_answer_hint' => 'Ref: Q3 fim', 'max_score' => '4.0', 'order_index' => 2],
+        ],
+        'BANCO-01: só as Questões marcadas são copiadas, com Resposta de referência e Pontuação, renumeradas'
+      );
+      check($questionsOf($ownSource['id']) === $originalQuestions, 'BANCO-01: Exercício de origem fica intacto');
+      check($auditCount('teacher.bank.import', $newDraftId) === 1, 'BANCO-01: importação é auditada');
+
+      // BANCO-02 — Importar para um Rascunho existente acrescenta depois das Questões que já existem
+      $append = postAs($base, $jarDocenteA, '/teacher/bank/import', [
+        'source' => 'own', 'source_id' => $ownSource['id'], 'exercise_id' => $newDraftId,
+        'question_ids' => [$ownSource['questions'][1]],
+      ]);
+      check($draftIdFrom($append) === $newDraftId, 'BANCO-02: importação para Rascunho existente volta às Questões dele');
+      check(
+        array_column($questionsOf($newDraftId), 'text') === ['Q1 base', 'Q3 fim', 'Q2 meio']
+          && array_column($questionsOf($newDraftId), 'order_index') === [1, 2, 3],
+        'BANCO-02: Questões importadas entram depois das existentes'
+      );
+
+      // BANCO-03 — Negações: nada é copiado
+      $countAll = fn(): int => $countRows('SELECT COUNT(*) FROM questions');
+      $before = $countAll();
+      $foreignDraft = $mkExercise($docenteB['id'], 'Rascunho do Docente B', 'draft', ['QB1']);
+      $r = postAs($base, $jarDocenteA, '/teacher/bank/import', [
+        'source' => 'own', 'source_id' => $ownSource['id'], 'exercise_id' => $foreignDraft['id'],
+        'question_ids' => [$ownSource['questions'][0]],
+      ]);
+      check($r['code'] === 403, "BANCO-03: importar para Rascunho de outro Docente responde 403 (recebeu {$r['code']})");
+
+      $published = $mkExercise($docenteA['id'], 'Publicado do Docente A', 'active', ['QP1']);
+      $r = postAs($base, $jarDocenteA, '/teacher/bank/import', [
+        'source' => 'own', 'source_id' => $ownSource['id'], 'exercise_id' => $published['id'],
+        'question_ids' => [$ownSource['questions'][0]],
+      ]);
+      check($r['code'] === 302 && !str_contains($r['location'], '/questions/create'), 'BANCO-03: importar para Exercício Publicado é recusado');
+
+      $foreignSource = $mkExercise($docenteB['id'], 'Concluído do Docente B', 'ready', ['QB fonte']);
+      $r = postAs($base, $jarDocenteA, '/teacher/bank/import', [
+        'source' => 'own', 'source_id' => $foreignSource['id'], 'question_ids' => $foreignSource['questions'],
+      ]);
+      check($r['code'] === 302 && !str_contains($r['location'], '/questions/create'), 'BANCO-03: "Meus" não aceita Exercício de outro Docente como origem');
+
+      $r = postAs($base, $jarDocenteA, '/teacher/bank/import', [
+        'source' => 'own', 'source_id' => $ownSource['id'], 'question_ids' => [$foreignSource['questions'][0]],
+      ]);
+      check($r['code'] === 302 && !str_contains($r['location'], '/questions/create'), 'BANCO-03: Questão que não pertence à origem é ignorada');
+      check($countAll() === $before + 1 + 1 + 1, 'BANCO-03: nenhuma Questão foi copiada nas tentativas negadas (só as de seed)');
+
+      $blockedSource = $mkExercise($docenteA['id'], 'Com Questão Bloqueada', 'ready', ['Liberada', 'Bloqueada']);
+      $pdoA->exec("UPDATE questions SET admin_review_status = 'blocked' WHERE id = {$blockedSource['questions'][1]}");
+      $r = postAs($base, $jarDocenteA, '/teacher/bank/import', [
+        'source' => 'own', 'source_id' => $blockedSource['id'], 'question_ids' => $blockedSource['questions'], 'title' => 'Sem bloqueada',
+      ]);
+      check(array_column($questionsOf($draftIdFrom($r)), 'text') === ['Liberada'], 'BANCO-03: Questão Bloqueada nunca é copiada');
+
+      $studentBank = postAs($base, $jarAlunoA, '/teacher/bank/import', [
+        'source' => 'own', 'source_id' => $ownSource['id'], 'question_ids' => $ownSource['questions'],
+      ]);
+      check($studentBank['code'] === 302 && str_ends_with($studentBank['location'], '/student/dashboard'), 'BANCO-03: Aluno não usa o banco');
+
+      // BANCO-04 — Docente sugere, Admin aprova com Temas, item aparece no banco e é importado
+      $bankRow = fn(int $sourceExerciseId): array|false => $pdoA->query(
+        "SELECT id, status, review_note, reviewed_by FROM bank_exercises WHERE source_exercise_id = {$sourceExerciseId} ORDER BY id DESC LIMIT 1"
+      )->fetch();
+      $suggestSource = $mkExercise($docenteA['id'], 'Vetores e laços', 'active', ['Some um vetor', 'Inverta um vetor']);
+      $r = postAs($base, $jarDocenteA, "/teacher/exercises/{$suggestSource['id']}/suggest-bank");
+      $suggested = $bankRow($suggestSource['id']);
+      check($r['code'] === 302 && $suggested !== false && $suggested['status'] === 'suggested', 'BANCO-04: Docente sugere Exercício Publicado próprio');
+      check(
+        $suggested !== false && $countRows("SELECT COUNT(*) FROM bank_questions WHERE bank_exercise_id = {$suggested['id']}") === 2,
+        'BANCO-04: a Sugestão guarda cópia das Questões'
+      );
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$suggestSource['id']}/suggest-bank");
+      check($countRows("SELECT COUNT(*) FROM bank_exercises WHERE source_exercise_id = {$suggestSource['id']}") === 1, 'BANCO-04: Sugestão repetida não duplica');
+
+      $r = postAs($base, $jarDocenteA, "/teacher/exercises/{$newDraftId}/suggest-bank");
+      check($bankRow($newDraftId) === false, 'BANCO-04: Rascunho não pode ser sugerido');
+      $r = postAs($base, $jarDocenteA, "/teacher/exercises/{$foreignSource['id']}/suggest-bank");
+      check($r['code'] === 403 && $bankRow($foreignSource['id']) === false, 'BANCO-04: Docente não sugere Exercício de outro Docente (403)');
+      $pdoA->exec("UPDATE exercises SET admin_review_status = 'flagged' WHERE id = {$published['id']}");
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$published['id']}/suggest-bank");
+      check($bankRow($published['id']) === false, 'BANCO-04: Exercício Sinalizado não pode ser sugerido');
+
+      $r = postAs($base, $jarDocenteA, "/admin/bank/{$suggested['id']}/approve", ['themes' => 'Vetores, Laços']);
+      check($r['code'] === 302 && ($bankRow($suggestSource['id'])['status'] ?? '') === 'suggested', 'BANCO-04: Docente não aprova Sugestão');
+      $r = postAs($base, $jarAdmin, "/admin/bank/{$suggested['id']}/approve", ['themes' => 'Vetores, Laços']);
+      $approved = $bankRow($suggestSource['id']);
+      check(
+        $r['code'] === 302 && $approved['status'] === 'active' && (int) $approved['reviewed_by'] === $admin['id']
+          && $auditCount('admin.bank.approve', (int) $suggested['id']) === 1,
+        'BANCO-04: Admin aprova a Sugestão, com auditoria'
+      );
+      check(
+        $countRows("SELECT COUNT(*) FROM bank_exercise_themes bet JOIN bank_themes bt ON bt.id = bet.theme_id
+                    WHERE bet.bank_exercise_id = {$suggested['id']} AND bt.name IN ('Vetores', 'Laços')") === 2,
+        'BANCO-04: Temas definidos na aprovação ficam ligados ao item'
+      );
+
+      $listed = httpAs($jarDocenteB, 'GET', "{$base}/teacher/bank?theme=" . rawurlencode('Vetores'));
+      check($listed['code'] === 200 && str_contains($listed['body'], 'Vetores e laços'), 'BANCO-04: item aprovado aparece no banco filtrado pelo Tema');
+      $other = httpAs($jarDocenteB, 'GET', "{$base}/teacher/bank?theme=" . rawurlencode('Recursão'));
+      check($other['code'] === 200 && !str_contains($other['body'], 'Vetores e laços'), 'BANCO-04: filtro por outro Tema não traz o item');
+
+      $bankQuestionIds = array_map('intval', array_column(
+        $pdoA->query("SELECT id FROM bank_questions WHERE bank_exercise_id = {$suggested['id']} ORDER BY order_index")->fetchAll(), 'id'
+      ));
+      $fromBank = postAs($base, $jarDocenteB, '/teacher/bank/import', [
+        'source' => 'bank', 'source_id' => $suggested['id'], 'question_ids' => [$bankQuestionIds[1]], 'title' => 'Do banco',
+      ]);
+      $bankDraftId = $draftIdFrom($fromBank);
+      check(
+        $bankDraftId > 0 && array_column($questionsOf($bankDraftId), 'text') === ['Inverta um vetor']
+          && (int) $pdoA->query("SELECT teacher_id FROM exercises WHERE id = {$bankDraftId}")->fetchColumn() === $docenteB['id'],
+        'BANCO-04: outro Docente importa do banco institucional para um Rascunho dele'
+      );
+
+      // BANCO-05 — Recusa com motivo, inclusão direta pelo Admin e arquivamento
+      $rejectSource = $mkExercise($docenteA['id'], 'Para recusar', 'ready', ['QR']);
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$rejectSource['id']}/suggest-bank");
+      $toReject = $bankRow($rejectSource['id']);
+      postAs($base, $jarAdmin, "/admin/bank/{$toReject['id']}/reject", ['review_note' => 'Enunciado ambíguo']);
+      $rejected = $bankRow($rejectSource['id']);
+      check($rejected['status'] === 'rejected' && $rejected['review_note'] === 'Enunciado ambíguo', 'BANCO-05: recusa grava o motivo');
+
+      $directSource = $mkExercise($docenteB['id'], 'Incluído pelo Admin', 'ready', ['QD']);
+      postAs($base, $jarAdmin, "/admin/exercises/{$directSource['id']}/add-to-bank", ['themes' => 'Recursão']);
+      check(($bankRow($directSource['id'])['status'] ?? '') === 'active', 'BANCO-05: Admin inclui Exercício direto no banco, já ativo');
+
+      postAs($base, $jarAdmin, "/admin/bank/{$suggested['id']}/archive");
+      $afterArchive = httpAs($jarDocenteB, 'GET', "{$base}/teacher/bank");
+      $r = postAs($base, $jarDocenteB, '/teacher/bank/import', [
+        'source' => 'bank', 'source_id' => $suggested['id'], 'question_ids' => $bankQuestionIds,
+      ]);
+      check(
+        !str_contains($afterArchive['body'], 'Vetores e laços') && !str_contains($r['location'], '/questions/create'),
+        'BANCO-05: item arquivado some do banco e não pode mais ser importado'
+      );
+      postAs($base, $jarAdmin, "/admin/bank/{$toReject['id']}/approve", ['themes' => 'Reabrir']);
+      postAs($base, $jarAdmin, "/admin/bank/{$suggested['id']}/approve", ['themes' => 'Reabrir']);
+      check(
+        ($bankRow($rejectSource['id'])['status'] ?? '') === 'rejected' && ($bankRow($suggestSource['id'])['status'] ?? '') === 'archived',
+        'BANCO-05: só Sugestões podem ser aprovadas (recusado e arquivado não voltam ao banco por "aprovar")'
+      );
+
+      // BANCO-06 — Telas: pontos de entrada e escopo da aba "Meus"
+      $page = fn(string $jar, string $path): array => httpAs($jar, 'GET', "{$base}{$path}");
+      $create = $page($jarDocenteA, '/teacher/exercises/create');
+      check($create['code'] === 200 && str_contains($create['body'], 'Partir do banco') && str_contains($create['body'], 'name="title"'),
+        'BANCO-06: "Criar exercício" oferece começar do zero e partir do banco');
+      $draftPage = $page($jarDocenteA, "/teacher/exercises/{$newDraftId}");
+      check($draftPage['code'] === 200 && str_contains($draftPage['body'], "/teacher/bank?exercise={$newDraftId}"),
+        'BANCO-06: Rascunho oferece importar questões do banco');
+      $readyPage = $page($jarDocenteA, "/teacher/exercises/{$rejectSource['id']}");
+      check($readyPage['code'] === 200 && str_contains($readyPage['body'], 'Enunciado ambíguo') && str_contains($readyPage['body'], 'Sugerir para o banco'),
+        'BANCO-06: Exercício recusado mostra o motivo e permite sugerir de novo');
+      $targetPage = $page($jarDocenteA, "/teacher/bank?exercise={$newDraftId}&tab=own");
+      check($targetPage['code'] === 200 && str_contains($targetPage['body'], 'Adicionar ao Rascunho') && str_contains($targetPage['body'], 'Recursão (origem)'),
+        'BANCO-06: banco em modo "adicionar ao Rascunho" lista os Exercícios próprios');
+      check(!str_contains($targetPage['body'], 'Concluído do Docente B'), 'BANCO-06: aba "Meus" não mostra Exercícios de outro Docente');
+      check($page($jarDocenteA, "/teacher/bank?exercise={$foreignDraft['id']}")['code'] === 403,
+        'BANCO-06: banco não abre em modo "adicionar" para Rascunho de outro Docente (403)');
+      $adminBank = $page($jarAdmin, '/admin/bank?status=rejected');
+      check($adminBank['code'] === 200 && str_contains($adminBank['body'], 'Para recusar'), 'BANCO-06: curadoria do Admin lista os recusados');
+      $adminExercise = $page($jarAdmin, "/admin/exercises/{$ownSource['id']}");
+      check($adminExercise['code'] === 200 && str_contains($adminExercise['body'], 'Adicionar ao banco'), 'BANCO-06: Admin pode incluir Exercício direto no banco');
+      check($page($jarDocenteA, '/admin/bank')['code'] === 302, 'BANCO-06: Docente não acessa a curadoria');
     }
 
     proc_terminate($serverProcess);

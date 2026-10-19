@@ -106,6 +106,22 @@ global $session;
         </div>
       </form>
     </div>
+    <?php if (!$isDraft && $exerciseReviewStatus === 'approved'): ?>
+      <div class="content-note">
+        <strong>Banco de exercícios</strong>
+        <p>Inclui uma cópia deste exercício e das questões no banco institucional, já disponível para todos os Docentes.</p>
+        <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/add-to-bank') ?>" class="form">
+          <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+          <div class="form-group">
+            <label class="form-label" for="exercise-bank-themes">Temas <span class="hint">(separados por vírgula)</span></label>
+            <input id="exercise-bank-themes" name="themes" class="form-input" type="text" maxlength="500" placeholder="Ex.: Recursão, Vetores">
+          </div>
+          <div class="td-actions">
+            <button type="submit" class="btn btn--ghost">Adicionar ao banco</button>
+          </div>
+        </form>
+      </div>
+    <?php endif; ?>
     <div class="meta-grid">
       <div><strong>Status</strong><?= $isDraft ? 'Rascunho' : ($isReady ? 'Pronto' : ($isClosed ? 'Encerrado' : ($isOpen ? 'Aberto' : 'Agendado'))) ?></div>
       <div><strong>Turmas</strong><?= \Core\View::e($exercise['turma_label'] ?? 'Pendente de finalização') ?></div>

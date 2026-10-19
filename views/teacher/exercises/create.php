@@ -17,7 +17,24 @@ global $session;
   </div>
 <?php endif; ?>
 
-<div class="editor-layout">
+<div class="cards-grid cards-grid--feature section" aria-label="Como começar">
+  <article class="card card--feature">
+    <div class="card-body card-body--stack">
+      <strong>Começar do zero</strong>
+      <p class="surface-copy">Defina título e descrição abaixo e cadastre as questões uma a uma.</p>
+      <a href="#form-novo-exercicio" class="btn btn--primary">Preencher o formulário</a>
+    </div>
+  </article>
+  <article class="card card--feature">
+    <div class="card-body card-body--stack">
+      <strong>Partir do banco</strong>
+      <p class="surface-copy">Escolha um exercício do banco institucional ou um seu, marque as questões que quer aproveitar e acrescente novas depois.</p>
+      <a href="<?= \Core\app_url('/teacher/bank') ?>" class="btn btn--ghost">Abrir o banco de exercícios</a>
+    </div>
+  </article>
+</div>
+
+<div class="editor-layout" id="form-novo-exercicio">
   <section class="surface-block editor-main">
     <div class="surface-block__header">
       <div>

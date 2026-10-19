@@ -70,6 +70,24 @@ _Evitar_: Exercício aberto/fechado, liberação
 Quantas Tentativas um Aluno pode iniciar numa Publicação. Zero significa ilimitado.
 _Evitar_: Número de chances
 
+## Banco de exercícios
+
+**Banco de exercícios**:
+Acervo institucional de Exercícios curado pelo Admin, do qual qualquer Docente pode Importar Questões. Cada item é uma cópia independente do Exercício de origem.
+_Evitar_: Biblioteca (já é o nome da lista de Exercícios do Docente), repositório, compartilhados
+
+**Tema**:
+Rótulo definido pelo Admin para classificar itens do Banco de exercícios e filtrá-los.
+_Evitar_: Tag, categoria, assunto
+
+**Sugestão ao banco**:
+Pedido de um Docente para que um Exercício seu, Concluído ou Publicado, entre no Banco de exercícios. O Admin aprova (com Temas) ou recusa (com motivo).
+_Evitar_: Compartilhamento, publicação no banco
+
+**Importar**:
+Copiar Questões escolhidas, do Banco de exercícios ou de um Exercício próprio, para um Rascunho do Docente. A origem nunca muda, e Questões Bloqueadas não são copiadas.
+_Evitar_: Clonar, vincular, reutilizar (para a operação)
+
 ## Moderação
 
 **Moderação** (`admin_review_status`):

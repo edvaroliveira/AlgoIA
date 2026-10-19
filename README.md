@@ -15,6 +15,7 @@ Construída em **PHP puro** (sem framework, sem Composer), com um mini-framework
 - **Três papéis** — Admin, Docente e Aluno, cada um com rotas e autorização próprias, aplicadas no controller e na consulta ao banco.
 - **Turmas e Matrículas** — entrada por Chave de acesso, com aprovação pelo Docente; *Recusar* remove pedido pendente, *Desvincular* remove Aluno já aprovado (de uma Turma ou de todas). Turma inativada pelo Admin bloqueia o acesso dos Alunos e as alterações do Docente.
 - **Exercícios** — Rascunho → Concluído → Publicado. Cada **Publicação** (Exercício × Turma) tem janela e Limite de tentativas próprios.
+- **Banco de exercícios** — o Docente cria do zero ou parte do banco institucional (curado pelo Admin, com Temas) ou dos próprios Exercícios, escolhe quais Questões importar para um Rascunho e acrescenta novas. Docentes sugerem Exercícios; o Admin aprova ou recusa.
 - **Correção por IA** — avaliação automática das respostas via OpenAI, com rubrica por faixa de pontuação e motivos de desconto (`deduction_reasons`).
 - **Fila assíncrona** — o envio do aluno enfileira a correção em `grading_jobs`; um worker processa a fila com retry e recuperação de jobs travados.
 - **Defesa contra prompt injection** — a resposta do Aluno vai isolada em bloco delimitado (marcadores forjados são neutralizados), padrões suspeitos em português e inglês são registrados em `injection_logs` (só um resumo, nunca o texto completo).
@@ -150,7 +151,7 @@ O cadastro público de Docentes **nasce desabilitado**. Um Admin habilita/desabi
 
 ## Modelo de dados (principais tabelas)
 
-`users` · `turmas` · `student_turma` (Matrícula) · `exercises` · `exercise_turmas` (Publicação) · `questions` · `attempts` (Tentativa) · `answers` · `grading_jobs` · `injection_logs` · `audit_logs` · `login_attempts` · `system_settings`
+`users` · `turmas` · `student_turma` (Matrícula) · `exercises` · `exercise_turmas` (Publicação) · `questions` · `attempts` (Tentativa) · `answers` · `grading_jobs` · `injection_logs` · `audit_logs` · `login_attempts` · `system_settings` · `bank_exercises` / `bank_questions` / `bank_themes` (Banco de exercícios)
 
 Janela e Limite de tentativas ficam na Publicação, não no Exercício ([ADR 0003](docs/adr/0003-janela-e-limite-por-publicacao.md)).
 
