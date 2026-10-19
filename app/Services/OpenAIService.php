@@ -396,8 +396,11 @@ PROMPT;
       'complexidade linear',
     ];
 
+    // O indicador precisa começar uma palavra: "coeficientes" não é "eficien…" e
+    // "Absoluto(n)" não é "O(n)". O fim fica livre para casar radicais
+    // ("eficien" → eficiente/eficiência, "otimiz" → otimize/otimização).
     foreach ($explicitIndicators as $indicator) {
-      if (str_contains($content, $indicator)) {
+      if (preg_match('/(?<![\p{L}\p{N}_])' . preg_quote($indicator, '/') . '/u', $content) === 1) {
         return true;
       }
     }

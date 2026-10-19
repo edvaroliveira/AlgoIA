@@ -343,6 +343,26 @@ same(true, $parsed['correct'], 'AU-07: valor não booleano cai na regra da Pontu
 $parsed = $prs->invoke($oai, '{"score": 9, "feedback": "Ok.", "correct": false, "deduction_reasons": ["missing_concept"]}', 10.0, 'Q', 'H');
 same(false, $parsed['correct'], 'AU-07: booleano de verdade é respeitado');
 
+// ── Rigidez: indicadores casam no início de palavra, não dentro de outra ──────
+// "coeficientes" contém "eficien" e "Absoluto(n)" contém "o(n)"; nenhum dos dois
+// pede eficiência ou abordagem específica.
+$strictRule = new ReflectionMethod($oai, 'questionRequiresEfficiencyOrSpecificApproach');
+foreach ([
+  'Leia os coeficientes a, b e c de uma equação do segundo grau.' => false,
+  'Exiba Absoluto(n) para o número lido.' => false,
+  'Calcule o valor máximo(n) da sequência.' => false,
+  'Mostre o resultado(n) final.' => false,
+  'O algoritmo deve ser eficiente para entradas grandes.' => true,
+  'Resolva com complexidade O(n).' => true,
+  'Busque em O(log n) passos.' => true,
+  'Você deve usar o laço PARA.' => true,
+  'Obrigatoriamente, use uma função.' => true,
+  'Otimize a busca.' => true,
+  'Resolva sem ordenar o vetor.' => true,
+] as $text => $expected) {
+  same($expected, $strictRule->invoke($oai, $text, ''), 'Rigidez: "' . $text . '"');
+}
+
 // ── AU-08: promoção à Pontuação máxima só para resposta que o modelo julgou correta ──
 $parsed = $prs->invoke($oai, '{"score": 0, "feedback": "Fraca.", "correct": false, "deduction_reasons": ["approach_difference"]}', 10.0, 'Explique recursão.', 'Caso base.');
 same(0.0, $parsed['score'], 'AU-08: resposta julgada incorreta não é promovida, mesmo só com approach_difference');
