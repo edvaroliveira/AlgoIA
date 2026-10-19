@@ -148,7 +148,7 @@ depois do login, perde a sessão.
 
 - PHP 8.0 ou mais novo, sem dependências externas (ADR 0001). A CI testa no 8.3 e no 8.5, e o smoke estático proíbe as APIs deprecated no 8.5. Funciona em subpasta.
 - Banco de produção: Percona Server 5.7, com `sql_mode` não estrito. A CI de integração usa o mesmo motor e o mesmo modo.
-- Instalação limpa: aplicar só `001_create_tables.sql`. Bases existentes: migrations incrementais na ordem de `docs/deploy_operacional.md`.
+- Instalação limpa: aplicar só `001_create_tables.sql`, a linha de base do schema (2026-10-19). Bases existentes: aplicar em ordem as migrations incrementais posteriores (a partir da `023`), conforme `docs/deploy_operacional.md`.
 
 ## Integrações externas
 

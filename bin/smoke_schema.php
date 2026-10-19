@@ -92,8 +92,8 @@ try {
     }
   }
 
-  // Os índices de desempenho (migration 022) existiam só nos antigos scripts de
-  // reset de teste; uma instalação feita pelo 001 nascia sem eles.
+  // Os índices de desempenho existiam só nos antigos scripts de reset de teste;
+  // até 2026-10-19 uma instalação feita pelo 001 nascia sem eles.
   $requiredIndexes = [
     'attempts'        => ['idx_attempts_student_exercise_turma', 'idx_attempts_status', 'idx_attempts_submitted_at'],
     'grading_jobs'    => ['idx_grading_jobs_status_available'],

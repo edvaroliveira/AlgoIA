@@ -1,5 +1,10 @@
--- IAProg – Migration 001: Schema completo
--- Execute no MySQL/MariaDB do Hostgator via phpMyAdmin ou CLI
+-- AlgoIA – Migration 001: schema completo (linha de base)
+-- Instalação limpa: aplique só este arquivo, via phpMyAdmin ou CLI.
+--
+-- Linha de base de 2026-10-19 (tag schema-baseline-2026-10-19): equivale às
+-- antigas migrations 001–022. Toda mudança de schema daqui em diante precisa de
+-- DUAS coisas: atualizar este arquivo E criar uma migration incremental
+-- idempotente a partir da 023 (para o banco que já existe).
 
 SET FOREIGN_KEY_CHECKS = 0;
 SET NAMES utf8mb4;
