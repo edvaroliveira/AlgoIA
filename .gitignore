@@ -10,3 +10,6 @@ Thumbs.db
 # Dumps de banco nunca vão para o repo (repo público; AU-01). Migrations ficam em database/migrations/.
 database/*.sql
 *.sql.gz
+
+# Configuração local do editor (pode conter auto-approve de comandos); nunca vai ao repo público.
+.vscode/
