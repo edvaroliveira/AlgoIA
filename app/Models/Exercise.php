@@ -429,6 +429,38 @@ class Exercise extends Model
     );
   }
 
+  /**
+   * Agenda do Aluno: cada Publicação aberta ou futura das Turmas ativas em que ele
+   * tem Matrícula ativa, ordenada pelo prazo, com as Tentativas usadas e em andamento.
+   * Mesmos filtros de acesso de findAllForStudent (Moderação e Questão bloqueada).
+   */
+  public function agendaForStudent(int $studentId): array
+  {
+    return $this->db->fetchAll(
+      "SELECT e.id AS exercise_id, e.title, t.name AS turma_name, et.turma_id,
+              et.opens_at, et.closes_at, et.max_attempts,
+              (SELECT COUNT(*) FROM attempts a
+                WHERE a.student_id = st.student_id AND a.exercise_id = e.id AND a.turma_id = et.turma_id
+                  AND a.status IN ('submitted', 'graded')) AS used_attempts,
+              (SELECT COUNT(*) FROM attempts a
+                WHERE a.student_id = st.student_id AND a.exercise_id = e.id AND a.turma_id = et.turma_id
+                  AND a.status = 'in_progress') AS in_progress
+             FROM exercise_turmas et
+             JOIN exercises e ON e.id = et.exercise_id
+             JOIN turmas t ON t.id = et.turma_id AND t.active = 1
+             JOIN student_turma st ON st.turma_id = et.turma_id AND st.student_id = ? AND st.status = 'active'
+             WHERE e.status = 'active'
+               AND COALESCE(e.admin_review_status, 'approved') <> 'blocked'
+               AND NOT EXISTS (
+                 SELECT 1 FROM questions blocked_q
+                 WHERE blocked_q.exercise_id = e.id AND blocked_q.admin_review_status = 'blocked'
+               )
+               AND et.closes_at >= NOW()
+             ORDER BY et.closes_at, e.title",
+      [$studentId]
+    );
+  }
+
   public function findForStudent(int $exerciseId, int $studentId): array|false
   {
     return $this->db->fetchOne(

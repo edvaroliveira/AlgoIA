@@ -159,6 +159,7 @@ try {
 }
 
 $allTables = [
+  'notifications',
   'score_reviews',
   'bank_exercise_themes',
   'bank_themes',
@@ -1235,6 +1236,73 @@ if (!extension_loaded('curl')) {
       check($r['code'] === 302 && $kept['status'] === 'kept' && $scoreOf() === '6.5', 'REV-04: Docente mantém a nota, que não muda');
       check(str_contains(httpAs($jarAlunoA, 'GET', "{$base}/student/attempts/{$attGradedA}/result")['body'], 'O caso de pilha vazia não aparece na resposta.'),
         'REV-04: Aluno vê a resposta do Docente ao pedido');
+
+      // NOT — Avisos dentro do app
+      $notes = fn(int $userId, string $type): array => $pdoA->query(
+        "SELECT title, link, read_at FROM notifications WHERE user_id = {$userId} AND type = " . $pdoA->quote($type) . " ORDER BY id"
+      )->fetchAll();
+      $unread = fn(int $userId): int => (int) $pdoA->query("SELECT COUNT(*) FROM notifications WHERE user_id = {$userId} AND read_at IS NULL")->fetchColumn();
+
+      // NOT-01 — Publicar avisa os Alunos da Turma
+      $notifyEx = $mkExercise($docenteB['id'], 'Exercício para avisar', 'ready', ['QN1']);
+      $r = postAs($base, $jarDocenteB, "/teacher/exercises/{$notifyEx['id']}/activate", [
+        'publication' => [$turmaB['id'] => [
+          'enabled' => '1',
+          'opens_at' => date('Y-m-d\TH:i', time() - 3600),
+          'closes_at' => date('Y-m-d\TH:i', time() + 5 * 3600),
+          'max_attempts' => '2',
+        ]],
+      ]);
+      $published = $notes($alunoB['id'], 'exercise_published');
+      check(
+        count($published) === 1 && str_contains($published[0]['title'], 'Exercício para avisar')
+          && str_ends_with($published[0]['link'], "/student/exercises/{$notifyEx['id']}"),
+        'NOT-01: publicar o Exercício avisa o Aluno da Turma, com link para o Exercício'
+      );
+      check($notes($alunoA['id'], 'exercise_published') === [], 'NOT-01: Aluno de outra Turma não recebe o aviso');
+
+      // NOT-02 — Sino mostra não lidos; a página de avisos lista e marca como lidos
+      $alunoBPage = httpAs($jarAlunoB, 'GET', "{$base}/student/dashboard");
+      check(str_contains($alunoBPage['body'], 'data-unread="' . $unread($alunoB['id']) . '"') && $unread($alunoB['id']) >= 1,
+        'NOT-02: sino no topo mostra a quantidade de avisos não lidos');
+      $deadline = $notes($alunoB['id'], 'deadline');
+      check(count($deadline) === 1 && str_contains($deadline[0]['title'], 'Exercício para avisar'),
+        'NOT-02: prazo em menos de 24 h gera aviso para quem ainda não enviou');
+      httpAs($jarAlunoB, 'GET', "{$base}/student/dashboard");
+      check(count($notes($alunoB['id'], 'deadline')) === 1, 'NOT-02: aviso de prazo não se repete');
+      $inbox = httpAs($jarAlunoB, 'GET', "{$base}/notificacoes");
+      check($inbox['code'] === 200 && str_contains($inbox['body'], 'Exercício para avisar') && $unread($alunoB['id']) === 0,
+        'NOT-02: página de avisos lista os avisos e os marca como lidos');
+
+      // NOT-03 — Correção concluída, Matrícula aprovada e Revisão de nota avisam
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, turma_id, status) VALUES ({$notifyEx['id']}, {$alunoB['id']}, {$turmaB['id']}, 'submitted')");
+      $submittedId = (int) $pdoA->lastInsertId();
+      (new App\Models\Attempt($dbA))->markGraded($submittedId, 1.0);
+      $graded = $notes($alunoB['id'], 'attempt_graded');
+      check(count($graded) === 1 && str_ends_with($graded[0]['link'], "/student/attempts/{$submittedId}/result"),
+        'NOT-03: Tentativa corrigida avisa o Aluno com link para o resultado');
+      (new App\Models\Attempt($dbA))->markGraded($submittedId, 1.0);
+      check(count($notes($alunoB['id'], 'attempt_graded')) === 1, 'NOT-03: corrigir de novo não duplica o aviso');
+      check(count($notes($alunoPendente['id'], 'enrollment_approved')) >= 1, 'NOT-03: Matrícula aprovada avisa o Aluno');
+      check(count($notes($docenteA['id'], 'review_requested')) === 1, 'NOT-03: Pedido de revisão avisa o Docente');
+      check(count($notes($alunoA['id'], 'review_answered')) === 2, 'NOT-03: Revisão de nota e nota mantida avisam o Aluno');
+
+      // AGE-01 — Agenda do Aluno
+      $agenda = httpAs($jarAlunoB, 'GET', "{$base}/student/agenda");
+      check(
+        $agenda['code'] === 200 && str_contains($agenda['body'], 'Exercício para avisar') && str_contains($agenda['body'], 'Vence em menos de 24 h')
+          && str_contains($agenda['body'], '1 de 2 tentativas usadas'),
+        'AGE-01: agenda lista a Publicação com prazo e tentativas usadas'
+      );
+      check(!str_contains($agenda['body'], 'Exercício HTTP A'), 'AGE-01: agenda não mostra Publicações de outras Turmas');
+      $closedEx = $mkExercise($docenteB['id'], 'Exercício já encerrado', 'active', ['QN2']);
+      $pdoA->exec("INSERT INTO exercise_turmas (exercise_id, turma_id, opens_at, closes_at, max_attempts)
+                   VALUES ({$closedEx['id']}, {$turmaB['id']}, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 1 DAY, 1)");
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, turma_id, status) VALUES ({$notifyEx['id']}, {$alunoB['id']}, {$turmaB['id']}, 'submitted')");
+      $agenda = httpAs($jarAlunoB, 'GET', "{$base}/student/agenda");
+      check(!str_contains($agenda['body'], 'Exercício já encerrado'), 'AGE-01: agenda não mostra Publicação encerrada');
+      check(str_contains($agenda['body'], '2 de 2 tentativas usadas'), 'AGE-01: Tentativa Enviada (ainda sem correção) conta como usada');
+      check($page($jarDocenteA, '/student/agenda')['code'] === 302, 'AGE-01: agenda é só do Aluno');
 
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);

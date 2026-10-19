@@ -79,7 +79,8 @@ class TurmaController
   public function approveStudent(string $id, string $studentId): void
   {
     Request::validateCsrf();
-    $this->ensureActiveTurma($this->getOwnedTurma((int) $id), 'teacher.student.approve');
+    $turma = $this->getOwnedTurma((int) $id);
+    $this->ensureActiveTurma($turma, 'teacher.student.approve');
 
     global $session;
 
@@ -90,6 +91,14 @@ class TurmaController
     }
 
     AuditService::record('teacher.student.approve', 'student', (int) $studentId, ['turma_id' => (int) $id]);
+    (new \App\Models\Notification())->notifySafely(
+      (int) $studentId,
+      \App\Models\Notification::TYPE_ENROLLMENT_APPROVED,
+      'Matrícula aprovada na turma ' . ($turma['name'] ?? ''),
+      '/student/dashboard',
+      null,
+      'enrollment:' . (int) $id
+    );
     $session->flash('success', 'Aluno aprovado com sucesso.');
     View::redirect("/teacher/turmas/{$id}");
   }
