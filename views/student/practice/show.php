@@ -40,6 +40,7 @@ $fmt = static fn($n): string => number_format((float) $n, 1, ',', '');
 </section>
 
 <?php if ($history !== []): ?>
+  <div class="section">
   <section class="surface-block">
     <div class="surface-block__body">
       <p><strong>Suas correções</strong></p>
@@ -74,4 +75,5 @@ $fmt = static fn($n): string => number_format((float) $n, 1, ',', '');
       <?php endforeach; ?>
     </div>
   </section>
+  </div>
 <?php endif; ?>

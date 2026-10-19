@@ -42,6 +42,7 @@ $requiredColumns = [
   'bank_themes' => ['id', 'name'],
   'bank_exercise_themes' => ['bank_exercise_id', 'theme_id'],
   'notifications' => ['user_id', 'type', 'title', 'link', 'dedupe_key', 'read_at'],
+  'questions' => ['bank_question_id'],
   'practice_answers' => ['student_id', 'bank_question_id', 'score', 'max_score', 'feedback', 'deduction_reasons_json'],
   'score_reviews' => ['answer_id', 'status', 'request_message', 'requested_by', 'previous_score', 'new_score', 'justification', 'reviewed_by'],
 ];
@@ -115,7 +116,7 @@ try {
     'student_turma'   => ['idx_student_turma_status'],
     'exercises'       => ['idx_exercises_status_review'],
     'exercise_turmas' => ['idx_exercise_turmas_window'],
-    'questions'       => ['idx_questions_exercise_order', 'idx_questions_review'],
+    'questions'       => ['idx_questions_exercise_order', 'idx_questions_review', 'idx_questions_bank_question'],
     'answers'         => ['idx_answers_evaluated_at'],
     'injection_logs'  => ['idx_injection_logs_created_at'],
     'audit_logs'      => ['idx_audit_created_at'],
@@ -142,6 +143,7 @@ try {
   $requiredForeignKeys = [
     ['exercises', 'admin_reviewed_by', 'users'],
     ['questions', 'admin_reviewed_by', 'users'],
+    ['questions', 'bank_question_id', 'bank_questions'],
   ];
 
   foreach ($requiredForeignKeys as [$table, $column, $referencedTable]) {

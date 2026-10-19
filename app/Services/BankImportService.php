@@ -97,7 +97,7 @@ class BankImportService
         [$sourceId, $teacherId, Exercise::STATUS_READY, Exercise::STATUS_ACTIVE]
       );
       $questions = $exercise ? $this->db->fetchAll(
-        "SELECT text, expected_answer_hint, max_score FROM questions
+        "SELECT text, expected_answer_hint, max_score, bank_question_id FROM questions
                WHERE exercise_id = ? AND id IN ({$placeholders}) AND admin_review_status <> 'blocked'
                ORDER BY order_index, id",
         array_merge([$sourceId], $questionIds)
@@ -108,7 +108,7 @@ class BankImportService
         [$sourceId]
       );
       $questions = $exercise ? $this->db->fetchAll(
-        "SELECT text, expected_answer_hint, max_score FROM bank_questions
+        "SELECT text, expected_answer_hint, max_score, id AS bank_question_id FROM bank_questions
                WHERE bank_exercise_id = ? AND id IN ({$placeholders})
                ORDER BY order_index, id",
         array_merge([$sourceId], $questionIds)
@@ -136,9 +136,17 @@ class BankImportService
     $order = $firstOrder;
     foreach ($questions as $question) {
       $this->db->insert(
-        "INSERT INTO questions (exercise_id, text, expected_answer_hint, max_score, order_index)
-               VALUES (?, ?, ?, ?, ?)",
-        [$exerciseId, $question['text'], $question['expected_answer_hint'], $question['max_score'], $order++]
+        "INSERT INTO questions (exercise_id, text, expected_answer_hint, max_score, order_index, bank_question_id)
+               VALUES (?, ?, ?, ?, ?, ?)",
+        [
+          $exerciseId,
+          $question['text'],
+          $question['expected_answer_hint'],
+          $question['max_score'],
+          $order++,
+          // Origem no banco (dá o Tema ao progresso); de um Exercício próprio, herda a dele.
+          $question['bank_question_id'] !== null ? (int) $question['bank_question_id'] : null,
+        ]
       );
     }
   }

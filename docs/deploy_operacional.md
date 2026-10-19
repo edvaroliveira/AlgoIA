@@ -46,6 +46,7 @@ traz de volta, se algum banco anterior a essa data aparecer).
 | `024_score_reviews.sql` | Cria `score_reviews` (Revisao de nota pelo Docente e Pedido de revisao do Aluno). Idempotente. |
 | `025_notifications.sql` | Cria `notifications` (avisos dentro do app). Idempotente. |
 | `026_practice_answers.sql` | Cria `practice_answers` (modo prática). Idempotente. |
+| `027_questions_bank_origin.sql` | `questions.bank_question_id` (origem no banco, para o progresso por Tema) e liga importações antigas por texto idêntico. Idempotente. |
 
 ### Dados de teste (seed 003)
 
