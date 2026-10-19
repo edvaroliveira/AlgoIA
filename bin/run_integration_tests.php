@@ -149,6 +149,7 @@ try {
   applySchema($cfg, ROOT_PATH . '/database/migrations/001_create_tables.sql');
   applySchema($cfg, ROOT_PATH . '/database/migrations/020_admin_reviewed_by_fk.sql');
   applySchema($cfg, ROOT_PATH . '/database/migrations/021_drop_exercise_legacy_window.sql');
+  applySchema($cfg, ROOT_PATH . '/database/migrations/022_performance_indexes.sql');
 } catch (\Throwable $e) {
   echo 'Não foi possível aplicar o schema (' . $e->getMessage() . ") — testes de integração pulados.\n";
   exit(0);
