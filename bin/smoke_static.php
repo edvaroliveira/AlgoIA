@@ -14,7 +14,7 @@ $checks = [
     'file' => 'public/assets/uploads/.htaccess',
     'mustContain' => ['<IfModule mod_php8.c>', 'Require all denied'],
   ],
-  // AU-09/AU-10: nenhuma credencial conhecida em seeds e scripts de reset (repo público).
+  // AU-09/AU-10: nenhuma credencial conhecida nos seeds (repo público).
   [
     'file' => 'database/seeds/002_seed_admin.php',
     'mustContain' => ['seed_password(', 'must_change_password'],
@@ -24,14 +24,6 @@ $checks = [
     'file' => 'database/seeds/001_seed_teacher.php',
     'mustContain' => ['seed_password(', 'must_change_password'],
     'mustNotContain' => ['"  Senha : '],
-  ],
-  [
-    'file' => 'database/migrations/000_reset_test_database_full_schema_hostgator.sql',
-    'mustNotContain' => ['$2y$', 'admin@algoia.test'],
-  ],
-  [
-    'file' => 'database/migrations/000_reset_test_tables_full_schema_hostgator.sql',
-    'mustNotContain' => ['$2y$', 'admin@algoia.test'],
   ],
   [
     'file' => 'app/Models/Turma.php',
@@ -342,6 +334,14 @@ foreach ($phpFiles as $file) {
     if (preg_match($pattern, $content)) {
       $failures[] = "{$relative} usa {$label}";
     }
+  }
+}
+
+// Migrations nunca apagam o banco: scripts de DROP DATABASE ao lado das migrations
+// podiam ser aplicados por engano em produção (removidos em 2026-10-19).
+foreach (glob($root . '/database/migrations/*.sql') ?: [] as $migration) {
+  if (preg_match('/\bDROP\s+DATABASE\b/i', (string) file_get_contents($migration))) {
+    $failures[] = 'database/migrations/' . basename($migration) . ' contém DROP DATABASE';
   }
 }
 

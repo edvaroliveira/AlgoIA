@@ -174,7 +174,7 @@ Massa criada nesta rodada:
 1. Exercício `SMOKE 2026-06-02 - Fluxo Basico`.
 2. 1 questão discursiva com pontuação 10.
 3. Publicação para a turma `Algoritmo 2026.1` com 1 tentativa e janela imediata.
-4. 1 tentativa do aluno `edvar.oliveira@ufra.edu.br`, submetida e enviada para correção.
+4. 1 tentativa do aluno `<aluno de teste>`, submetida e enviada para correção.
 
 Observacoes adicionais:
 
@@ -232,7 +232,7 @@ Observacoes especificas:
 Validacoes adicionais desta rodada:
 
 1. O docente criou o exercício `SMOKE 2026-06-02 - Resultado Corrigido` com 1 questão discursiva de 10 pontos e o publicou para a turma `Algoritmo 2026.1`.
-2. O aluno `edvar.oliveira@ufra.edu.br` iniciou a tentativa `2`, respondeu a questão e submeteu o exercício com sucesso.
+2. O aluno `<aluno de teste>` iniciou a tentativa `2`, respondeu a questão e submeteu o exercício com sucesso.
 3. A tentativa apareceu no painel docente como `Na fila`, com `Correções pendentes: 1` e `Fila de IA: 1`.
 4. O docente acionou `Reprocessar` no dashboard e o sistema retornou `Tentativa reprocessada com sucesso.`.
 5. Após o reprocessamento, o aluno passou a ver `10.0` no painel e o resultado abriu em `/student/attempts/2/result` com nota total, feedback da IA e resposta esperada.
@@ -274,9 +274,9 @@ Impacto observado no smoke:
 | --- | --- | --- | --- |
 | B01 | Admin faz login e cai em `/admin/dashboard` | PASS | Login com `admin@algoia.test` redirecionou para `/admin/dashboard` |
 | B02 | Admin faz logout e volta ao login | PASS | Botao Encerrar sessao retornou para `/login` |
-| B03 | Docente faz login e cai em `/teacher/dashboard` | PASS | Login com `edvaroliveira@gmail.com` redirecionou para `/teacher/dashboard` |
+| B03 | Docente faz login e cai em `/teacher/dashboard` | PASS | Login com `<docente de teste>` redirecionou para `/teacher/dashboard` |
 | B04 | Docente faz logout e volta ao login | PASS | Logout docente retornou para `/login` |
-| B05 | Aluno faz login e cai em `/student/dashboard` | PASS | Login com `edvar.oliveira@ufra.edu.br` redirecionou para `/student/dashboard` |
+| B05 | Aluno faz login e cai em `/student/dashboard` | PASS | Login com `<aluno de teste>` redirecionou para `/student/dashboard` |
 | B06 | Aluno faz logout e volta ao login | PASS | Logout discente retornou para `/login` |
 
 ### Bloco C - CRUD Admin

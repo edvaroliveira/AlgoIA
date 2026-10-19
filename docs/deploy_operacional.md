@@ -67,7 +67,7 @@ Observacao: existem dois arquivos iniciados por `002` por historico do projeto. 
 
 A migration `021` remove de `exercises` as colunas legadas `turma_id`, `opens_at`, `closes_at` e `max_attempts` (e a FK `fk_ex_turma`): janela e limite pertencem a Publicacao (`exercise_turmas`, ver `docs/adr/0003`). Antes de aplicar, confirme `SELECT COUNT(*) FROM attempts WHERE turma_id IS NULL;` igual a 0. Ela e idempotente e pode ser aplicada antes ou depois do deploy do codigo, pois nenhuma versao atual grava essas colunas.
 
-A migration `020` adiciona as FKs `exercises.admin_reviewed_by -> users(id)` e `questions.admin_reviewed_by -> users(id)`, presentes nos schemas de teste (`000_reset_test_*_hostgator.sql`) desde sempre mas ausentes do `001_create_tables.sql` ate esta migration. Se alguma linha tiver `admin_reviewed_by` apontando para um `id` de usuario que nao existe mais, o `ALTER TABLE` falha — nesse caso, zere os valores orfaos antes de reaplicar.
+A migration `020` adiciona as FKs `exercises.admin_reviewed_by -> users(id)` e `questions.admin_reviewed_by -> users(id)`, presentes nos antigos scripts de reset de teste (`000_reset_test_*_hostgator.sql`, removidos em 2026-10-19) desde sempre mas ausentes do `001_create_tables.sql` ate esta migration. Se alguma linha tiver `admin_reviewed_by` apontando para um `id` de usuario que nao existe mais, o `ALTER TABLE` falha — nesse caso, zere os valores orfaos antes de reaplicar.
 
 A migration `019` e **pre-requisito do deploy do codigo**, nao opcional: sem a coluna `users.password_changed_at` toda troca de senha falha com "Unknown column". Aplique a migration antes de publicar os arquivos. Ela tambem preenche a coluna com `created_at` nas linhas existentes, para que o primeiro deploy nao derrube todas as sessoes de uma vez.
 
@@ -215,3 +215,18 @@ requisito duro para desenvolvimento local sem banco.
 No CI, o job `integration` (`.github/workflows/ci.yml`) sobe um servico MySQL
 8.0 dedicado (`algoia_ci`) e roda o script automaticamente, separado do job
 `test` original ("Lint + testes (sem banco)"), que continua sem MySQL.
+
+### Resetar um banco de teste
+
+Os antigos scripts `000_reset_test_*_hostgator.sql` (com `DROP DATABASE`) foram
+removidos: ficavam ao lado das migrations e podiam ser aplicados por engano em
+produção. Para zerar um banco **de teste**, apague todas as tabelas dele (no
+phpMyAdmin: selecionar todas → Eliminar) e aplique só o schema consolidado:
+
+```bash
+mysql -u USER -p BANCO_DE_TESTE < database/migrations/001_create_tables.sql
+```
+
+Depois, crie os usuários iniciais com os seeds (`SEED_*` no `.env`). O
+`bin/smoke_static.php` falha se algum arquivo de `database/migrations/` contiver
+`DROP DATABASE`.
