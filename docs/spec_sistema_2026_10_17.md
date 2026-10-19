@@ -139,6 +139,18 @@ depois do login, perde a sessão.
 - O Aluno pode enviar um Pedido de revisão, com uma explicação, para cada Resposta própria que não tirou a Pontuação máxima, uma única vez por Resposta. Ele acompanha o pedido (aguardando, nota revisada ou nota mantida) e a justificativa do Docente.
 - Os pedidos em aberto aparecem no painel do Docente ("Revisões pedidas"). O Docente responde alterando a nota ou mantendo-a com uma justificativa.
 
+### RF-17 Avisos
+
+- Um sino no topo mostra quantos Avisos não lidos o Usuário tem. A página de avisos lista os 50 mais recentes, com link para o assunto, e marca todos como lidos ao abrir.
+- Geram Aviso: a Publicação de um Exercício (para os Alunos com Matrícula ativa nas Turmas escolhidas), a Tentativa Corrigida (para o Aluno), a Matrícula aprovada (para o Aluno), o Pedido de revisão (para o Docente) e a Revisão de nota, alterando ou mantendo a nota (para o Aluno).
+- Prazo encerrando: ao abrir o app, o Aluno recebe um Aviso para cada Publicação aberta que encerra em até 24 h e na qual ainda não enviou Tentativa. Não há tarefa agendada.
+- O mesmo Aviso não se repete (mesmo evento para o mesmo Usuário). Uma falha ao gerar Aviso nunca impede a ação que o originou nem derruba a página.
+
+### RF-18 Agenda do Aluno
+
+- O Aluno vê, numa única lista, as Publicações abertas e futuras de todas as Turmas ativas em que tem Matrícula ativa, ordenadas pelo prazo, com os mesmos filtros de acesso da lista de Exercícios (Moderação e Questão Bloqueada).
+- Cada item mostra a Turma, o prazo (ou a data de abertura, se futura) e os destaques: "Vence em menos de 24 h", "Ainda não tentado", "Tentativa em andamento" e "X de Y tentativas usadas" (Tentativas Enviadas ou Corrigidas).
+
 ## Requisitos não funcionais
 
 ### RNF-01 Segurança

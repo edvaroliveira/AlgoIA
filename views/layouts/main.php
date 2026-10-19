@@ -43,6 +43,7 @@ $content = $content ?? '';
         <?php else: ?>
           <a href="<?= \Core\app_url('/student/dashboard') ?>" class="nav-link <?= str_contains($currentPath, 'dashboard') ? 'active' : '' ?>">Meu painel</a>
           <a href="<?= \Core\app_url('/student/exercises') ?>" class="nav-link <?= str_contains($currentPath, 'exercises') ? 'active' : '' ?>">Exercícios</a>
+          <a href="<?= \Core\app_url('/student/agenda') ?>" class="nav-link <?= str_contains($currentPath, 'student/agenda') ? 'active' : '' ?>">Agenda</a>
         <?php endif; ?>
       </nav>
 
@@ -60,8 +61,29 @@ $content = $content ?? '';
           $userRole = \Core\Auth::isAdmin() ? 'Administrador' : (\Core\Auth::isTeacher() ? 'Docente' : 'Aluno');
           $userInitial = mb_strtoupper(mb_substr(trim($userName), 0, 1));
           $userAvatar = \Core\Auth::avatar();
+          // Avisos: lembretes de prazo do Aluno são gerados aqui (sem depender de cron).
+          // Falhar ao montar o sino nunca pode derrubar a página.
+          $unreadNotifications = 0;
+          try {
+            $notificationModel = new \App\Models\Notification();
+            if (\Core\Auth::isStudent()) {
+              $notificationModel->generateDeadlineReminders((int) \Core\Auth::id());
+            }
+            $unreadNotifications = $notificationModel->unreadCount((int) \Core\Auth::id());
+          } catch (\Throwable $e) {
+            error_log('notifications bell failed: ' . $e->getMessage());
+          }
           ?>
           <div class="topbar-actions">
+            <a class="topbar-bell <?= $unreadNotifications > 0 ? 'topbar-bell--unread' : '' ?>" href="<?= \Core\app_url('/notificacoes') ?>"
+              data-unread="<?= $unreadNotifications ?>"
+              title="<?= $unreadNotifications > 0 ? $unreadNotifications . ' aviso(s) não lido(s)' : 'Avisos' ?>"
+              aria-label="Avisos<?= $unreadNotifications > 0 ? ': ' . $unreadNotifications . ' não lido(s)' : '' ?>">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1Z"/></svg>
+              <?php if ($unreadNotifications > 0): ?>
+                <span class="topbar-bell__count"><?= $unreadNotifications > 99 ? '99+' : $unreadNotifications ?></span>
+              <?php endif; ?>
+            </a>
             <span class="topbar-card">
               <span class="topbar-dot"></span>
               <span><?= \Core\Auth::isAdmin() ? 'Modo administrativo ativo' : (\Core\Auth::isTeacher() ? 'Modo docente ativo' : 'Modo aluno ativo') ?></span>

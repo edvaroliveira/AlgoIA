@@ -194,6 +194,15 @@ class ExerciseController
       'question_count' => $questions,
     ]);
 
+    (new \App\Models\Notification())->notifyTurmaStudents(
+      array_keys($publicationConfigs),
+      \App\Models\Notification::TYPE_EXERCISE_PUBLISHED,
+      'Novo exercício: ' . ($exercise['title'] ?? ''),
+      '/student/exercises/' . (int) $id,
+      null,
+      'published:' . (int) $id
+    );
+
     global $session;
     $session->flash('success', 'Exercício finalizado e ativado para as turmas selecionadas.');
     View::redirect("/teacher/exercises/{$id}");
@@ -245,6 +254,14 @@ class ExerciseController
     unset($ex);
 
     View::render('student/exercises/index', ['exercises' => $exercises]);
+  }
+
+  /** GET /student/agenda — Publicações abertas e futuras, por prazo. */
+  public function studentAgenda(): void
+  {
+    View::render('student/agenda', [
+      'items' => $this->exercises->agendaForStudent((int) Auth::id()),
+    ]);
   }
 
   public function studentShow(string $id): void

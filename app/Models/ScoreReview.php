@@ -169,6 +169,19 @@ class ScoreReview extends Model
     ) > 0;
   }
 
+  /** Aluno e Tentativa de uma Revisão de nota (para avisar quem pediu). */
+  public function contextOf(int $reviewId): array|false
+  {
+    return $this->db->fetchOne(
+      "SELECT att.student_id, att.id AS attempt_id
+             FROM score_reviews sr
+             JOIN answers ans ON ans.id = sr.answer_id
+             JOIN attempts att ON att.id = ans.attempt_id
+             WHERE sr.id = ?",
+      [$reviewId]
+    );
+  }
+
   /** Revisões da Tentativa agrupadas por Resposta, da mais antiga para a mais recente. */
   public function byAnswerForAttempt(int $attemptId): array
   {

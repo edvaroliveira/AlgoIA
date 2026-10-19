@@ -18,6 +18,9 @@ $router->get('/password/reset', 'AuthController@showResetPassword');
 $router->post('/password/reset', 'AuthController@resetPassword');
 $router->post('/logout',   'AuthController@logout');
 
+// ── Avisos (qualquer usuário autenticado) ──────────────────────────────────────
+$router->get('/notificacoes', 'NotificationController@index', ['auth']);
+
 // ── Conta (perfil próprio) ───────────────────────────────────────────────────
 $router->get('/conta',               'AccountController@show', ['auth']);
 $router->post('/conta/foto',         'AccountController@uploadAvatar', ['auth']);
@@ -127,6 +130,7 @@ $router->post('/teacher/score-reviews/{id}/keep',   'AttemptController@keepScore
 // ── Student ───────────────────────────────────────────────────────────────────
 $router->get('/student/dashboard',                  'DashboardController@student', ['student']);
 $router->get('/student/exercises',                  'ExerciseController@studentIndex', ['student']);
+$router->get('/student/agenda',                     'ExerciseController@studentAgenda', ['student']);
 $router->get('/student/exercises/{id}',             'ExerciseController@studentShow', ['student']);
 $router->post('/student/exercises/{id}/start',      'AttemptController@start', ['student']);
 $router->post('/student/attempts/{id}/answer',      'AttemptController@saveAnswer', ['student']);

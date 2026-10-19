@@ -224,6 +224,12 @@ class AttemptController
         'previous_score' => $answer['ai_score'],
         'new_score' => round((float) $rawScore, 1),
       ]);
+      (new \App\Models\Notification())->notifySafely(
+        (int) $answer['student_id'],
+        \App\Models\Notification::TYPE_REVIEW_ANSWERED,
+        'Sua nota foi revisada pelo Docente',
+        '/student/attempts/' . (int) $answer['attempt_id'] . '/result'
+      );
       $session->flash('success', 'Nota revisada. A nota da tentativa foi recalculada.');
     } catch (\RuntimeException $e) {
       $session->flash('error', $e->getMessage());
@@ -248,6 +254,15 @@ class AttemptController
 
     Auth::ensure($kept);
     AuditService::record('teacher.score.keep', 'score_review', (int) $id, []);
+    $context = $reviews->contextOf((int) $id);
+    if ($context) {
+      (new \App\Models\Notification())->notifySafely(
+        (int) $context['student_id'],
+        \App\Models\Notification::TYPE_REVIEW_ANSWERED,
+        'O Docente respondeu ao seu pedido de revisão',
+        '/student/attempts/' . (int) $context['attempt_id'] . '/result'
+      );
+    }
     $session->flash('success', 'Pedido respondido: nota mantida.');
     View::redirect(\Core\app_safe_path((string) Request::post('return_to', ''), '/teacher/dashboard'));
   }
@@ -265,6 +280,12 @@ class AttemptController
     try {
       $reviews->request((int) $id, (int) Auth::id(), Request::text('message'));
       AuditService::record('student.score.request', 'answer', (int) $id, ['attempt_id' => (int) $answer['attempt_id']]);
+      (new \App\Models\Notification())->notifySafely(
+        (int) $answer['teacher_id'],
+        \App\Models\Notification::TYPE_REVIEW_REQUESTED,
+        'Pedido de revisão de nota',
+        '/teacher/attempts/' . (int) $answer['attempt_id'] . '/result'
+      );
       $session->flash('success', 'Pedido de revisão enviado ao Docente.');
     } catch (\RuntimeException $e) {
       $session->flash('error', $e->getMessage());

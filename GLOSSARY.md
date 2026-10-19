@@ -144,6 +144,14 @@ _Evitar_: Correção manual, override, Reprocessamento (que é refazer a Correç
 Solicitação do Aluno, com uma explicação, para que o Docente reveja a Pontuação de uma Resposta que não tirou a Pontuação máxima. Um por Resposta.
 _Evitar_: Recurso, contestação, reclamação
 
+**Aviso** (`notifications`):
+Mensagem curta dentro do app para um Usuário sobre um acontecimento que pede atenção: Publicação nova, prazo encerrando, Tentativa Corrigida, Matrícula aprovada, Pedido de revisão recebido ou respondido. Fica não lido até o Usuário abrir a página de avisos.
+_Evitar_: Notificação push, e-mail, Mural
+
+**Agenda**:
+Lista, para o Aluno, das Publicações abertas e futuras de todas as suas Turmas, ordenadas pelo prazo, com as Tentativas já usadas.
+_Evitar_: Calendário, cronograma
+
 **Suspeita de injeção** (`injection_logs`):
 Registro de que uma Resposta continha um padrão de tentativa de manipular a Correção por IA.
 _Evitar_: Fraude, ataque

@@ -35,6 +35,22 @@ class Attempt extends Model
 
     if ($rows === 0) {
       error_log("markGraded: attempt {$attemptId} not in submitted state — update skipped.");
+      return;
+    }
+
+    $attempt = $this->db->fetchOne(
+      "SELECT a.student_id, e.title FROM attempts a JOIN exercises e ON e.id = a.exercise_id WHERE a.id = ?",
+      [$attemptId]
+    );
+    if ($attempt) {
+      (new Notification($this->db))->notifySafely(
+        (int) $attempt['student_id'],
+        Notification::TYPE_ATTEMPT_GRADED,
+        'Correção concluída: ' . $attempt['title'],
+        '/student/attempts/' . $attemptId . '/result',
+        'Sua tentativa foi corrigida. Veja a nota e o que faltou para a nota máxima.',
+        'graded:' . $attemptId
+      );
     }
   }
 

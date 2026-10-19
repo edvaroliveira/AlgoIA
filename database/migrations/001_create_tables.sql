@@ -279,6 +279,24 @@ CREATE TABLE IF NOT EXISTS score_reviews (
     CONSTRAINT fk_score_reviews_reviewed_by FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ── Avisos ──────────────────────────────────────────────────────────────────
+-- Avisos dentro do app (sino no topo). dedupe_key evita repetir o mesmo aviso
+-- para o mesmo usuário (ex.: prazo encerrando, correção concluída).
+CREATE TABLE IF NOT EXISTS notifications (
+    id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT UNSIGNED NOT NULL,
+    type       VARCHAR(40)  NOT NULL,
+    title      VARCHAR(200) NOT NULL,
+    body       VARCHAR(500) NULL,
+    link       VARCHAR(255) NULL,
+    dedupe_key VARCHAR(120) NULL,
+    read_at    DATETIME     NULL,
+    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_notifications_user_read (user_id, read_at),
+    UNIQUE KEY uk_notifications_dedupe (user_id, dedupe_key),
+    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ── Configurações ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS system_settings (
     id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
