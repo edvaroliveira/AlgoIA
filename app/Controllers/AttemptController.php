@@ -254,7 +254,6 @@ class AttemptController
     $usedTries  = $attemptTurmaId !== null ? $this->attempts->countUsedAttempts((int) $attempt['student_id'], (int) $attempt['exercise_id'], $attemptTurmaId) : 0;
     $maxTries   = (int) ($attempt['max_attempts'] ?? 0);
     $showReferenceAnswer = $internalReview || $isClosed || ($maxTries > 0 && $usedTries >= $maxTries);
-    $showDeductionReasons = $internalReview;
     $resultBackUrl = $internalReview ? $internalBasePath . (int) $attempt['exercise_id'] : "/student/exercises/{$attempt['exercise_id']}";
     $resultAnswerLabel = $internalReview ? 'Resposta do aluno:' : 'Sua resposta:';
 
@@ -265,7 +264,7 @@ class AttemptController
       'maxScore',
       'bestScore',
       'showReferenceAnswer',
-      'showDeductionReasons',
+      'internalReview',
       'resultBackUrl',
       'resultAnswerLabel'
     ));

@@ -4,17 +4,9 @@ $bestScore = $bestScore ?? null;
 $maxScore = $maxScore ?? 0;
 $answers = $answers ?? [];
 $showReferenceAnswer = $showReferenceAnswer ?? false;
-$showDeductionReasons = $showDeductionReasons ?? false;
+$internalReview = $internalReview ?? false;
 $resultBackUrl = $resultBackUrl ?? '/student/exercises/' . ($attempt['exercise_id'] ?? 0);
 $resultAnswerLabel = $resultAnswerLabel ?? 'Sua resposta:';
-$deductionLabels = [
-  'logic_error' => 'Erro de lógica',
-  'missing_concept' => 'Conceito ausente',
-  'contradiction' => 'Contradição',
-  'inefficiency' => 'Ineficiência',
-  'approach_difference' => 'Diferença de abordagem',
-  'incomplete_explanation' => 'Explicação incompleta',
-];
 $pageTitle = 'Resultado — ' . ($attempt['exercise_title'] ?? 'Exercício');
 $isBest    = $bestScore !== null
   && isset($attempt['total_score'])
@@ -100,20 +92,29 @@ $isBest    = $bestScore !== null
       <?php endif; ?>
 
       <?php
-        $deductionReasons = [];
-        if ($showDeductionReasons && !empty($ans['deduction_reasons_json'])) {
-          $decodedReasons = json_decode((string) $ans['deduction_reasons_json'], true);
-          $deductionReasons = is_array($decodedReasons) ? array_values(array_filter($decodedReasons, 'is_string')) : [];
-        }
+        // Motivos de desconto: para o Aluno, só quando não tirou a nota máxima, com dica de estudo.
+        $deductionReasons = \App\Models\DeductionReason::fromJson($ans['deduction_reasons_json'] ?? null);
+        $lostPoints = isset($ans['ai_score']) && (float) $ans['ai_score'] < (float) $ans['max_score'];
       ?>
-      <?php if ($showDeductionReasons && !empty($deductionReasons)): ?>
+      <?php if ($deductionReasons !== [] && ($internalReview || $lostPoints)): ?>
         <div class="feedback-block feedback-block--err">
-          <strong>Motivos de desconto:</strong>
-          <p>
-            <?php foreach ($deductionReasons as $reason): ?>
-              <span class="badge badge--warning"><?= \Core\View::e($deductionLabels[$reason] ?? $reason) ?></span>
-            <?php endforeach; ?>
-          </p>
+          <strong><?= $internalReview ? 'Motivos de desconto:' : 'O que faltou para a nota máxima:' ?></strong>
+          <?php if ($internalReview): ?>
+            <p>
+              <?php foreach ($deductionReasons as $reason): ?>
+                <span class="badge badge--warning"><?= \Core\View::e(\App\Models\DeductionReason::label($reason)) ?></span>
+              <?php endforeach; ?>
+            </p>
+          <?php else: ?>
+            <ul class="deduction-list">
+              <?php foreach ($deductionReasons as $reason): ?>
+                <li>
+                  <strong><?= \Core\View::e(\App\Models\DeductionReason::label($reason)) ?></strong>
+                  <span><?= \Core\View::e(\App\Models\DeductionReason::tip($reason)) ?></span>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php endif; ?>
         </div>
       <?php endif; ?>
 

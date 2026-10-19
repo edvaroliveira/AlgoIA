@@ -107,7 +107,7 @@ depois do login, perde a sessão.
 
 - O Aluno só vê o resultado de uma Tentativa *Corrigida*, e apenas das próprias Tentativas.
 - A Resposta de referência só aparece ao Aluno depois do encerramento da Publicação ou quando ele esgota o Limite de tentativas.
-- Os Motivos de desconto aparecem para Docente e Admin. Para o Aluno aparecem a Pontuação e o Feedback.
+- O Aluno vê a Pontuação, o Feedback e, nas Respostas sem Pontuação máxima, os Motivos de desconto em linguagem amigável, cada um com uma dica de estudo. Docente e Admin veem os Motivos de desconto de todas as Respostas.
 
 ### RF-12 Moderação
 
