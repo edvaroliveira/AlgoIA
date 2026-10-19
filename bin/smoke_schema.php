@@ -92,9 +92,19 @@ try {
     }
   }
 
+  // Os índices de desempenho (migration 022) existiam só nos antigos scripts de
+  // reset de teste; uma instalação feita pelo 001 nascia sem eles.
   $requiredIndexes = [
-    'attempts'     => ['idx_attempts_student_exercise_turma'],
-    'grading_jobs' => ['idx_grading_jobs_status_available'],
+    'attempts'        => ['idx_attempts_student_exercise_turma', 'idx_attempts_status', 'idx_attempts_submitted_at'],
+    'grading_jobs'    => ['idx_grading_jobs_status_available'],
+    'users'           => ['idx_users_role_status', 'idx_users_registration_source'],
+    'student_turma'   => ['idx_student_turma_status'],
+    'exercises'       => ['idx_exercises_status_review'],
+    'exercise_turmas' => ['idx_exercise_turmas_window'],
+    'questions'       => ['idx_questions_exercise_order', 'idx_questions_review'],
+    'answers'         => ['idx_answers_evaluated_at'],
+    'injection_logs'  => ['idx_injection_logs_created_at'],
+    'audit_logs'      => ['idx_audit_created_at'],
   ];
 
   foreach ($requiredIndexes as $table => $indexes) {

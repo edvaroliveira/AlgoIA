@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS users (
     created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_users_password_reset_expires (password_reset_expires_at),
+    INDEX idx_users_role_status (role, status),
+    INDEX idx_users_registration_source (registration_source),
     CONSTRAINT fk_users_approved_by FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -48,6 +50,7 @@ CREATE TABLE IF NOT EXISTS student_turma (
     status     ENUM('pending','active') NOT NULL DEFAULT 'pending',
     joined_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_student_turma (student_id, turma_id),
+    INDEX idx_student_turma_status (status),
     CONSTRAINT fk_st_student FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_st_turma   FOREIGN KEY (turma_id)   REFERENCES turmas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -65,6 +68,7 @@ CREATE TABLE IF NOT EXISTS exercises (
     admin_reviewed_by INT UNSIGNED NULL,
     created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_exercises_status_review (status, admin_review_status),
     CONSTRAINT fk_ex_teacher FOREIGN KEY (teacher_id) REFERENCES users(id),
     CONSTRAINT fk_ex_admin_reviewed_by FOREIGN KEY (admin_reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -76,6 +80,7 @@ CREATE TABLE IF NOT EXISTS exercise_turmas (
     closes_at   DATETIME     NOT NULL,
     max_attempts INT         NOT NULL DEFAULT 1 COMMENT '0 = ilimitado',
     PRIMARY KEY (exercise_id, turma_id),
+    INDEX idx_exercise_turmas_window (opens_at, closes_at),
     CONSTRAINT fk_ex_turmas_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
     CONSTRAINT fk_ex_turmas_turma    FOREIGN KEY (turma_id)    REFERENCES turmas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -93,6 +98,8 @@ CREATE TABLE IF NOT EXISTS questions (
     admin_reviewed_at    DATETIME NULL,
     admin_reviewed_by    INT UNSIGNED NULL,
     created_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_questions_exercise_order (exercise_id, order_index),
+    INDEX idx_questions_review (admin_review_status),
     CONSTRAINT fk_q_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
     CONSTRAINT fk_q_admin_reviewed_by FOREIGN KEY (admin_reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -109,6 +116,8 @@ CREATE TABLE IF NOT EXISTS attempts (
     status       ENUM('in_progress','submitted','graded') NOT NULL DEFAULT 'in_progress',
     INDEX idx_attempts_turma (turma_id),
     INDEX idx_attempts_student_exercise_turma (student_id, exercise_id, turma_id),
+    INDEX idx_attempts_status (status),
+    INDEX idx_attempts_submitted_at (submitted_at),
     CONSTRAINT fk_att_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
     CONSTRAINT fk_att_student  FOREIGN KEY (student_id)  REFERENCES users(id),
     CONSTRAINT fk_attempts_turma FOREIGN KEY (turma_id) REFERENCES turmas(id) ON DELETE SET NULL
@@ -143,6 +152,7 @@ CREATE TABLE IF NOT EXISTS answers (
     deduction_reasons_json JSON NULL,
     evaluated_at   DATETIME     NULL,
     UNIQUE KEY uk_answer (attempt_id, question_id),
+    INDEX idx_answers_evaluated_at (evaluated_at),
     CONSTRAINT fk_ans_attempt  FOREIGN KEY (attempt_id)  REFERENCES attempts(id) ON DELETE CASCADE,
     CONSTRAINT fk_ans_question FOREIGN KEY (question_id) REFERENCES questions(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -156,6 +166,7 @@ CREATE TABLE IF NOT EXISTS injection_logs (
     student_answer  TEXT         NOT NULL,
     created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_injection_logs_answer (answer_id),
+    INDEX idx_injection_logs_created_at (created_at),
     CONSTRAINT fk_inj_answer FOREIGN KEY (answer_id) REFERENCES answers(id) ON DELETE SET NULL,
     CONSTRAINT fk_inj_student FOREIGN KEY (student_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -175,6 +186,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     INDEX idx_audit_actor (actor_user_id),
     INDEX idx_audit_entity (entity_type, entity_id),
     INDEX idx_audit_action (action),
+    INDEX idx_audit_created_at (created_at),
     CONSTRAINT fk_audit_actor_user FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

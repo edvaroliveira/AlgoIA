@@ -54,7 +54,7 @@ Construída em **PHP puro** (sem framework, sem Composer), com um mini-framework
 ├── routes/web.php      # Definição explícita de rotas
 ├── config/             # app.php, database.php, openai.php
 ├── database/
-│   ├── migrations/     # Schema consolidado (001) + incrementais idempotentes (002–021)
+│   ├── migrations/     # Schema consolidado (001) + incrementais idempotentes (002–022)
 │   └── seeds/          # Seeds de Docente e Admin (senha obrigatória via .env)
 ├── bin/                # Worker da fila, runners de teste e smoke tests
 ├── views/              # Templates por perfil (admin/teacher/student/auth)
@@ -100,7 +100,7 @@ Construída em **PHP puro** (sem framework, sem Composer), com um mini-framework
    ```bash
    mysql -u USER -p SEU_BANCO < database/migrations/001_create_tables.sql
    ```
-   > Instalação limpa: aplique **apenas** o `001`. As migrations `002`–`021` existem só para atualizar bases antigas. Detalhes em [docs/deploy_operacional.md](docs/deploy_operacional.md).
+   > Instalação limpa: aplique **apenas** o `001`. As migrations `002`–`022` existem só para atualizar bases antigas. Detalhes em [docs/deploy_operacional.md](docs/deploy_operacional.md).
 
 3. **Popular usuários iniciais** (professor/admin). Defina antes `SEED_TEACHER_*` e `SEED_ADMIN_*` no `.env`. Não há senha padrão: os seeds recusam senha vazia, o placeholder do `.env.example` ou senha fraca, e marcam troca obrigatória no primeiro acesso.
    ```bash
