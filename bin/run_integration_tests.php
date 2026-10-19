@@ -1147,6 +1147,57 @@ if (!extension_loaded('curl')) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SEED-ALG — seed do banco de algoritmos (300 Questões) como processo real
+// ═══════════════════════════════════════════════════════════════════════════
+// Fica depois dos testes HTTP: os Temas do seed (ex.: "Vetores") encheriam a
+// primeira página dos filtros usados pelos cenários BANCO-0x.
+
+$runSeed = static function (array $args): array {
+  $cmd = array_merge(
+    [PHP_BINARY, '-d', 'variables_order=EGPCS', ROOT_PATH . '/database/seeds/003_seed_banco_algoritmos.php'],
+    $args
+  );
+  $proc = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, ROOT_PATH);
+  $out = stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]);
+  fclose($pipes[1]);
+  fclose($pipes[2]);
+  return ['code' => proc_close($proc), 'output' => $out];
+};
+
+$pdoA->exec("INSERT INTO users (name, email, password_hash, role, status) VALUES ('Docente Seed', 'docente.seed." . bin2hex(random_bytes(3)) . "@test.local', 'x', 'teacher', 'active')");
+$seedTeacherId = (int) $pdoA->lastInsertId();
+$seedBankCount = fn(): int => (int) $pdoA->query("SELECT COUNT(*) FROM bank_exercises WHERE status = 'active' AND title LIKE '% — Lista %'")->fetchColumn();
+$seedOwnCount  = fn(): int => (int) $pdoA->query("SELECT COUNT(*) FROM exercises WHERE teacher_id = {$seedTeacherId} AND status = 'ready'")->fetchColumn();
+
+$bad = $runSeed(['--teacher-id=999999']);
+check($bad['code'] !== 0 && $seedBankCount() === 0, 'SEED-ALG: Docente inexistente é recusado sem criar nada');
+
+$first = $runSeed(["--teacher-id={$seedTeacherId}"]);
+check($first['code'] === 0, 'SEED-ALG: seed termina com sucesso (' . trim(substr($first['output'], -160)) . ')');
+check($seedBankCount() === 60, 'SEED-ALG: 60 Exercícios ativos no banco institucional (obtido ' . $seedBankCount() . ')');
+check(
+  (int) $pdoA->query("SELECT COUNT(*) FROM bank_questions bq JOIN bank_exercises be ON be.id = bq.bank_exercise_id WHERE be.title LIKE '% — Lista %'")->fetchColumn() === 300,
+  'SEED-ALG: 300 Questões no banco institucional'
+);
+check(
+  (int) $pdoA->query("SELECT COUNT(DISTINCT bt.name) FROM bank_themes bt JOIN bank_exercise_themes bet ON bet.theme_id = bt.id
+                      WHERE bt.name IN ('Variáveis', 'Estruturas de Decisão', 'Estruturas de Repetição', 'Vetores', 'Matrizes', 'Modularização')")->fetchColumn() === 6,
+  'SEED-ALG: os 6 tópicos viram Temas do banco'
+);
+check(
+  $seedOwnCount() === 60
+    && (int) $pdoA->query("SELECT COUNT(*) FROM questions q JOIN exercises e ON e.id = q.exercise_id WHERE e.teacher_id = {$seedTeacherId}")->fetchColumn() === 300,
+  'SEED-ALG: 60 Exercícios Concluídos (300 Questões) na aba "Meus" do Docente'
+);
+check(
+  (int) $pdoA->query("SELECT COUNT(DISTINCT max_score) FROM questions q JOIN exercises e ON e.id = q.exercise_id WHERE e.teacher_id = {$seedTeacherId}")->fetchColumn() === 3,
+  'SEED-ALG: Pontuações 1, 2 e 3 presentes'
+);
+
+$again = $runSeed(["--teacher-id={$seedTeacherId}"]);
+check($again['code'] === 0 && $seedBankCount() === 60 && $seedOwnCount() === 60, 'SEED-ALG: rodar de novo não duplica nada');
+
 // ── Limpeza ──────────────────────────────────────────────────────────────
 $pdoA->exec('SET FOREIGN_KEY_CHECKS = 0');
 foreach ($allTables as $t) {
