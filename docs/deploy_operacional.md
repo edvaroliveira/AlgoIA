@@ -29,61 +29,42 @@ arquivos que não são `.php` (um GET em `.php` executaria o script):
 
 ### Instalacao limpa
 
-Para um ambiente novo, use o schema consolidado:
-
 1. Criar o banco vazio com charset `utf8mb4`.
 2. Executar `database/migrations/001_create_tables.sql`.
-3. Nao executar as migrations incrementais `002` a `022` em seguida, pois elas existem para atualizar bases antigas.
 
-O arquivo `001_create_tables.sql` contem o schema atual consolidado, incluindo auditoria, configuracoes, cadastro docente, contexto de turma em tentativas, reset por token e motivos de desconto da IA.
+O `001_create_tables.sql` e a **linha de base** do schema (2026-10-19): contem
+o schema completo, inclusive indices e chaves estrangeiras. Equivale as antigas
+migrations `001`–`022`, removidas da pasta e preservadas na tag
+`schema-baseline-2026-10-19` (`git checkout schema-baseline-2026-10-19 -- database/migrations`
+traz de volta, se algum banco anterior a essa data aparecer).
+
+### Mudancas de schema (a partir da linha de base)
+
+Toda mudanca de schema precisa de **duas** coisas no mesmo PR:
+
+1. Atualizar o `001_create_tables.sql` (instalacao limpa).
+2. Criar uma migration incremental **idempotente**, numerada a partir da `023`
+   (`023_descricao.sql`, `024_...`), para o banco que ja existe. Use o padrao de
+   verificar em `information_schema` antes de `ALTER` (`PREPARE`/`EXECUTE`).
+
+O `bin/smoke_schema.php` deve passar tanto num banco criado so pelo `001`
+quanto num banco atualizado pelas incrementais. O runner de integracao aplica o
+`001` e, em seguida, todas as incrementais da pasta, em ordem.
 
 ### Atualizacao de base existente
 
-Para um ambiente que ja foi criado com schema antigo, nao reexecute `001_create_tables.sql`. Aplique as migrations incrementais ainda nao executadas, nesta ordem:
-
-1. `002_create_audit_logs.sql`
-2. `002_exercise_activation_workflow.sql`
-3. `003_exercise_publication_by_turma.sql`
-4. `004_fix_attempts_exercise_delete_cascade.sql`
-5. `005_add_admin_role.sql`
-6. `006_add_admin_review_flags.sql`
-7. `007_attempt_turma_context.sql`
-8. `008_user_must_change_password.sql`
-9. `009_password_reset_tokens.sql`
-10. `010_teacher_registration.sql`
-11. `011_answers_deduction_reasons.sql`
-12. `012_user_registration_source.sql`
-13. `013_login_attempts.sql`
-14. `014_grading_jobs.sql`
-15. `015_fix_exercises_turma_fk.sql`
-16. `016_user_avatar.sql`
-17. `017_grading_jobs_worker_id.sql`
-18. `018_attempts_start_index.sql`
-19. `019_users_password_changed_at.sql`
-20. `020_admin_reviewed_by_fk.sql`
-21. `021_drop_exercise_legacy_window.sql`
-22. `022_performance_indexes.sql`
-
-Observacao: existem dois arquivos iniciados por `002` por historico do projeto. A ordem acima e a referencia oficial.
-
-A migration `022` cria 12 indices de desempenho (status, datas de Auditoria e de `injection_logs`, janela das Publicacoes, Questoes por Exercicio, moderacao) que existiam so nos antigos scripts de reset de teste: bancos criados pelo `001` antes de 2026-10-19 nasciam sem eles. E idempotente e pode ser aplicada a qualquer momento.
-
-A migration `021` remove de `exercises` as colunas legadas `turma_id`, `opens_at`, `closes_at` e `max_attempts` (e a FK `fk_ex_turma`): janela e limite pertencem a Publicacao (`exercise_turmas`, ver `docs/adr/0003`). Antes de aplicar, confirme `SELECT COUNT(*) FROM attempts WHERE turma_id IS NULL;` igual a 0. Ela e idempotente e pode ser aplicada antes ou depois do deploy do codigo, pois nenhuma versao atual grava essas colunas.
-
-A migration `020` adiciona as FKs `exercises.admin_reviewed_by -> users(id)` e `questions.admin_reviewed_by -> users(id)`, presentes nos antigos scripts de reset de teste (`000_reset_test_*_hostgator.sql`, removidos em 2026-10-19) desde sempre mas ausentes do `001_create_tables.sql` ate esta migration. Se alguma linha tiver `admin_reviewed_by` apontando para um `id` de usuario que nao existe mais, o `ALTER TABLE` falha — nesse caso, zere os valores orfaos antes de reaplicar.
-
-A migration `019` e **pre-requisito do deploy do codigo**, nao opcional: sem a coluna `users.password_changed_at` toda troca de senha falha com "Unknown column". Aplique a migration antes de publicar os arquivos. Ela tambem preenche a coluna com `created_at` nas linhas existentes, para que o primeiro deploy nao derrube todas as sessoes de uma vez.
-
-A migration `015` recria a FK `fk_ex_turma` com `ON DELETE SET NULL`, permitindo excluir turma com exercicio referenciado sem erro. Esse comportamento ja vem no schema consolidado `001` para instalacoes limpas; a `015` corrige apenas bases criadas com a versao antiga da `001`.
-
-As migrations `010`, `011`, `012`, `013` e `014` usam verificacoes ou criacao idempotente para evitar erro quando uma coluna, indice, chave estrangeira ou tabela ja existir. Ainda assim, migrations historicas anteriores devem ser aplicadas uma unica vez e na ordem indicada.
+Aplique, em ordem, as migrations incrementais com numero maior que o da ultima
+ja aplicada nesse banco. Nao reexecute o `001` esperando que ele altere tabelas
+existentes: ele usa `CREATE TABLE IF NOT EXISTS` e nao muda tabela que ja existe.
+O banco de teste do HostGator foi conferido em 2026-10-19 e esta identico a
+linha de base.
 
 Antes de atualizar uma base de producao:
 
 1. Fazer backup do banco.
-2. Confirmar quais migrations ja foram aplicadas.
-3. Aplicar somente as migrations pendentes.
-4. Se a base recebeu ajustes manuais, validar colunas existentes antes de executar arquivos antigos com `ADD COLUMN`.
+2. Confirmar qual foi a ultima migration incremental aplicada (a linha de base equivale a `022`).
+3. Aplicar somente as migrations pendentes, em ordem.
+4. Se a base recebeu ajustes manuais, rodar `php bin/smoke_schema.php` antes, para ver divergencias.
 5. Executar `php bin/smoke_static.php` para validar invariantes basicos do codigo antes do smoke test funcional.
 6. Executar `php bin/run_tests.php` para rodar os testes unitarios (sem banco): sanitizacao de entrada, allowlist de templates, rotas e cache-busting.
 7. Executar `php bin/smoke_schema.php` apos aplicar migrations para confirmar que o schema esperado esta disponivel.

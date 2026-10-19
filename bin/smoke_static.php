@@ -213,21 +213,12 @@ $checks = [
     ],
   ],
   [
-    'file' => 'database/migrations/019_users_password_changed_at.sql',
+    // Linha de base do schema (tag schema-baseline-2026-10-19): estruturas que o
+    // código exige e que antes eram conferidas nas migrations 013, 014 e 019.
+    'file' => 'database/migrations/001_create_tables.sql',
     'mustContain' => [
       'password_changed_at',
-      'information_schema.COLUMNS',
-    ],
-  ],
-  [
-    'file' => 'database/migrations/013_login_attempts.sql',
-    'mustContain' => [
       'CREATE TABLE IF NOT EXISTS login_attempts',
-    ],
-  ],
-  [
-    'file' => 'database/migrations/014_grading_jobs.sql',
-    'mustContain' => [
       'CREATE TABLE IF NOT EXISTS grading_jobs',
       'uk_grading_jobs_attempt',
     ],

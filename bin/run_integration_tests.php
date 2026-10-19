@@ -106,7 +106,7 @@ $dbB = wrapAsDatabase($pdoB);
 /**
  * Aplica um .sql via cliente `mysql` (CLI), não via loop de PDO::exec().
  *
- * database/migrations/020_admin_reviewed_by_fk.sql usa SQL dinâmico
+ * As migrations incrementais usam SQL dinâmico
  * (PREPARE/EXECUTE/DEALLOCATE) para ser idempotente. Rodar isso através de
  * PDO — dividindo o arquivo em instruções e chamando exec() uma a uma —
  * quebra com "Cannot execute queries while other unbuffered queries are
@@ -147,9 +147,12 @@ function applySchema(array $cfg, string $path): void
 
 try {
   applySchema($cfg, ROOT_PATH . '/database/migrations/001_create_tables.sql');
-  applySchema($cfg, ROOT_PATH . '/database/migrations/020_admin_reviewed_by_fk.sql');
-  applySchema($cfg, ROOT_PATH . '/database/migrations/021_drop_exercise_legacy_window.sql');
-  applySchema($cfg, ROOT_PATH . '/database/migrations/022_performance_indexes.sql');
+  // Migrations incrementais posteriores à linha de base (023+), em ordem.
+  foreach (glob(ROOT_PATH . '/database/migrations/*.sql') ?: [] as $migration) {
+    if (basename($migration) !== '001_create_tables.sql') {
+      applySchema($cfg, $migration);
+    }
+  }
 } catch (\Throwable $e) {
   echo 'Não foi possível aplicar o schema (' . $e->getMessage() . ") — testes de integração pulados.\n";
   exit(0);
