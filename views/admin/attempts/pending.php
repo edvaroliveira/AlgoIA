@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Correções pendentes — Administração';
+$pageTitle = 'Correções pendentes';
 $attempts = $attempts ?? [];
 $filters = $filters ?? ['search' => '', 'from_date' => '', 'to_date' => '', 'min_age_hours' => 0];
 $pagination = $pagination ?? ['totalItems' => count($attempts), 'totalPages' => 1, 'currentPage' => 1, 'path' => '/admin/attempts/pending', 'query' => $filters];

@@ -4,7 +4,7 @@ $pending = $pending ?? [];
 $students = $students ?? [];
 $publications = $publications ?? [];
 $returnPath = $returnPath ?? '/admin/turmas';
-$pageTitle = 'Turma — Administração';
+$pageTitle = 'Turma';
 $defaultPublicationMin = date('Y-m-d\TH:i', strtotime('+1 hour'));
 $currentPath = '/admin/turmas/' . (int) ($turma['id'] ?? 0) . '?return_to=' . urlencode($returnPath);
 global $session;

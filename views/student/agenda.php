@@ -1,4 +1,5 @@
 <?php
+$pageTitle = 'Agenda';
 $items = $items ?? [];
 $now = time();
 ?>

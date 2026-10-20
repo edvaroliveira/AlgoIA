@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Auditoria — Administração';
+$pageTitle = 'Auditoria';
 $logs = $logs ?? [];
 $filters = $filters ?? ['search' => '', 'action' => '', 'entity_type' => '', 'from_date' => '', 'to_date' => ''];
 $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($logs), 'path' => '/admin/audit', 'query' => $filters];

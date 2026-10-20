@@ -1,4 +1,4 @@
-<?php $pageTitle = 'Dashboard — Docente'; ?>
+<?php $pageTitle = 'Painel docente'; ?>
 <?php
 $turmas = $turmas ?? [];
 $totalExs = $totalExs ?? 0;
@@ -16,7 +16,7 @@ $gradingJobFailures = $gradingJobFailures ?? [];
 <section class="hero-panel hero-panel--teacher">
   <div>
     <div class="hero-panel__eyebrow">Visão geral docente</div>
-    <h2 class="hero-panel__title">Central de acompanhamento da sua operação acadêmica.</h2>
+    <h1 class="hero-panel__title">Central de acompanhamento da sua operação acadêmica.</h1>
     <p class="hero-panel__copy">Acompanhe turmas, aprovações, exercícios em andamento e ações rápidas sem navegar em telas fragmentadas.</p>
   </div>
   <div class="hero-panel__meta">

@@ -1,4 +1,5 @@
 <?php
+$pageTitle = 'Progresso';
 $themes = $themes ?? [];
 $evolution = $evolution ?? [];
 $achievements = $achievements ?? [];

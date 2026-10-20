@@ -1,3 +1,4 @@
+<?php $pageTitle = 'Solicitar acesso de docente'; ?>
 <?php global $session; ?>
 
 <?php if (!empty($disabled)): ?>

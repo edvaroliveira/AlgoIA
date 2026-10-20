@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Turmas — Administração';
+$pageTitle = 'Turmas';
 $turmas = $turmas ?? [];
 $filters = $filters ?? ['search' => '', 'status' => '', 'attention' => ''];
 $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($turmas), 'path' => '/admin/turmas', 'query' => $filters];

@@ -1,3 +1,4 @@
+<?php $pageTitle = 'Entrar'; ?>
 <?php global $session; ?>
 <?php if (isset($error)): ?>
   <div class="alert alert--error"><?= \Core\View::e($error) ?></div>

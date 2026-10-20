@@ -1,6 +1,8 @@
 <?php
 use App\Models\AiUsageLog;
 
+$pageTitle = 'Uso da IA';
+
 global $session;
 $filters = $filters ?? [];
 $settings = $settings ?? [];

@@ -1,6 +1,8 @@
 <?php
 use App\Models\TurmaRanking;
 
+$pageTitle = 'Ranking';
+
 $boards = $boards ?? [];
 $studentId = (int) ($studentId ?? 0);
 $display = static function (array $row) use ($studentId): string {

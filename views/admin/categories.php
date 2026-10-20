@@ -1,4 +1,5 @@
 <?php
+$pageTitle = 'Categorias';
 global $session;
 $tree = $tree ?? [];
 $csrf = '<input type="hidden" name="_csrf_token" value="' . \Core\View::e($session->csrfToken()) . '">';

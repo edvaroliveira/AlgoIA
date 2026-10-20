@@ -1,4 +1,5 @@
 <?php
+$pageTitle = 'Prática';
 $themes = $themes ?? [];
 $usedToday = (int) ($usedToday ?? 0);
 $limit = (int) ($limit ?? 0);

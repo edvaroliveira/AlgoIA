@@ -1,3 +1,4 @@
+<?php $pageTitle = 'Criar conta'; ?>
 <?php global $session; ?>
 
 <?php if (isset($success)): ?>

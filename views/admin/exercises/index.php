@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Exercícios — Administração';
+$pageTitle = 'Exercícios';
 $exercises = $exercises ?? [];
 $filters = $filters ?? ['search' => '', 'status' => '', 'timing' => ''];
 $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($exercises), 'path' => '/admin/exercises', 'query' => $filters];

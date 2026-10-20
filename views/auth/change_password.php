@@ -1,3 +1,4 @@
+<?php $pageTitle = 'Trocar senha'; ?>
 <?php global $session; ?>
 
 <div class="auth-eyebrow">Troca obrigatória</div>

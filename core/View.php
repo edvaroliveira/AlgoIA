@@ -8,6 +8,9 @@ class View
 {
   public static string $nonce = '';
 
+  /** Título definido pela view ($pageTitle), repassado ao layout. */
+  private static ?string $pageTitle = null;
+
   /**
    * Renders $template inside $layout.
    * The layout receives $content (the rendered template) plus all $data keys.
@@ -18,10 +21,15 @@ class View
     string $layout = 'layouts/main'
   ): void {
     // Render inner view
+    self::$pageTitle = null;
     $content = self::capture($template, $data);
 
     if ($layout) {
-      self::capture($layout, array_merge($data, ['content' => $content]), true);
+      $layoutData = ['content' => $content];
+      if (self::$pageTitle !== null) {
+        $layoutData['pageTitle'] = self::$pageTitle;
+      }
+      self::capture($layout, array_merge($data, $layoutData), true);
     } else {
       echo $content;
     }
@@ -31,6 +39,13 @@ class View
   public static function partial(string $template, array $data = []): void
   {
     self::capture($template, $data, true);
+  }
+
+  /** Texto do <title>: "Página — AlgoIA" (ou só "AlgoIA"). */
+  public static function documentTitle(?string $pageTitle): string
+  {
+    $pageTitle = trim((string) $pageTitle);
+    return $pageTitle === '' || $pageTitle === 'AlgoIA' ? 'AlgoIA' : $pageTitle . ' — AlgoIA';
   }
 
   /** Escape for HTML output. */
@@ -70,6 +85,9 @@ class View
     ob_start();
     require $file;
     $out = (string) ob_get_clean();
+    if (!$echo && isset($pageTitle) && is_string($pageTitle)) {
+      self::$pageTitle = $pageTitle;
+    }
 
     if ($echo) {
       echo $out;

@@ -1,6 +1,8 @@
 <?php
 use App\Services\EnvSettings;
 
+$pageTitle = 'Configurações';
+
 global $session;
 $groups = $groups ?? [];
 $values = $values ?? [];
