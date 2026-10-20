@@ -52,7 +52,20 @@ class AdminDashboardController extends AdminBaseController
       'gradingJobFailures'         => $gradingJobs->recentFailures(null, 5),
       'pendingActions'             => $this->buildDashboardPendingActions($pendingUsers, $pendingTurmas, $closingExercises, $pendingGradingAttempts, $this->users->getPendingTeacherRequests(3)),
       'recentAdminEvents'          => $recentAdminEvents,
+      'aiUsage'                    => $this->aiUsageCard(),
     ]);
+  }
+
+  /** Cartão-resumo do Uso da IA no painel: gasto do mês e orçamento. */
+  private function aiUsageCard(): array
+  {
+    try {
+      $usage = new \App\Models\AiUsageLog();
+      $settings = $usage->settings();
+      return ['month_brl' => $usage->monthSpendUsd() * $settings['usd_brl'], 'budget_brl' => $settings['budget_brl']];
+    } catch (\Throwable $e) {
+      return ['month_brl' => 0.0, 'budget_brl' => 0.0];
+    }
   }
 
   public function saveFilterPreset(string $scope): void

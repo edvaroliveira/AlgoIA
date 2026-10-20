@@ -78,7 +78,16 @@ class AttemptGradingService
           (string) $answer['student_answer'],
           (float) $answer['max_score'],
           (int) $answer['id'],
-          (int) $attempt['student_id']
+          (int) $attempt['student_id'],
+          [
+            'kind'        => \App\Models\AiUsageLog::KIND_GRADING,
+            'teacher_id'  => (int) ($exercise['teacher_id'] ?? 0),
+            'turma_id'    => (int) ($attempt['turma_id'] ?? 0),
+            'exercise_id' => (int) $attempt['exercise_id'],
+            'attempt_id'  => $attemptId,
+            'answer_id'   => (int) $answer['id'],
+            'student_id'  => (int) $attempt['student_id'],
+          ]
         );
       } finally {
         $answerDurationMs = (int) round((microtime(true) - $answerStartedAt) * 1000);

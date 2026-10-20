@@ -30,6 +30,7 @@ $requiredTables = [
   'practice_answers',
   'turma_posts',
   'student_achievements',
+  'ai_usage_logs',
 ];
 
 $requiredColumns = [
@@ -45,6 +46,7 @@ $requiredColumns = [
   'bank_exercise_themes' => ['bank_exercise_id', 'theme_id'],
   'notifications' => ['user_id', 'type', 'title', 'link', 'dedupe_key', 'read_at', 'emailed_at', 'email_attempts'],
   'questions' => ['bank_question_id'],
+  'ai_usage_logs' => ['kind', 'teacher_id', 'turma_id', 'student_id', 'prompt_tokens', 'completion_tokens', 'cost_usd', 'status'],
   'student_achievements' => ['student_id', 'code', 'earned_at'],
   'turmas' => ['ranking_mode'],
   'turma_posts' => ['turma_id', 'teacher_id', 'title', 'body', 'pinned', 'expires_at'],

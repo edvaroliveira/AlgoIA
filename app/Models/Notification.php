@@ -21,6 +21,7 @@ class Notification extends Model
   public const TYPE_TEACHER_REGISTRATION = 'teacher_registration';
   public const TYPE_TURMA_POST           = 'turma_post';
   public const TYPE_ACHIEVEMENT          = 'achievement';
+  public const TYPE_AI_BUDGET            = 'ai_budget';
 
   protected string $table = 'notifications';
 

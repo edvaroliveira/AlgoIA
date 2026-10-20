@@ -35,6 +35,7 @@ $content = $content ?? '';
           <a href="<?= \Core\app_url('/admin/exercises') ?>" class="nav-link <?= str_contains($currentPath, 'admin/exercises') ? 'active' : '' ?>">Exercícios</a>
           <a href="<?= \Core\app_url('/admin/bank') ?>" class="nav-link <?= str_contains($currentPath, 'admin/bank') ? 'active' : '' ?>">Banco de exercícios</a>
           <a href="<?= \Core\app_url('/admin/audit') ?>" class="nav-link <?= str_contains($currentPath, 'admin/audit') ? 'active' : '' ?>">Auditoria</a>
+          <a href="<?= \Core\app_url('/admin/ia') ?>" class="nav-link <?= str_contains($currentPath, 'admin/ia') ? 'active' : '' ?>">Uso da IA</a>
         <?php elseif (\Core\Auth::isTeacher()): ?>
           <a href="<?= \Core\app_url('/teacher/dashboard') ?>" class="nav-link <?= str_contains($currentPath, 'dashboard') ? 'active' : '' ?>">Painel docente</a>
           <a href="<?= \Core\app_url('/teacher/turmas') ?>" class="nav-link <?= str_contains($currentPath, 'turmas') ? 'active' : '' ?>">Turmas</a>

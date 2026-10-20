@@ -37,6 +37,9 @@ $router->post('/admin/presets/{scope}/save', 'AdminDashboardController@saveFilte
 $router->post('/admin/presets/{scope}/delete', 'AdminDashboardController@deleteFilterPreset', ['admin']);
 $router->post('/admin/grading-jobs/{id}/retry', 'AdminDashboardController@retryGradingJob', ['admin']);
 $router->post('/admin/settings/teacher-registration', 'AdminDashboardController@toggleTeacherRegistration', ['admin']);
+$router->get('/admin/ia', 'AdminAiUsageController@index', ['admin']);
+$router->post('/admin/ia/configuracoes', 'AdminAiUsageController@updateSettings', ['admin']);
+$router->get('/admin/ia/export', 'AdminAiUsageController@export', ['admin']);
 $router->get('/admin/users',     'AdminUserController@users', ['admin']);
 $router->get('/admin/users/export', 'AdminUserController@exportUsers', ['admin']);
 $router->get('/admin/users/export.json', 'AdminUserController@exportUsersJson', ['admin']);

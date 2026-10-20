@@ -88,7 +88,8 @@ class OpenAIService
     string $studentAnswer,
     float  $maxScore,
     ?int   $answerId,
-    int    $studentId
+    int    $studentId,
+    array  $usageContext = []
   ): array {
     // Falha rápida: sem chave, os 3 retries só queimariam tempo e acabariam
     // num "Erro ao processar avaliação" que não diz o que está errado.
@@ -103,10 +104,44 @@ class OpenAIService
     $userPrompt   = $this->buildUserPrompt($questionText, $expectedAnswerHint, $studentAnswer, $maxScore);
 
     // Layer 2 — isolated delimiters in prompt
-    $rawResponse = $this->callApi($systemPrompt, $userPrompt, $this->maxRetries);
+    $startedAt = microtime(true);
+    try {
+      $response = $this->callApi($systemPrompt, $userPrompt, $this->maxRetries);
+    } catch (\RuntimeException $e) {
+      $this->recordUsage($usageContext, 0, 0, $startedAt, false, 'api');
+      throw $e;
+    }
 
-    // Layer 3 — strict structural validation
-    return $this->parseResponse($rawResponse, $maxScore, $questionText, $expectedAnswerHint);
+    // Layer 3 — strict structural validation (tokens já foram cobrados, então registra mesmo se falhar)
+    try {
+      $result = $this->parseResponse($response['content'], $maxScore, $questionText, $expectedAnswerHint);
+    } catch (\RuntimeException $e) {
+      $this->recordUsage($usageContext, $response['prompt_tokens'], $response['completion_tokens'], $startedAt, false, 'invalid_response');
+      throw $e;
+    }
+    $this->recordUsage($usageContext, $response['prompt_tokens'], $response['completion_tokens'], $startedAt, true, null);
+    return $result;
+  }
+
+  /** Uso da IA (tokens, latência, custo) para o painel do Admin; nunca derruba a correção. */
+  private function recordUsage(array $context, int $promptTokens, int $completionTokens, float $startedAt, bool $ok, ?string $errorCategory): void
+  {
+    if ($context === []) {
+      return;
+    }
+    try {
+      (new \App\Models\AiUsageLog($this->db()))->recordSafely(
+        $context,
+        $this->model,
+        $promptTokens,
+        $completionTokens,
+        (int) round((microtime(true) - $startedAt) * 1000),
+        $ok,
+        $errorCategory
+      );
+    } catch (\Throwable $e) {
+      error_log('ai usage record failed: ' . $e->getMessage());
+    }
   }
 
   // ── Prompt construction ──────────────────────────────────────────────────
@@ -241,7 +276,8 @@ PROMPT;
 
   // ── API call ──────────────────────────────────────────────────────────────
 
-  private function callApi(string $systemPrompt, string $userPrompt, int $maxRetries = 3): string
+  /** @return array{content: string, prompt_tokens: int, completion_tokens: int} */
+  private function callApi(string $systemPrompt, string $userPrompt, int $maxRetries = 3): array
   {
     $payload = json_encode([
       'model'           => $this->model,
@@ -284,7 +320,11 @@ PROMPT;
 
       if ($httpCode === 200) {
         $data = json_decode((string) $response, true);
-        return $data['choices'][0]['message']['content'] ?? '';
+        return [
+          'content'           => (string) ($data['choices'][0]['message']['content'] ?? ''),
+          'prompt_tokens'     => (int) ($data['usage']['prompt_tokens'] ?? 0),
+          'completion_tokens' => (int) ($data['usage']['completion_tokens'] ?? 0),
+        ];
       }
 
       if ($httpCode === 429 || $httpCode >= 500) {
