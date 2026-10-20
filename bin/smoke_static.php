@@ -9,6 +9,16 @@ $checks = [
     'file' => '.htaccess',
     'mustContain' => ['RewriteRule ^public(/|$) - [L]', 'RewriteRule ^ - [F,L]', 'Require all denied'],
   ],
+  // UI-01: layouts sem Bootstrap (o app.css traz a base própria).
+  [
+    'file' => 'views/layouts/main.php',
+    'mustContain' => ['id="menu-lateral"', 'href="#conteudo"'],
+    'mustNotContain' => ['bootstrap'],
+  ],
+  [
+    'file' => 'views/layouts/guest.php',
+    'mustNotContain' => ['bootstrap'],
+  ],
   // AU-04: php_flag fora de IfModule derruba a pasta (500) com PHP via CGI/FPM.
   [
     'file' => 'public/assets/uploads/.htaccess',

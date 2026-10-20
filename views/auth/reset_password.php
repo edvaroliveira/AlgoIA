@@ -1,3 +1,4 @@
+<?php $pageTitle = 'Redefinir senha'; ?>
 <?php global $session; ?>
 <?php $validToken = $validToken ?? false; ?>
 

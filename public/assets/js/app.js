@@ -39,6 +39,83 @@
     true
   );
 
+  // ── Menu lateral recolhível (gaveta abaixo de 992px) ───────────────────────
+  // Abre pelo ☰; fecha com ESC, clique no fundo, clique em link ou ao voltar
+  // para a largura de desktop. Ao fechar, o foco volta ao ☰.
+  const drawerToggle = document.querySelector("[aria-controls='menu-lateral']");
+  const drawer = document.getElementById("menu-lateral");
+  const drawerBackdrop = document.querySelector("[data-drawer-close]");
+  if (drawerToggle && drawer) {
+    const desktop = window.matchMedia("(min-width: 992px)");
+    const setDrawer = function (open, restoreFocus) {
+      document.body.classList.toggle("drawer-open", open);
+      drawerToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      drawerToggle.setAttribute("aria-label", open ? "Fechar menu" : "Abrir menu");
+      if (drawerBackdrop) {
+        drawerBackdrop.hidden = !open;
+      }
+      if (open) {
+        // Espera o navegador aplicar visibility: visible antes de focar
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(function () {
+            const first = drawer.querySelector("a[href]");
+            if (first && isOpen()) {
+              first.focus();
+            }
+          });
+        });
+      } else if (restoreFocus) {
+        drawerToggle.focus();
+      }
+    };
+    const isOpen = function () {
+      return document.body.classList.contains("drawer-open");
+    };
+    drawerToggle.addEventListener("click", function () {
+      setDrawer(!isOpen(), true);
+    });
+    if (drawerBackdrop) {
+      drawerBackdrop.addEventListener("click", function () {
+        setDrawer(false, true);
+      });
+    }
+    drawer.addEventListener("click", function (event) {
+      if (event.target.closest("a[href]") && isOpen()) {
+        setDrawer(false, false);
+      }
+    });
+    document.addEventListener("keydown", function (event) {
+      if (!isOpen()) {
+        return;
+      }
+      if (event.key === "Escape") {
+        setDrawer(false, true);
+        return;
+      }
+      // Tab fica preso dentro da gaveta enquanto ela está aberta
+      if (event.key === "Tab") {
+        const links = drawer.querySelectorAll("a[href]");
+        if (!links.length) {
+          return;
+        }
+        const first = links[0];
+        const last = links[links.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !drawer.contains(document.activeElement))) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !drawer.contains(document.activeElement))) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    });
+    desktop.addEventListener("change", function (event) {
+      if (event.matches && isOpen()) {
+        setDrawer(false, false);
+      }
+    });
+  }
+
   // ── Avatar: refletir nome do arquivo escolhido ───────────────────────────────
   // Primeiro de tudo, para nao depender de blocos anteriores nesta pagina.
   const avatarInput = document.getElementById("avatar");

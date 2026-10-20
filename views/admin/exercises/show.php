@@ -4,7 +4,7 @@ $questions = $questions ?? [];
 $results = $results ?? [];
 $maxScore = $maxScore ?? 0;
 $returnPath = $returnPath ?? '/admin/exercises';
-$pageTitle = 'Exercício — Administração';
+$pageTitle = 'Exercício';
 $isDraft = ($exercise['status'] ?? '') === 'draft';
 $isReady = ($exercise['status'] ?? '') === 'ready';
 $isOpen = ($exercise['status'] ?? '') === 'active'

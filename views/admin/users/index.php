@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Usuários — Administração';
+$pageTitle = 'Usuários';
 $users = $users ?? [];
 $filters = $filters ?? ['search' => '', 'role' => '', 'status' => ''];
 $pagination = $pagination ?? ['totalPages' => 1, 'currentPage' => 1, 'totalItems' => count($users), 'path' => '/admin/users', 'query' => $filters];

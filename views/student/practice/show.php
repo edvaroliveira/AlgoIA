@@ -1,4 +1,5 @@
 <?php
+$pageTitle = 'Prática';
 global $session;
 $history = $history ?? [];
 $draft = (string) ($draft ?? '');

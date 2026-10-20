@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Correções pendentes — Docente';
+$pageTitle = 'Correções pendentes';
 $attempts = $attempts ?? [];
 $filters = $filters ?? ['search' => '', 'from_date' => '', 'to_date' => '', 'min_age_hours' => 0];
 $pagination = $pagination ?? ['totalItems' => count($attempts), 'totalPages' => 1, 'currentPage' => 1, 'path' => '/teacher/attempts/pending', 'query' => $filters];

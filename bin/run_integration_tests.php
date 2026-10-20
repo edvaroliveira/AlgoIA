@@ -2262,6 +2262,43 @@ if (!extension_loaded('curl')) {
       check(str_contains($progCat, 'Estruturas de Dados') && str_contains(httpAs($jarProg, 'GET', "{$base}/student/pratica")['body'], 'Algoritmos Teste'),
         'CAT-05: Progresso e Prática agrupam por categoria');
 
+      // UI-01 — Layout: um único <h1>, título da aba com o nome da página, sem Bootstrap
+      $uiPages = [
+        [$jarAdmin, '/admin/users'], [$jarAdmin, '/admin/ia'], [$jarAdmin, '/admin/dashboard'],
+        [$jarDocenteA, '/teacher/dashboard'], [$jarDocenteA, '/teacher/exercises'], [$jarDocenteA, '/teacher/bank'],
+        [$jarAlunoA, '/student/dashboard'], [$jarAlunoA, '/student/agenda'], [$jarAlunoA, '/conta'],
+      ];
+      $uiBad = [];
+      foreach ($uiPages as [$uiJar, $uiPath]) {
+        $uiBody = httpAs($uiJar, 'GET', "{$base}{$uiPath}")['body'];
+        if (preg_match_all('#<h1[\s>]#i', $uiBody) !== 1) {
+          $uiBad[] = "{$uiPath}: h1";
+        }
+        if (stripos($uiBody, 'bootstrap') !== false) {
+          $uiBad[] = "{$uiPath}: bootstrap";
+        }
+      }
+      check($uiBad === [], 'UI-01: toda página tem exatamente um <h1> e não carrega Bootstrap' . ($uiBad ? ' (' . implode(', ', $uiBad) . ')' : ''));
+      $uiTitle = static fn(string $html): string => preg_match('#<title>([^<]*)</title>#', $html, $tm) ? html_entity_decode($tm[1]) : '';
+      check($uiTitle(httpAs($jarAlunoA, 'GET', "{$base}/student/agenda")['body']) === 'Agenda — AlgoIA'
+        && $uiTitle(httpAs($jarAdmin, 'GET', "{$base}/admin/users")['body']) === 'Usuários — AlgoIA',
+        'UI-01: título da aba é "Página — AlgoIA"');
+
+      // UI-02 — Navegação: item atual com aria-current, inclusive em subpáginas
+      $uiCurrent = static fn(string $html): string => preg_match('#<a[^>]*aria-current="page"[^>]*>\s*([^<]+?)\s*</a>#', $html, $cm) ? $cm[1] : '';
+      check($uiCurrent(httpAs($jarDocenteA, 'GET', "{$base}/teacher/bank")['body']) === 'Exercícios'
+        && $uiCurrent(httpAs($jarAdmin, 'GET', "{$base}/admin/ia")['body']) === 'Uso da IA'
+        && $uiCurrent(httpAs($jarAlunoA, 'GET', "{$base}/student/pratica")['body']) === 'Prática'
+        && $uiCurrent(httpAs($jarDocenteA, 'GET', "{$base}/teacher/turmas/{$turmaDes['id']}/desempenho")['body']) === 'Turmas',
+        'UI-02: item atual do menu marcado com aria-current="page"');
+
+      // UI-03 — Acessibilidade e menu recolhível
+      $uiHome = httpAs($jarAlunoA, 'GET', "{$base}/student/dashboard")['body'];
+      check(preg_match('#<a[^>]+href="\#conteudo"[^>]*>Pular para o conteúdo</a>#', $uiHome) === 1 && str_contains($uiHome, 'id="conteudo"'),
+        'UI-03: link "Pular para o conteúdo" leva ao conteúdo principal');
+      check(preg_match('#<button[^>]+aria-controls="menu-lateral"[^>]+aria-expanded="false"#', $uiHome) === 1 && str_contains($uiHome, 'id="menu-lateral"'),
+        'UI-03: botão do menu recolhível controla a navegação lateral');
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);

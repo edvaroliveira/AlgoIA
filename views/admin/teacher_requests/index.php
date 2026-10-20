@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Solicitações de docentes — Administração';
+$pageTitle = 'Solicitações de docentes';
 $requests = $requests ?? [];
 $pagination = $pagination ?? ['totalItems' => count($requests), 'totalPages' => 1, 'currentPage' => 1, 'path' => '/admin/teacher-requests', 'query' => []];
 $teacherRegistrationEnabled = $teacherRegistrationEnabled ?? false;

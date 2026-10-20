@@ -5,7 +5,7 @@ $teacherExercises = $teacherExercises ?? [];
 $studentTurmas = $studentTurmas ?? [];
 $studentAttempts = $studentAttempts ?? [];
 $auditLogs = $auditLogs ?? [];
-$pageTitle = 'Usuário — Administração';
+$pageTitle = 'Usuário';
 $role = $user['role'] ?? 'student';
 $status = $user['status'] ?? 'inactive';
 ?>

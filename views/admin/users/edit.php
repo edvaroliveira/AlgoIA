@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Editar usuário — Administração';
+$pageTitle = 'Editar usuário';
 $user = $user ?? [];
 $errors = $errors ?? [];
 global $session;

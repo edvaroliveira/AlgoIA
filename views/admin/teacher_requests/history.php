@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Histórico de solicitações — Administração';
+$pageTitle = 'Histórico de solicitações';
 $history = $history ?? [];
 $pagination = $pagination ?? ['totalItems' => count($history), 'totalPages' => 1, 'currentPage' => 1, 'path' => '/admin/teacher-requests/history', 'query' => []];
 global $session;

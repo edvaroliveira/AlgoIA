@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Dashboard — Administração';
+$pageTitle = 'Painel administrativo';
 $totalUsers = $totalUsers ?? 0;
 $adminCount = $adminCount ?? 0;
 $teacherCount = $teacherCount ?? 0;
@@ -47,7 +47,7 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
 <section class="hero-panel hero-panel--teacher">
   <div>
     <div class="hero-panel__eyebrow">Administração</div>
-    <h2 class="hero-panel__title">Painel administrativo operacional.</h2>
+    <h1 class="hero-panel__title">Painel administrativo operacional.</h1>
     <p class="hero-panel__copy">A área administrativa já cobre governança global de usuários, turmas, exercícios e auditoria, com filtros, detalhes e exportações.</p>
   </div>
   <div class="hero-panel__meta">

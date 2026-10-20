@@ -1,4 +1,4 @@
-<?php $pageTitle = 'Dashboard';
+<?php $pageTitle = 'Meu painel';
 global $session; ?>
 <?php
 $turmas = $turmas ?? [];
@@ -9,7 +9,7 @@ $all = $all ?? [];
 <section class="hero-panel hero-panel--student">
   <div>
     <div class="hero-panel__eyebrow">Painel do aluno</div>
-    <h2 class="hero-panel__title">Continue sua prática com visão clara do que está aberto agora.</h2>
+    <h1 class="hero-panel__title">Continue sua prática com visão clara do que está aberto agora.</h1>
     <p class="hero-panel__copy">Veja exercícios liberados, acompanhe seu histórico e entre em novas turmas sem perder o contexto da sua evolução.</p>
   </div>
   <div class="hero-panel__meta">

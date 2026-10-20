@@ -1,4 +1,5 @@
 <?php
+$pageTitle = 'Avisos';
 $items = $items ?? [];
 ?>
 

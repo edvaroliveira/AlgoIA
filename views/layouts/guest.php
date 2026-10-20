@@ -8,14 +8,12 @@
   <meta name="theme-color" content="#173f31">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="<?= \Core\app_url('/assets/img/algoIA.ico') ?>">
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-  <title><?= \Core\View::e($pageTitle ?? 'AlgoIA') ?></title>
+  <title><?= \Core\View::e(\Core\View::documentTitle($pageTitle ?? null)) ?></title>
   <link rel="stylesheet" href="<?= \Core\asset_url('/assets/css/app.css') ?>">
 </head>
 
 <body class="guest-layout">
-  <div class="guest-shell container-xxl py-4 py-lg-5">
+  <div class="guest-shell">
     <div class="guest-grid">
       <section class="guest-hero">
         <div class="guest-hero__badge">
@@ -54,7 +52,6 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="<?= \Core\asset_url('/assets/js/app.js') ?>"></script>
 </body>
 

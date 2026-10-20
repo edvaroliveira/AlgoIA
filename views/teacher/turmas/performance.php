@@ -2,6 +2,8 @@
 use App\Models\DeductionReason;
 use App\Models\TurmaPerformance;
 
+$pageTitle = 'Desempenho da Turma';
+
 $exercises = $grid['exercises'] ?? [];
 $students = $grid['students'] ?? [];
 $turmaAverage = $grid['turmaAverage'] ?? null;
