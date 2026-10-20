@@ -17,6 +17,22 @@ if (is_string($log) && $log !== '') {
 
 header('Content-Type: application/json');
 
+// GET /v1/models/{modelo}: teste de chave e modelo da tela de Configurações.
+$uri = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+if (preg_match('#/v1/models/([^/]+)$#', $uri, $m) === 1) {
+  $auth = (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+  if ($auth === 'Bearer chave-invalida') {
+    http_response_code(401);
+    echo '{"error":{"message":"Incorrect API key provided"}}';
+  } elseif ($m[1] === 'modelo-inexistente') {
+    http_response_code(404);
+    echo '{"error":{"message":"The model does not exist"}}';
+  } else {
+    echo json_encode(['id' => $m[1], 'object' => 'model']);
+  }
+  return;
+}
+
 if (str_contains($body, 'FALHA_SIMULADA')) {
   http_response_code(400);
   echo '{"error":{"message":"falha simulada"}}';

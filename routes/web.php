@@ -40,6 +40,8 @@ $router->post('/admin/settings/teacher-registration', 'AdminDashboardController@
 $router->get('/admin/ia', 'AdminAiUsageController@index', ['admin']);
 $router->post('/admin/ia/configuracoes', 'AdminAiUsageController@updateSettings', ['admin']);
 $router->get('/admin/ia/export', 'AdminAiUsageController@export', ['admin']);
+$router->get('/admin/configuracoes', 'AdminEnvController@index', ['admin']);
+$router->post('/admin/configuracoes/{group}', 'AdminEnvController@update', ['admin']);
 $router->get('/admin/users',     'AdminUserController@users', ['admin']);
 $router->get('/admin/users/export', 'AdminUserController@exportUsers', ['admin']);
 $router->get('/admin/users/export.json', 'AdminUserController@exportUsersJson', ['admin']);

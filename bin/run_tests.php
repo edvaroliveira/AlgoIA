@@ -556,6 +556,31 @@ check(str_contains($w, 'l.teacher_id = ?') && str_contains($w, 'l.turma_id = ?')
 [$w, $p] = App\Models\AiUsageLog::where(['kind' => "x' OR 1=1"] + $aiBase);
 check(!str_contains($w, 'kind') && $p === [], 'IA: tipo desconhecido é ignorado');
 
+// ENVFILE — gravar o .env pela tela do Admin: preserva comentários, faz backup, aspas quando preciso
+$envDir = sys_get_temp_dir() . '/envfile_' . bin2hex(random_bytes(4));
+mkdir($envDir);
+$envPath = $envDir . '/.env';
+file_put_contents($envPath, "# cabeçalho preservado\nAPP_NAME=AlgoIA\nOPENAI_MODEL=gpt-4o   # comentário de linha\n\nDB_PASSWORD=velha\n");
+$envWriter = new App\Services\EnvFile($envPath);
+same(['APP_NAME' => 'AlgoIA', 'OPENAI_MODEL' => 'gpt-4o', 'DB_PASSWORD' => 'velha'], $envWriter->read(), 'ENVFILE: lê como o sistema lê');
+$envWriter->update(['OPENAI_MODEL' => 'gpt-4o-mini', 'APP_NAME' => 'AlgoIA # Campus', 'MAIL_FROM' => 'no-reply@x.test']);
+$written = (string) file_get_contents($envPath);
+check(str_contains($written, "# cabeçalho preservado\n") && str_contains($written, "DB_PASSWORD=velha\n"), 'ENVFILE: linhas não alteradas e comentários ficam');
+same(['APP_NAME' => 'AlgoIA # Campus', 'OPENAI_MODEL' => 'gpt-4o-mini', 'DB_PASSWORD' => 'velha', 'MAIL_FROM' => 'no-reply@x.test'], Core\Env::parse($written),
+  'ENVFILE: valores novos voltam iguais pelo leitor (aspas quando há " #"), chave nova vai ao fim');
+check(count(glob($envDir . '/.env.backup-*')) === 1 && str_contains((string) file_get_contents(glob($envDir . '/.env.backup-*')[0]), 'OPENAI_MODEL=gpt-4o   #'),
+  'ENVFILE: guarda backup do .env anterior');
+same('"a \'b\' c"', App\Services\EnvFile::format("a 'b' c"), 'ENVFILE: aspas simples dentro do valor usam aspas duplas');
+same("'diz \"oi\"'", App\Services\EnvFile::format('diz "oi"'), 'ENVFILE: aspas duplas dentro do valor usam aspas simples');
+same('Senha#123', App\Services\EnvFile::format('Senha#123'), 'ENVFILE: valor simples fica sem aspas');
+$envErr = null;
+try { $envWriter->update(['APP_NAME' => "linha1\nlinha2"]); } catch (InvalidArgumentException $e) { $envErr = $e->getMessage(); }
+check($envErr !== null && !str_contains((string) file_get_contents($envPath), 'linha2'), 'ENVFILE: quebra de linha é recusada (injetaria outra variável)');
+for ($i = 0; $i < 7; $i++) { $envWriter->update(['OPENAI_MODEL' => "m{$i}"]); }
+check(count(glob($envDir . '/.env.backup-*')) <= App\Services\EnvFile::KEEP_BACKUPS, 'ENVFILE: mantém só os backups mais recentes');
+array_map('unlink', glob($envDir . '/{,.}*', GLOB_BRACE) ?: []);
+@rmdir($envDir);
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];

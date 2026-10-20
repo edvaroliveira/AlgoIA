@@ -64,6 +64,35 @@ class SmtpTransport
     }
   }
 
+  /** Só conecta e autentica (sem enviar), para validar a configuração antes de salvar. */
+  public function verifyLogin(string $from): void
+  {
+    try {
+      $this->connect();
+      $this->expect([220]);
+      $helo = $this->heloName($from);
+      $this->command("EHLO {$helo}", [250]);
+      if ($this->encryption === 'tls') {
+        $this->command('STARTTLS', [220]);
+        if (stream_socket_enable_crypto($this->socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT) !== true) {
+          throw new \RuntimeException('Falha ao iniciar TLS (STARTTLS).');
+        }
+        $this->command("EHLO {$helo}", [250]);
+      }
+      if ($this->user !== '') {
+        $this->command('AUTH LOGIN', [334]);
+        $this->command(base64_encode($this->user), [334]);
+        $this->command(base64_encode($this->password), [235], true);
+      }
+      $this->command('QUIT', [221]);
+    } finally {
+      if (is_resource($this->socket)) {
+        fclose($this->socket);
+      }
+      $this->socket = null;
+    }
+  }
+
   private function connect(): void
   {
     $scheme = $this->encryption === 'ssl' ? 'ssl' : 'tcp';

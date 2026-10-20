@@ -704,6 +704,31 @@ if (!extension_loaded('curl')) {
   putenv("OPENAI_API_URL=http://127.0.0.1:{$fakeAiPort}/v1/chat/completions");
   putenv('OPENAI_API_KEY=chave-de-teste');
   putenv('OPENAI_MAX_RETRIES=1');
+
+  // .env que a tela de Configurações do Admin edita nos testes (nunca o .env real).
+  $envEditDir = sys_get_temp_dir() . '/algoia_env_' . bin2hex(random_bytes(4));
+  mkdir($envEditDir);
+  $envEditPath = $envEditDir . '/.env';
+  file_put_contents($envEditPath, implode("\n", [
+    '# comentário que deve ser preservado',
+    'APP_NAME="AlgoIA Teste"',
+    'APP_URL=https://algoia.test',
+    'APP_DEBUG=false',
+    'OPENAI_API_KEY=sk-teste-1234567890abcd',
+    'OPENAI_MODEL=gpt-4o',
+    'DB_HOST=' . $cfg['host'],
+    'DB_DATABASE=banco_antigo',
+    'DB_USERNAME=' . $cfg['username'],
+    'DB_PASSWORD=' . $cfg['password'],
+    'MAIL_DRIVER=smtp',
+    'MAIL_FROM=no-reply@algoia.test',
+    'MAIL_SMTP_HOST=127.0.0.1',
+    'MAIL_SMTP_PORT=2525',
+    'MAIL_SMTP_ENCRYPTION=none',
+    'MAIL_SMTP_USER=no-reply@algoia.test',
+    'MAIL_SMTP_PASSWORD=senha-smtp-antiga',
+  ]) . "\n");
+  putenv("APP_ENV_FILE={$envEditPath}");
   $fakeAiProcess = proc_open(
     ['php', '-d', 'variables_order=EGPCS', '-S', "127.0.0.1:{$fakeAiPort}", ROOT_PATH . '/bin/fixtures/fake_openai_server.php'],
     [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
@@ -1985,6 +2010,92 @@ if (!extension_loaded('curl')) {
       check($iaCsv['code'] === 200 && str_contains($iaCsv['headers'], 'text/csv') && str_contains($iaCsv['body'], 'tipo;')
         && str_contains($iaCsv['body'], 'Aluno Uso IA 3'), 'IA-06: exportação CSV do uso da IA');
 
+      // ENV-01 — Configurações do ambiente: só Admin; segredos nunca aparecem inteiros
+      $envValues = fn(): array => Core\Env::parse((string) file_get_contents($envEditPath));
+      $envPage = httpAs($jarAdmin, 'GET', "{$base}/admin/configuracoes");
+      check($envPage['code'] === 200 && str_contains($envPage['body'], 'value="gpt-4o"') && str_contains($envPage['body'], 'abcd')
+        && !str_contains($envPage['body'], 'sk-teste-1234567890abcd') && !str_contains($envPage['body'], 'senha-smtp-antiga')
+        && ($cfg['password'] === '' || !str_contains($envPage['body'], $cfg['password'])),
+        'ENV-01: Admin vê as configurações; segredos só com os 4 últimos caracteres');
+      check($page($jarDocenteA, '/admin/configuracoes')['code'] !== 200, 'ENV-01: só o Admin acessa');
+
+      // ENV-02 — Salvar exige a senha do Admin
+      $iaForm = static fn(array $over = []): array => array_merge([
+        'OPENAI_API_KEY' => '', 'OPENAI_MODEL' => 'gpt-4o-mini', 'OPENAI_TIMEOUT_SECONDS' => '45', 'OPENAI_MAX_RETRIES' => '3',
+        'admin_password' => 'errada',
+      ], $over);
+      postAs($base, $jarAdmin, '/admin/configuracoes/ia', $iaForm());
+      check($envValues()['OPENAI_MODEL'] === 'gpt-4o' && $countRows("SELECT COUNT(*) FROM audit_logs WHERE action = 'admin.env.update_denied'") === 1,
+        'ENV-02: senha do Admin errada não altera nada (auditado)');
+
+      // ENV-03 — Salva só o grupo, mantém segredo em branco, preserva comentários, faz backup, audita sem valores
+      $r = postAs($base, $jarAdmin, '/admin/configuracoes/ia', $iaForm(['admin_password' => $pw]));
+      $v = $envValues();
+      check($r['code'] === 302 && $v['OPENAI_MODEL'] === 'gpt-4o-mini' && $v['OPENAI_TIMEOUT_SECONDS'] === '45'
+        && $v['OPENAI_API_KEY'] === 'sk-teste-1234567890abcd' && $v['APP_NAME'] === 'AlgoIA Teste'
+        && str_contains((string) file_get_contents($envEditPath), '# comentário que deve ser preservado'),
+        'ENV-03: salva o grupo; segredo em branco é mantido; comentários preservados');
+      check(count(glob($envEditPath . '.backup-*') ?: []) >= 1, 'ENV-03: backup do .env anterior');
+      $envAudit = $pdoA->query("SELECT metadata_json FROM audit_logs WHERE action = 'admin.env.update' ORDER BY id DESC LIMIT 1")->fetchColumn();
+      check(is_string($envAudit) && str_contains($envAudit, 'OPENAI_MODEL') && !str_contains($envAudit, 'gpt-4o-mini'), 'ENV-03: auditoria registra as chaves, não os valores');
+
+      // ENV-04 — Chave ou modelo recusados pela OpenAI não são salvos
+      postAs($base, $jarAdmin, '/admin/configuracoes/ia', $iaForm(['admin_password' => $pw, 'OPENAI_API_KEY' => 'chave-invalida']));
+      check($envValues()['OPENAI_API_KEY'] === 'sk-teste-1234567890abcd', 'ENV-04: chave recusada pela OpenAI não é salva');
+      postAs($base, $jarAdmin, '/admin/configuracoes/ia', $iaForm(['admin_password' => $pw, 'OPENAI_MODEL' => 'modelo-inexistente']));
+      check($envValues()['OPENAI_MODEL'] === 'gpt-4o-mini'
+        && str_contains(httpAs($jarAdmin, 'GET', "{$base}/admin/configuracoes")['body'], 'não encontrou o modelo'),
+        'ENV-04: modelo inexistente não é salvo e o Admin vê o motivo');
+      postAs($base, $jarAdmin, '/admin/configuracoes/ia', $iaForm(['admin_password' => $pw, 'OPENAI_API_KEY' => 'sk-nova-chave-9999']));
+      check($envValues()['OPENAI_API_KEY'] === 'sk-nova-chave-9999', 'ENV-04: chave aceita pela OpenAI é salva');
+
+      // ENV-05 — Banco: só salva se a conexão funcionar
+      $dbForm = static fn(array $over = []): array => array_merge([
+        'DB_HOST' => $cfg['host'], 'DB_DATABASE' => $cfg['database'], 'DB_USERNAME' => $cfg['username'], 'DB_PASSWORD' => '',
+        'admin_password' => $pw,
+      ], $over);
+      postAs($base, $jarAdmin, '/admin/configuracoes/db', $dbForm(['DB_DATABASE' => 'banco_que_nao_existe_xyz']));
+      check($envValues()['DB_DATABASE'] === 'banco_antigo', 'ENV-05: dados de banco que não conectam não são salvos');
+      postAs($base, $jarAdmin, '/admin/configuracoes/db', $dbForm());
+      check($envValues()['DB_DATABASE'] === $cfg['database'] && $envValues()['DB_PASSWORD'] === $cfg['password'] && $countRows("SELECT COUNT(*) FROM audit_logs WHERE action = 'admin.env.update'") === 3,
+        'ENV-05: dados que conectam são salvos (senha em branco mantida)');
+
+      // ENV-06 — E-mail: SMTP testado antes de salvar
+      $envSmtpPort = $port + 2500;
+      $envSmtpProc = proc_open([PHP_BINARY, ROOT_PATH . '/bin/fixtures/fake_smtp_server.php', (string) $envSmtpPort],
+        [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $envSmtpPipes, ROOT_PATH, array_merge(getenv(), ['FAKE_SMTP_LOG' => '']));
+      for ($i = 0; $i < 30 && @fsockopen('127.0.0.1', $envSmtpPort) === false; $i++) {
+        usleep(100_000);
+      }
+      $mailForm = static fn(array $over = []): array => array_merge([
+        'MAIL_DRIVER' => 'smtp', 'MAIL_FROM' => 'no-reply@algoia.test', 'MAIL_FROM_NAME' => 'AlgoIA', 'MAIL_SMTP_HOST' => '127.0.0.1',
+        'MAIL_SMTP_PORT' => (string) $envSmtpPort, 'MAIL_SMTP_ENCRYPTION' => 'none', 'MAIL_SMTP_USER' => 'no-reply@algoia.test',
+        'MAIL_SMTP_PASSWORD' => 'senha-errada', 'admin_password' => $pw,
+      ], $over);
+      postAs($base, $jarAdmin, '/admin/configuracoes/mail', $mailForm());
+      check($envValues()['MAIL_SMTP_PASSWORD'] === 'senha-smtp-antiga', 'ENV-06: SMTP que recusa o login não é salvo');
+      postAs($base, $jarAdmin, '/admin/configuracoes/mail', $mailForm(['MAIL_SMTP_PASSWORD' => 'senha-smtp-nova']));
+      check($envValues()['MAIL_SMTP_PASSWORD'] === 'senha-smtp-nova' && $envValues()['MAIL_SMTP_PORT'] === (string) $envSmtpPort,
+        'ENV-06: SMTP que aceita o login é salvo');
+      if (is_resource($envSmtpProc)) {
+        proc_terminate($envSmtpProc);
+        proc_close($envSmtpProc);
+      }
+
+      // ENV-07 — Aplicação: validação e valores com " #" voltam iguais
+      $appForm = static fn(array $over = []): array => array_merge([
+        'APP_NAME' => 'AlgoIA # Campus Norte', 'APP_URL' => 'https://algoia.test/app', 'APP_ENV' => 'production', 'APP_DEBUG' => 'false',
+        'TRUSTED_PROXIES' => '', 'GRADING_JOB_MAX_ATTEMPTS' => '3', 'GRADING_JOB_STALE_MINUTES' => '15', 'admin_password' => $pw,
+      ], $over);
+      postAs($base, $jarAdmin, '/admin/configuracoes/app', $appForm(['APP_URL' => 'nao-e-url']));
+      check($envValues()['APP_URL'] === 'https://algoia.test', 'ENV-07: valor inválido é recusado');
+      postAs($base, $jarAdmin, '/admin/configuracoes/app', $appForm(['APP_NAME' => "Nome\nOPENAI_API_KEY=roubada"]));
+      check($envValues()['OPENAI_API_KEY'] === 'sk-nova-chave-9999' && !str_contains((string) file_get_contents($envEditPath), 'roubada'),
+        'ENV-07: quebra de linha não injeta outra variável');
+      postAs($base, $jarAdmin, '/admin/configuracoes/app', $appForm());
+      check($envValues()['APP_NAME'] === 'AlgoIA # Campus Norte' && $envValues()['APP_URL'] === 'https://algoia.test/app',
+        'ENV-07: valores salvos voltam iguais pelo leitor do .env');
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);
@@ -2014,6 +2125,8 @@ if (!extension_loaded('curl')) {
     proc_close($fakeAiProcess);
   }
   @unlink($fakeAiLog);
+  array_map('unlink', glob($envEditDir . '/{,.}*', GLOB_BRACE) ?: []);
+  @rmdir($envEditDir);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

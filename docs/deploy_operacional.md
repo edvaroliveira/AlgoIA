@@ -90,7 +90,18 @@ Antes de atualizar uma base de producao:
 
 ## Variaveis de Ambiente
 
-Configurar no `.env`:
+O Admin pode editar o `.env` pela interface em **Configuracoes** (`/admin/configuracoes`), em quatro grupos: IA, E-mail, Banco de dados e Aplicacao/fila. Regras:
+
+- Salvar exige a senha do Admin; tentativas com senha errada sao auditadas (`admin.env.update_denied`).
+- Cada grupo e testado antes de gravar: a chave e o modelo na OpenAI (`GET /v1/models/{modelo}`), o login no SMTP (sem enviar e-mail) e a conexao com o banco. Se o teste falhar, nada e gravado.
+- Segredos (chave da OpenAI, senhas do banco e do SMTP) nunca voltam para a tela: aparecem so os 4 ultimos caracteres, e campo em branco mantem o valor atual.
+- A gravacao preserva comentarios e a ordem das linhas, e e atomica (arquivo temporario + rename). O `.env` anterior fica em `.env.backup-AAAAMMDD-HHMMSS-*` (os 5 mais recentes), protegido pelo `.htaccess` da raiz e fora do Git.
+- A auditoria (`admin.env.update`) registra o grupo e os nomes das chaves alteradas, nunca os valores.
+- O `.env` precisa ter permissao de escrita para o usuario do PHP (no HostGator, o proprio usuario da conta). Sem isso, a tela abre so para leitura.
+- Variaveis definidas no proprio servidor (fora do `.env`) tem prioridade; a tela avisa quando isso acontece.
+- As mudancas valem a partir da proxima requisicao e da proxima execucao do cron.
+
+Configurar no `.env` (ou pela tela acima):
 
 - `APP_NAME`
 - `APP_ENV`
