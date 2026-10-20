@@ -146,7 +146,7 @@ Enquanto não corrigida, a Tentativa fica *Enviada* (`submitted`, mostrada como 
 
 ## Avisos por e-mail (worker)
 
-Os Avisos do app (exercício publicado, prazo encerrando, correção concluída, Revisão de nota, Matrícula, decisão do cadastro docente) também saem por e-mail para quem não desligou em Minha conta. Configure `MAIL_FROM` no `.env` e agende no cron, a cada 5 minutos:
+Os Avisos do app (exercício publicado, prazo encerrando, correção concluída, Revisão de nota, Matrícula, decisão do cadastro docente) também saem por e-mail para quem não desligou em Minha conta. O envio é por SMTP autenticado (caixa `no-reply@` do domínio, no Titan): configure `MAIL_DRIVER=smtp`, `MAIL_FROM` e `MAIL_SMTP_*` no `.env` e agende no cron, a cada 5 minutos:
 
 ```bash
 php bin/send_notification_emails.php 200
