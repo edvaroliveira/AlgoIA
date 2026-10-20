@@ -86,6 +86,7 @@ class TurmaController
       'grid'       => $grid,
       'selected'   => $selected,
       'byQuestion' => $selected !== null ? $performance->byQuestion((int) $id, $exerciseId) : [],
+      'evolution'  => $selected !== null ? (new \App\Models\AttemptEvolution())->forTurmaExercise((int) $id, $exerciseId) : [],
     ]);
   }
 

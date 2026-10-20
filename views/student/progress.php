@@ -1,5 +1,6 @@
 <?php
 $themes = $themes ?? [];
+$evolution = $evolution ?? [];
 $levels = [
   \App\Models\ThemeProgress::LEVEL_STRONG   => ['Ponto forte', 'badge--success'],
   \App\Models\ThemeProgress::LEVEL_MIDDLE   => ['Em evolução', 'badge--info'],
@@ -13,7 +14,7 @@ $weak = array_column(array_filter($themes, static fn(array $t): bool => $t['leve
 <div class="page-header">
   <div>
     <h1>Progresso</h1>
-    <p class="subtitle">Seu desempenho por Tema, somando a Prática e as Tentativas com Questões do banco de exercícios.</p>
+    <p class="subtitle">Seu desempenho por Tema (Prática e Tentativas com Questões do banco) e a evolução nos exercícios que você refez.</p>
   </div>
 </div>
 
@@ -65,3 +66,43 @@ $weak = array_column(array_filter($themes, static fn(array $t): bool => $t['leve
   </section>
   </div>
 <?php endif; ?>
+
+<div class="section">
+  <section class="surface-block">
+    <div class="surface-block__body">
+      <p><strong>Evolução nas Tentativas</strong> — primeira e última nota em cada exercício que você refez.</p>
+      <?php if ($evolution === []): ?>
+        <p class="empty-state">Quando você refizer um exercício, a comparação entre a primeira e a última nota aparece aqui.</p>
+      <?php else: ?>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Exercício</th>
+              <th>Primeira</th>
+              <th>Última</th>
+              <th>Diferença</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($evolution as $item):
+              [$trendLabel, $trendBadge] = \App\Models\AttemptEvolution::trendBadge($item['trend']);
+            ?>
+              <tr>
+                <td>
+                  <?= \Core\View::e($item['title']) ?><br>
+                  <small><?= $item['turma_name'] !== null ? \Core\View::e($item['turma_name']) . ' · ' : '' ?><?= $item['attempts'] ?> Tentativas</small>
+                </td>
+                <td><?= number_format($item['first'], 1, ',', '') ?> de <?= number_format($item['max_total'], 1, ',', '') ?></td>
+                <td><?= number_format($item['last'], 1, ',', '') ?></td>
+                <td>
+                  <?= \App\Models\AttemptEvolution::deltaText($item['delta']) ?>
+                  <br><span class="badge <?= $trendBadge ?>"><?= $trendLabel ?></span>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
+    </div>
+  </section>
+</div>

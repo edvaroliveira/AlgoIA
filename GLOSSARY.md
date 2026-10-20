@@ -164,6 +164,10 @@ _Evitar_: Boletim, ranking, nota do Tema
 Visão do Docente sobre uma Turma: a melhor nota de cada Aluno com Matrícula ativa em cada Exercício publicado nela, a média de cada Aluno e da Turma e, por Exercício, a média de cada Questão e os Motivos de desconto mais comuns.
 _Evitar_: Relatório, boletim, dashboard
 
+**Evolução**:
+Comparação, numa mesma Publicação, entre a nota da primeira e a da última Tentativa Corrigida de um Aluno que refez o Exercício: melhorou, manteve ou caiu.
+_Evitar_: Histórico de notas, progresso (que é por Tema)
+
 **Suspeita de injeção** (`injection_logs`):
 Registro de que uma Resposta continha um padrão de tentativa de manipular a Correção por IA.
 _Evitar_: Fraude, ataque
