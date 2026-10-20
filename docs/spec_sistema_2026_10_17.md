@@ -196,6 +196,12 @@ depois do login, perde a sessão.
 - Cada conquista é gravada uma única vez, com a data, e gera Aviso (e e-mail). São recalculadas após cada correção na Prática, cada Tentativa Corrigida e ao abrir Progresso.
 - Em Progresso, o Aluno vê as obtidas (primeiro) e as bloqueadas, com o que falta. Só o próprio Aluno vê; não há ranking.
 
+### RF-24 Ranking da Turma
+
+- Desligado por padrão. Na página da Turma, o Docente escolhe: desligado, semanal (a partir de segunda-feira), mensal (a partir do dia 1º) ou desde o início da Turma. A mudança é auditada.
+- Pontos: soma, por Questão do banco, da melhor nota de Prática do Aluno no período (escala 0 a 10). Repetir a mesma Questão não soma de novo. Só entram Alunos com Matrícula ativa na Turma. Empates dividem a posição (1, 2, 2, 4).
+- O Aluno vê o top 5 e a própria posição ("Você está em Nº de T"); no semanal e no mensal, também o campeão do período anterior. Em Minha conta pode aparecer como "Aluno anônimo" para os colegas. O Docente vê a lista completa com nomes.
+
 ## Requisitos não funcionais
 
 ### RNF-01 Segurança

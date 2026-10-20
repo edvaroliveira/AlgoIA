@@ -26,6 +26,7 @@ $router->get('/conta',               'AccountController@show', ['auth']);
 $router->post('/conta/foto',         'AccountController@uploadAvatar', ['auth']);
 $router->post('/conta/foto/remover', 'AccountController@deleteAvatar', ['auth']);
 $router->post('/conta/avisos-email', 'AccountController@updateEmailNotifications', ['auth']);
+$router->post('/conta/ranking', 'AccountController@updateRankingAnonymous', ['student']);
 
 // ── Teacher ──────────────────────────────────────────────────────────────────
 $router->get('/teacher/dashboard', 'DashboardController@teacher', ['teacher']);
@@ -93,6 +94,7 @@ $router->get('/teacher/turmas',                                   'TurmaControll
 $router->get('/teacher/turmas/create',                            'TurmaController@create', ['teacher']);
 $router->post('/teacher/turmas',                                  'TurmaController@store', ['teacher']);
 $router->get('/teacher/turmas/{id}',                              'TurmaController@show', ['teacher']);
+$router->post('/teacher/turmas/{id}/ranking',                     'TurmaController@updateRanking', ['teacher']);
 $router->post('/teacher/turmas/{id}/mural',                       'TurmaController@storePost', ['teacher']);
 $router->post('/teacher/turmas/{id}/mural/{postId}/fixar',        'TurmaController@togglePostPin', ['teacher']);
 $router->post('/teacher/turmas/{id}/mural/{postId}/excluir',      'TurmaController@deletePost', ['teacher']);
@@ -139,6 +141,7 @@ $router->get('/student/exercises',                  'ExerciseController@studentI
 $router->get('/student/agenda',                     'ExerciseController@studentAgenda', ['student']);
 $router->get('/student/pratica',                    'PracticeController@index', ['student']);
 $router->get('/student/mural',                      'MuralController@student', ['student']);
+$router->get('/student/ranking',                    'RankingController@student', ['student']);
 $router->get('/student/progresso',                  'ProgressController@student', ['student']);
 $router->get('/student/pratica/sortear',            'PracticeController@draw', ['student']);
 $router->get('/student/pratica/questao/{id}',       'PracticeController@show', ['student']);

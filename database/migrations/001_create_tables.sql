@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     email         VARCHAR(150)  NOT NULL UNIQUE,
     avatar_path   VARCHAR(255)  NULL,
     email_notifications TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Avisos também por e-mail (Minha conta)',
+    ranking_anonymous TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Aparece como Aluno anônimo no ranking',
     password_hash VARCHAR(255)  NOT NULL,
     must_change_password TINYINT(1) NOT NULL DEFAULT 0,
     password_reset_at DATETIME NULL,
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS turmas (
     name       VARCHAR(100) NOT NULL,
     access_key CHAR(6)      NOT NULL UNIQUE,
     active     TINYINT(1)   NOT NULL DEFAULT 1,
+    ranking_mode ENUM('off','weekly','monthly','all') NOT NULL DEFAULT 'off',
     created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_turmas_teacher FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

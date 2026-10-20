@@ -441,6 +441,49 @@ summary:focus-visible {
   color: var(--text-muted);
 }
 
+.ranking-list {
+  list-style: none;
+  margin: 0.75rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.ranking-row {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.8rem;
+}
+
+.ranking-row--me {
+  background: #e4f6eb;
+  border-color: #b9e3c8;
+}
+
+.ranking-row__pos {
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.ranking-row__pts {
+  font-weight: 600;
+}
+
+.ranking-mine {
+  font-weight: 600;
+}
+
+.ranking-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 1rem;
+}
+
 .agenda-item {
   display: flex;
   flex-wrap: wrap;

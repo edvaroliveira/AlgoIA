@@ -63,7 +63,25 @@ class TurmaController
       'pending'  => $this->turmas->getPendingStudents((int) $id),
       'students' => $this->turmas->getActiveStudents((int) $id),
       'posts'    => (new TurmaPost())->forTurma((int) $id),
+      'ranking'  => (new \App\Models\TurmaRanking())->standings($turma),
     ]);
+  }
+
+  /** POST /teacher/turmas/{id}/ranking — liga/desliga e escolhe o período. */
+  public function updateRanking(string $id): void
+  {
+    Request::validateCsrf();
+    $this->getOwnedTurma((int) $id);
+    global $session;
+    $mode = Request::str('ranking_mode');
+
+    if ((new \App\Models\TurmaRanking())->setMode((int) $id, $mode)) {
+      AuditService::record('teacher.turma.ranking', 'turma', (int) $id, ['mode' => $mode]);
+      $session->flash('success', 'Ranking: ' . \App\Models\TurmaRanking::modeLabel($mode) . '.');
+    } else {
+      $session->flash('error', 'Período de ranking inválido.');
+    }
+    View::redirect('/teacher/turmas/' . (int) $id . '#ranking');
   }
 
   // ── Teacher: mural ───────────────────────────────────────────────────────

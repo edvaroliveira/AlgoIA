@@ -176,6 +176,10 @@ _Evitar_: Fórum, chat, comunicado
 Marco que o Aluno atinge pela própria atividade (primeira correção, primeira resposta num Tema, dias seguidos de estudo, volume de Prática, nota máxima, ponto forte, melhora ao refazer). Obtida uma única vez e visível só para ele.
 _Evitar_: Medalha, badge, troféu, ranking
 
+**Ranking** (`turmas.ranking_mode`):
+Classificação opcional dos Alunos de uma Turma pelos pontos da Prática no período escolhido pelo Docente (semanal, mensal ou desde o início da Turma). Cada Aluno vê o top 5 e a própria posição, e pode aparecer como anônimo para os colegas.
+_Evitar_: Placar, competição, nota da Turma
+
 **Suspeita de injeção** (`injection_logs`):
 Registro de que uma Resposta continha um padrão de tentativa de manipular a Correção por IA.
 _Evitar_: Fraude, ataque

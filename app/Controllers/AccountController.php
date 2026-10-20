@@ -120,6 +120,19 @@ class AccountController
     View::redirect('/conta');
   }
 
+  /** POST /conta/ranking — Aluno aparece (ou não) como anônimo no ranking. */
+  public function updateRankingAnonymous(): void
+  {
+    Request::validateCsrf();
+
+    global $session;
+    $anonymous = (string) Request::post('ranking_anonymous', '') === '1';
+    (new User())->setRankingAnonymous((int) Auth::id(), $anonymous);
+
+    $session->flash('success', $anonymous ? 'Você aparece como anônimo no ranking.' : 'Seu nome aparece no ranking.');
+    View::redirect('/conta');
+  }
+
   /** Retorna mensagem de erro ou null se o upload for válido. */
   private function validateUpload(?array $file): ?string
   {
