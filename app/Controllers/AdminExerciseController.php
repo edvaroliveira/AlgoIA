@@ -95,6 +95,9 @@ class AdminExerciseController extends AdminBaseController
       'results'    => $this->exercises->getResultsForTeacher((int) $id),
       'maxScore'   => $this->questions->getTotalMaxScore((int) $id),
       'returnPath' => $this->buildReturnPathFromRequest('/admin/exercises'),
+      'bankStatus' => (new \App\Models\BankExercise())->latestForExercise((int) $id),
+      'categoryTree' => (new \App\Models\Category())->tree(true),
+      'classification' => (new \App\Models\Category())->classificationOf('exercise', (int) $id),
     ]);
   }
 

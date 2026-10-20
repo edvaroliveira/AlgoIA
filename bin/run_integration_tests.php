@@ -159,6 +159,7 @@ try {
 }
 
 $allTables = [
+  'exercise_themes',
   'ai_usage_logs',
   'student_achievements',
   'turma_posts',
@@ -167,6 +168,7 @@ $allTables = [
   'score_reviews',
   'bank_exercise_themes',
   'bank_themes',
+  'categories',
   'bank_questions',
   'bank_exercises',
   'injection_logs',
@@ -692,13 +694,36 @@ function postAs(string $base, string $jar, string $path, array $fields = []): ar
 if (!extension_loaded('curl')) {
   echo "curl indisponível — smoke HTTP pulado.\n";
 } else {
-  $port = 18080 + random_int(0, 500);
+  // Porta livre de verdade: um servidor órfão de rodada anterior na mesma porta
+  // receberia as requisições desta suíte (com outro ambiente — já gravou no .env
+  // real em 2026-10-20). Por isso nenhuma porta em uso é reaproveitada.
+  $freePort = static function (int $from, int $span): int {
+    for ($i = 0; $i < 200; $i++) {
+      $candidate = $from + random_int(0, $span);
+      $probe = @fsockopen('127.0.0.1', $candidate, $errno, $errstr, 0.2);
+      if ($probe === false) {
+        return $candidate;
+      }
+      fclose($probe);
+    }
+    throw new \RuntimeException('Nenhuma porta livre para o servidor de testes.');
+  };
+  // Processos auxiliares morrem junto com a suíte, mesmo em erro fatal.
+  $spawned = [];
+  register_shutdown_function(static function () use (&$spawned): void {
+    foreach ($spawned as $proc) {
+      if (is_resource($proc)) {
+        @proc_terminate($proc);
+      }
+    }
+  });
+  $port = $freePort(18080, 500);
   $host = "127.0.0.1:{$port}";
 
   $descriptors = [1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
 
   // IA falsa local: a Correção na hora da prática fala com ela, nunca com a OpenAI.
-  $fakeAiPort = $port + 1000;
+  $fakeAiPort = $freePort(19080, 500);
   $fakeAiLog = tempnam(sys_get_temp_dir(), 'fake_openai_');
   putenv("FAKE_OPENAI_LOG={$fakeAiLog}");
   putenv("OPENAI_API_URL=http://127.0.0.1:{$fakeAiPort}/v1/chat/completions");
@@ -735,6 +760,7 @@ if (!extension_loaded('curl')) {
     $fakeAiPipes,
     ROOT_PATH
   );
+  $spawned[] = $fakeAiProcess;
 
   $serverProcess = proc_open(
     // Mesmo fuso do processo de teste: a janela da Publicação precisa bater com o banco.
@@ -745,6 +771,7 @@ if (!extension_loaded('curl')) {
     $pipes,
     ROOT_PATH
   );
+  $spawned[] = $serverProcess;
 
   if (!is_resource($serverProcess)) {
     echo "Não foi possível iniciar o servidor embutido — smoke HTTP pulado.\n";
@@ -994,6 +1021,18 @@ if (!extension_loaded('curl')) {
         }
         return ['id' => $id, 'questions' => $qids];
       };
+      // Categoria com subcategorias (fixture direto no banco): ['id' => .., 'subs' => [nome => id]]
+      $mkCategory = function (string $name, array $subs) use ($pdoA): array {
+        $pdoA->exec("INSERT INTO categories (name) VALUES (" . $pdoA->quote($name) . ")");
+        $categoryId = (int) $pdoA->lastInsertId();
+        $ids = [];
+        foreach ($subs as $sub) {
+          $pdoA->exec("INSERT INTO bank_themes (category_id, name) VALUES ({$categoryId}, " . $pdoA->quote($sub) . ")");
+          $ids[$sub] = (int) $pdoA->lastInsertId();
+        }
+        return ['id' => $categoryId, 'subs' => $ids];
+      };
+      $catBanco = $mkCategory('Algoritmos Teste', ['Vetores', 'Laços', 'Recursão', 'Reabrir']);
       $questionsOf = fn(int $exerciseId): array => $pdoA->query(
         "SELECT text, expected_answer_hint, max_score, order_index FROM questions WHERE exercise_id = {$exerciseId} ORDER BY order_index"
       )->fetchAll();
@@ -1103,9 +1142,12 @@ if (!extension_loaded('curl')) {
       postAs($base, $jarDocenteA, "/teacher/exercises/{$published['id']}/suggest-bank");
       check($bankRow($published['id']) === false, 'BANCO-04: Exercício Sinalizado não pode ser sugerido');
 
-      $r = postAs($base, $jarDocenteA, "/admin/bank/{$suggested['id']}/approve", ['themes' => 'Vetores, Laços']);
+      $approveForm = ['category_id' => $catBanco['id'], 'theme_ids' => [$catBanco['subs']['Vetores'], $catBanco['subs']['Laços']]];
+      $r = postAs($base, $jarAdmin, "/admin/bank/{$suggested['id']}/approve", []);
+      check(($bankRow($suggestSource['id'])['status'] ?? '') === 'suggested', 'CAT-04: aprovar sem categoria/subcategoria é recusado');
+      $r = postAs($base, $jarDocenteA, "/admin/bank/{$suggested['id']}/approve", $approveForm);
       check($r['code'] === 302 && ($bankRow($suggestSource['id'])['status'] ?? '') === 'suggested', 'BANCO-04: Docente não aprova Sugestão');
-      $r = postAs($base, $jarAdmin, "/admin/bank/{$suggested['id']}/approve", ['themes' => 'Vetores, Laços']);
+      $r = postAs($base, $jarAdmin, "/admin/bank/{$suggested['id']}/approve", $approveForm);
       $approved = $bankRow($suggestSource['id']);
       check(
         $r['code'] === 302 && $approved['status'] === 'active' && (int) $approved['reviewed_by'] === $admin['id']
@@ -1115,8 +1157,12 @@ if (!extension_loaded('curl')) {
       check(
         $countRows("SELECT COUNT(*) FROM bank_exercise_themes bet JOIN bank_themes bt ON bt.id = bet.theme_id
                     WHERE bet.bank_exercise_id = {$suggested['id']} AND bt.name IN ('Vetores', 'Laços')") === 2,
-        'BANCO-04: Temas definidos na aprovação ficam ligados ao item'
+        'BANCO-04: subcategorias escolhidas na aprovação ficam ligadas ao item'
       );
+      check($countRows("SELECT COUNT(*) FROM bank_exercises WHERE id = {$suggested['id']} AND category_id = {$catBanco['id']}") === 1,
+        'CAT-04: aprovação grava a categoria do item');
+      $byCategory = httpAs($jarDocenteB, 'GET', "{$base}/teacher/bank?category={$catBanco['id']}");
+      check(str_contains($byCategory['body'], 'Vetores e laços'), 'CAT-04: banco filtra por categoria');
 
       $listed = httpAs($jarDocenteB, 'GET', "{$base}/teacher/bank?theme=" . rawurlencode('Vetores'));
       check($listed['code'] === 200 && str_contains($listed['body'], 'Vetores e laços'), 'BANCO-04: item aprovado aparece no banco filtrado pelo Tema');
@@ -1145,7 +1191,7 @@ if (!extension_loaded('curl')) {
       check($rejected['status'] === 'rejected' && $rejected['review_note'] === 'Enunciado ambíguo', 'BANCO-05: recusa grava o motivo');
 
       $directSource = $mkExercise($docenteB['id'], 'Incluído pelo Admin', 'ready', ['QD']);
-      postAs($base, $jarAdmin, "/admin/exercises/{$directSource['id']}/add-to-bank", ['themes' => 'Recursão']);
+      postAs($base, $jarAdmin, "/admin/exercises/{$directSource['id']}/add-to-bank", ['category_id' => $catBanco['id'], 'theme_ids' => [$catBanco['subs']['Recursão']]]);
       check(($bankRow($directSource['id'])['status'] ?? '') === 'active', 'BANCO-05: Admin inclui Exercício direto no banco, já ativo');
 
       postAs($base, $jarAdmin, "/admin/bank/{$suggested['id']}/archive");
@@ -1157,8 +1203,9 @@ if (!extension_loaded('curl')) {
         !str_contains($afterArchive['body'], 'Vetores e laços') && !str_contains($r['location'], '/questions/create'),
         'BANCO-05: item arquivado some do banco e não pode mais ser importado'
       );
-      postAs($base, $jarAdmin, "/admin/bank/{$toReject['id']}/approve", ['themes' => 'Reabrir']);
-      postAs($base, $jarAdmin, "/admin/bank/{$suggested['id']}/approve", ['themes' => 'Reabrir']);
+      $reopenForm = ['category_id' => $catBanco['id'], 'theme_ids' => [$catBanco['subs']['Reabrir']]];
+      postAs($base, $jarAdmin, "/admin/bank/{$toReject['id']}/approve", $reopenForm);
+      postAs($base, $jarAdmin, "/admin/bank/{$suggested['id']}/approve", $reopenForm);
       check(
         ($bankRow($rejectSource['id'])['status'] ?? '') === 'rejected' && ($bankRow($suggestSource['id'])['status'] ?? '') === 'archived',
         'BANCO-05: só Sugestões podem ser aprovadas (recusado e arquivado não voltam ao banco por "aprovar")'
@@ -1351,9 +1398,9 @@ if (!extension_loaded('curl')) {
       // PRA-01 — Modo prática: Temas do banco e correções do dia
       $alunoPratica = $mkUser('Aluno Pratica', 'student');
       $jarPratica = loginAs($base, $alunoPratica['email'], $pw);
-      $pdoA->exec("INSERT INTO bank_themes (name) VALUES ('Tema de Pratica')");
+      $pdoA->exec("INSERT INTO bank_themes (category_id, name) VALUES ({$catBanco['id']}, 'Tema de Pratica')");
       $praticaTheme = (int) $pdoA->lastInsertId();
-      $pdoA->exec("INSERT INTO bank_exercises (title, status) VALUES ('Lista de pratica', 'active')");
+      $pdoA->exec("INSERT INTO bank_exercises (title, status, category_id) VALUES ('Lista de pratica', 'active', {$catBanco['id']})");
       $praticaList = (int) $pdoA->lastInsertId();
       $pdoA->exec("INSERT INTO bank_exercise_themes (bank_exercise_id, theme_id) VALUES ({$praticaList}, {$praticaTheme})");
       $pdoA->exec("INSERT INTO bank_questions (bank_exercise_id, text, expected_answer_hint, max_score, order_index)
@@ -1443,10 +1490,10 @@ if (!extension_loaded('curl')) {
       $pdoA->exec("INSERT INTO answers (attempt_id, question_id, student_answer, ai_score, evaluated_at)
                    VALUES ({$halfAttempt}, {$progQuestions[0]}, 'r', 0, NOW())");
 
-      $mkThemeList = function (string $theme, string $questionText) use ($pdoA): int {
-        $pdoA->exec("INSERT INTO bank_themes (name) VALUES (" . $pdoA->quote($theme) . ")");
+      $mkThemeList = function (string $theme, string $questionText) use ($pdoA, $catBanco): int {
+        $pdoA->exec("INSERT INTO bank_themes (category_id, name) VALUES ({$catBanco['id']}, " . $pdoA->quote($theme) . ")");
         $themeId = (int) $pdoA->lastInsertId();
-        $pdoA->exec("INSERT INTO bank_exercises (title, status) VALUES (" . $pdoA->quote("Lista {$theme}") . ", 'active')");
+        $pdoA->exec("INSERT INTO bank_exercises (title, status, category_id) VALUES (" . $pdoA->quote("Lista {$theme}") . ", 'active', {$catBanco['id']})");
         $listId = (int) $pdoA->lastInsertId();
         $pdoA->exec("INSERT INTO bank_exercise_themes (bank_exercise_id, theme_id) VALUES ({$listId}, {$themeId})");
         $pdoA->exec("INSERT INTO bank_questions (bank_exercise_id, text, expected_answer_hint, max_score, order_index)
@@ -1454,6 +1501,7 @@ if (!extension_loaded('curl')) {
         return (int) $pdoA->lastInsertId();
       };
       $weakQ = $mkThemeList('Tema Fraco', 'Questao do tema fraco');
+      $weakQTheme = (int) $pdoA->query("SELECT id FROM bank_themes WHERE name = 'Tema Fraco'")->fetchColumn();
       for ($i = 0; $i < 3; $i++) {
         $pdoA->exec("INSERT INTO practice_answers (student_id, bank_question_id, student_answer, score, max_score, feedback)
                      VALUES ({$alunoProg['id']}, {$weakQ}, 'p', 2, 10, 'f')");
@@ -1483,6 +1531,10 @@ if (!extension_loaded('curl')) {
       $pdoA->exec("INSERT INTO answers (attempt_id, question_id, student_answer, ai_score, evaluated_at)
                    VALUES ({$legacyAttempt}, {$legacy['questions'][0]}, 'r', 10, NOW())");
       applySchema($cfg, ROOT_PATH . '/database/migrations/027_questions_bank_origin.sql');
+      applySchema($cfg, ROOT_PATH . '/database/migrations/033_categories.sql');
+      check($countRows("SELECT COUNT(*) FROM exercises WHERE id = {$legacy['id']} AND category_id = {$catBanco['id']}") === 1
+        && $countRows("SELECT COUNT(*) FROM exercise_themes WHERE exercise_id = {$legacy['id']} AND theme_id = {$weakQTheme}") === 1,
+        'CAT-06: migration classifica Exercício antigo pela origem das Questões no banco');
       $weak = $progRow(httpAs($jarProg, 'GET', "{$base}/student/progresso")['body'], 'Tema Fraco');
       check(str_contains($weak, '40%') && str_contains($weak, '4 respostas corrigidas'),
         'PROG-02: migration liga Questão importada antes (texto idêntico) e ela entra no progresso');
@@ -1789,7 +1841,7 @@ if (!extension_loaded('curl')) {
       check(!$earned(httpAs($jarPratica, 'GET', "{$base}/student/progresso")['body'], 'Volta por cima'), 'ACH-03: conquistas são de cada Aluno');
 
       // MAIL-08 — Driver SMTP (servidor SMTP falso local, sem TLS)
-      $smtpPort = $port + 2000;
+      $smtpPort = $freePort(20080, 500);
       $smtpLog = tempnam(sys_get_temp_dir(), 'fake_smtp_');
       $smtpProc = proc_open(
         [PHP_BINARY, ROOT_PATH . '/bin/fixtures/fake_smtp_server.php', (string) $smtpPort],
@@ -1798,6 +1850,7 @@ if (!extension_loaded('curl')) {
         ROOT_PATH,
         array_merge(getenv(), ['FAKE_SMTP_LOG' => $smtpLog])
       );
+      $spawned[] = $smtpProc;
       for ($i = 0; $i < 30 && @fsockopen('127.0.0.1', $smtpPort) === false; $i++) {
         usleep(100_000);
       }
@@ -2069,9 +2122,10 @@ if (!extension_loaded('curl')) {
         'ENV-05: dados que conectam são salvos (senha em branco mantida)');
 
       // ENV-06 — E-mail: SMTP testado antes de salvar
-      $envSmtpPort = $port + 2500;
+      $envSmtpPort = $freePort(20600, 400);
       $envSmtpProc = proc_open([PHP_BINARY, ROOT_PATH . '/bin/fixtures/fake_smtp_server.php', (string) $envSmtpPort],
         [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $envSmtpPipes, ROOT_PATH, array_merge(getenv(), ['FAKE_SMTP_LOG' => '']));
+      $spawned[] = $envSmtpProc;
       for ($i = 0; $i < 30 && @fsockopen('127.0.0.1', $envSmtpPort) === false; $i++) {
         usleep(100_000);
       }
@@ -2103,6 +2157,110 @@ if (!extension_loaded('curl')) {
       postAs($base, $jarAdmin, '/admin/configuracoes/app', $appForm());
       check($envValues()['APP_NAME'] === 'AlgoIA # Campus Norte' && $envValues()['APP_URL'] === 'https://algoia.test/app',
         'ENV-07: valores salvos voltam iguais pelo leitor do .env');
+
+      // CAT-01 — Admin mantém categorias e subcategorias; Docente só escolhe
+      $catCount = fn(string $where): int => $countRows("SELECT COUNT(*) FROM categories WHERE {$where}");
+      $r = postAs($base, $jarAdmin, '/admin/categorias', ['name' => 'Estruturas de Dados']);
+      $edId = (int) $pdoA->query("SELECT id FROM categories WHERE name = 'Estruturas de Dados'")->fetchColumn();
+      check($r['code'] === 302 && $edId > 0 && $auditCount('admin.category.create', $edId) === 1, 'CAT-01: Admin cria categoria (auditado)');
+      $dup = postAs($base, $jarAdmin, '/admin/categorias', ['name' => 'Estruturas de Dados']);
+      check($dup['code'] === 302 && $catCount("name = 'Estruturas de Dados'") === 1, 'CAT-01: nome de categoria repetido é recusado com mensagem');
+      postAs($base, $jarAdmin, "/admin/categorias/{$edId}/subcategorias", ['name' => 'Pilhas']);
+      postAs($base, $jarAdmin, "/admin/categorias/{$edId}/subcategorias", ['name' => 'Filas']);
+      $subId = fn(string $name): int => (int) $pdoA->query("SELECT id FROM bank_themes WHERE name = " . $pdoA->quote($name))->fetchColumn();
+      $pilhas = $subId('Pilhas');
+      $filas = $subId('Filas');
+      check($pilhas > 0 && $filas > 0 && $countRows("SELECT COUNT(*) FROM bank_themes WHERE category_id = {$edId}") === 2, 'CAT-01: Admin cria subcategorias dentro da categoria');
+      postAs($base, $jarAdmin, "/admin/subcategorias/{$pilhas}/renomear", ['name' => 'Pilhas e Deques']);
+      check($countRows("SELECT COUNT(*) FROM bank_themes WHERE id = {$pilhas} AND name = 'Pilhas e Deques'") === 1, 'CAT-01: Admin renomeia subcategoria');
+      postAs($base, $jarAdmin, "/admin/subcategorias/{$filas}/status", ['active' => '0']);
+      $createForm = httpAs($jarDocenteA, 'GET', "{$base}/teacher/exercises/create")['body'];
+      check(str_contains($createForm, 'Estruturas de Dados') && str_contains($createForm, 'Pilhas e Deques') && !str_contains($createForm, '>Filas<')
+        && !preg_match('#value="' . $filas . '"#', $createForm), 'CAT-01: subcategoria desativada some das escolhas do Docente');
+      check($page($jarDocenteA, '/admin/categorias')['code'] !== 200, 'CAT-01: só o Admin mantém categorias');
+
+      // CAT-02 — Classificação obrigatória para concluir; subcategoria deve ser da categoria
+      postAs($base, $jarDocenteA, '/teacher/exercises', ['title' => 'Pilha com vetor', 'description' => 'd']);
+      $catEx = (int) $pdoA->query("SELECT id FROM exercises WHERE title = 'Pilha com vetor'")->fetchColumn();
+      $pdoA->exec("INSERT INTO questions (exercise_id, text, expected_answer_hint, max_score, order_index) VALUES ({$catEx}, 'Empilhe', 'push', 10, 1)");
+      $exStatus = fn(int $id): string => (string) $pdoA->query("SELECT status FROM exercises WHERE id = {$id}")->fetchColumn();
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$catEx}/complete");
+      check($exStatus($catEx) === 'draft', 'CAT-02: Exercício sem classificação não pode ser concluído');
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$catEx}/classificacao", ['category_id' => $edId, 'theme_ids' => [$catBanco['subs']['Vetores']]]);
+      check($countRows("SELECT COUNT(*) FROM exercise_themes WHERE exercise_id = {$catEx}") === 0, 'CAT-02: subcategoria de outra categoria é recusada');
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$catEx}/classificacao", ['category_id' => $edId, 'theme_ids' => [$filas]]);
+      check($countRows("SELECT COUNT(*) FROM exercise_themes WHERE exercise_id = {$catEx}") === 0, 'CAT-02: subcategoria desativada é recusada');
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$catEx}/classificacao", ['category_id' => $edId, 'theme_ids' => [$pilhas]]);
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$catEx}/complete");
+      check($exStatus($catEx) === 'ready' && $countRows("SELECT COUNT(*) FROM exercises WHERE id = {$catEx} AND category_id = {$edId}") === 1,
+        'CAT-02: classificado, o Exercício é concluído');
+      $r = postAs($base, $jarDocenteB, "/teacher/exercises/{$catEx}/classificacao", ['category_id' => $edId, 'theme_ids' => [$pilhas]]);
+      check($r['code'] === 403, 'CAT-02: Docente não classifica Exercício de outro');
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$desEx1['id']}/classificacao", ['category_id' => $edId, 'theme_ids' => [$pilhas]]);
+      check($countRows("SELECT COUNT(*) FROM exercise_themes WHERE exercise_id = {$desEx1['id']} AND theme_id = {$pilhas}") === 1,
+        'CAT-02: Docente classifica Exercício já Publicado');
+      $pdoA->exec("INSERT INTO categories (name, active) VALUES ('Categoria Inativa', 0)");
+      $inactiveCat = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO bank_themes (category_id, name) VALUES ({$inactiveCat}, 'Sub da inativa')");
+      $inactiveSub = (int) $pdoA->lastInsertId();
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$desEx2['id']}/classificacao", ['category_id' => $inactiveCat, 'theme_ids' => [$inactiveSub]]);
+      check($countRows("SELECT COUNT(*) FROM exercise_themes WHERE exercise_id = {$desEx2['id']}") === 0, 'CAT-02: categoria desativada não pode ser escolhida');
+      $exList = httpAs($jarDocenteA, 'GET', "{$base}/teacher/exercises?category={$edId}")['body'];
+      check(str_contains($exList, 'Pilha com vetor') && !str_contains($exList, 'Exercício HTTP A'), 'CAT-02: lista de Exercícios filtra por categoria');
+
+      // CAT-03 — Importar herda; Sugerir copia
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$catEx}/suggest-bank");
+      $catBankItem = (int) $pdoA->query("SELECT id FROM bank_exercises WHERE source_exercise_id = {$catEx}")->fetchColumn();
+      check($countRows("SELECT COUNT(*) FROM bank_exercises WHERE id = {$catBankItem} AND category_id = {$edId}") === 1
+        && $countRows("SELECT COUNT(*) FROM bank_exercise_themes WHERE bank_exercise_id = {$catBankItem} AND theme_id = {$pilhas}") === 1,
+        'CAT-03: Sugestão leva a categoria e as subcategorias do Exercício');
+      postAs($base, $jarAdmin, "/admin/bank/{$catBankItem}/approve", ['category_id' => $edId, 'theme_ids' => [$pilhas]]);
+      $catBankQ = (int) $pdoA->query("SELECT id FROM bank_questions WHERE bank_exercise_id = {$catBankItem}")->fetchColumn();
+      $newFromBank = $draftIdFrom(postAs($base, $jarDocenteB, '/teacher/bank/import', [
+        'source' => 'bank', 'source_id' => $catBankItem, 'question_ids' => [$catBankQ], 'title' => 'Copia com classificacao',
+      ]));
+      check($countRows("SELECT COUNT(*) FROM exercises WHERE id = {$newFromBank} AND category_id = {$edId}") === 1
+        && $countRows("SELECT COUNT(*) FROM exercise_themes WHERE exercise_id = {$newFromBank} AND theme_id = {$pilhas}") === 1,
+        'CAT-03: Rascunho novo importado do banco herda a classificação');
+      $otherDraft = $mkExercise($docenteB['id'], 'Rascunho de outra categoria', 'draft', ['QO']);
+      $pdoA->exec("UPDATE exercises SET category_id = {$catBanco['id']} WHERE id = {$otherDraft['id']}");
+      $pdoA->exec("INSERT INTO exercise_themes (exercise_id, theme_id) VALUES ({$otherDraft['id']}, {$catBanco['subs']['Vetores']})");
+      postAs($base, $jarDocenteB, '/teacher/bank/import', [
+        'source' => 'bank', 'source_id' => $catBankItem, 'question_ids' => [$catBankQ], 'exercise_id' => $otherDraft['id'],
+      ]);
+      check($countRows("SELECT COUNT(*) FROM exercises WHERE id = {$otherDraft['id']} AND category_id = {$catBanco['id']}") === 1
+        && $countRows("SELECT COUNT(*) FROM exercise_themes WHERE exercise_id = {$otherDraft['id']}") === 1,
+        'CAT-03: Rascunho de outra categoria mantém a própria classificação ao importar');
+      $plainDraft = $mkExercise($docenteB['id'], 'Rascunho sem categoria', 'draft', ['QP']);
+      postAs($base, $jarDocenteB, '/teacher/bank/import', [
+        'source' => 'bank', 'source_id' => $catBankItem, 'question_ids' => [$catBankQ], 'exercise_id' => $plainDraft['id'],
+      ]);
+      check($countRows("SELECT COUNT(*) FROM exercises WHERE id = {$plainDraft['id']} AND category_id = {$edId}") === 1,
+        'CAT-03: Rascunho sem categoria herda a do item importado');
+
+      $bankByEd = httpAs($jarDocenteB, 'GET', "{$base}/teacher/bank?category={$edId}")['body'];
+      check(str_contains($bankByEd, 'Pilha com vetor') && !str_contains($bankByEd, 'Incluído pelo Admin'),
+        'CAT-04: filtro por categoria no banco esconde itens de outras categorias');
+
+      // CAT-04 — Inclusão direta visível no Admin, com o motivo quando não é possível
+      $draftForAdmin = $mkExercise($docenteA['id'], 'Rascunho no admin', 'draft', ['QA']);
+      $adminDraftPage = httpAs($jarAdmin, 'GET', "{$base}/admin/exercises/{$draftForAdmin['id']}")['body'];
+      check(str_contains($adminDraftPage, 'Banco de exercícios') && str_contains($adminDraftPage, 'Rascunho não pode entrar no banco'),
+        'CAT-04: quadro do banco aparece também no Rascunho, explicando por que não pode entrar');
+      $adminList = httpAs($jarAdmin, 'GET', "{$base}/admin/exercises")['body'];
+      check(str_contains($adminList, 'Adicionar ao banco'), 'CAT-04: lista de Exercícios do Admin tem atalho para adicionar ao banco');
+
+      // CAT-05 — Progresso conta Exercício criado do zero pela subcategoria; telas agrupam por categoria
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, turma_id, status, total_score) VALUES ({$catEx}, {$alunoProg['id']}, NULL, 'graded', 7)");
+      $catAttempt = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO answers (attempt_id, question_id, student_answer, ai_score, evaluated_at)
+                   SELECT {$catAttempt}, id, 'r', 7, NOW() FROM questions WHERE exercise_id = {$catEx}");
+      $progCat = httpAs($jarProg, 'GET', "{$base}/student/progresso")['body'];
+      $pilhasRow = $desRow($progCat, 'Pilhas e Deques');
+      check(str_contains($pilhasRow, '70%') && str_contains($pilhasRow, '1 resposta corrigida'),
+        'CAT-05: Progresso conta Tentativa de Exercício criado do zero pela subcategoria');
+      check(str_contains($progCat, 'Estruturas de Dados') && str_contains(httpAs($jarProg, 'GET', "{$base}/student/pratica")['body'], 'Algoritmos Teste'),
+        'CAT-05: Progresso e Prática agrupam por categoria');
 
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
@@ -2173,7 +2331,15 @@ check(
 check(
   (int) $pdoA->query("SELECT COUNT(DISTINCT bt.name) FROM bank_themes bt JOIN bank_exercise_themes bet ON bet.theme_id = bt.id
                       WHERE bt.name IN ('Variáveis', 'Estruturas de Decisão', 'Estruturas de Repetição', 'Vetores', 'Matrizes', 'Modularização')")->fetchColumn() === 6,
-  'SEED-ALG: os 6 tópicos viram Temas do banco'
+  'SEED-ALG: os 6 tópicos viram subcategorias do banco'
+);
+check(
+  (int) $pdoA->query("SELECT COUNT(*) FROM bank_themes bt JOIN categories c ON c.id = bt.category_id
+                      WHERE c.name = 'Algoritmos' AND bt.name IN ('Variáveis', 'Estruturas de Decisão', 'Estruturas de Repetição', 'Vetores', 'Matrizes', 'Modularização')")->fetchColumn() === 6
+    && (int) $pdoA->query("SELECT COUNT(*) FROM exercises e JOIN categories c ON c.id = e.category_id
+                            WHERE e.teacher_id = {$seedTeacherId} AND c.name = 'Algoritmos'
+                              AND EXISTS (SELECT 1 FROM exercise_themes et WHERE et.exercise_id = e.id)")->fetchColumn() === 60,
+  'SEED-ALG: categoria Algoritmos com 6 subcategorias; Exercícios do Docente já classificados'
 );
 check(
   $seedOwnCount() === 60

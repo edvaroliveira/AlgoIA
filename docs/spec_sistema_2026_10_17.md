@@ -168,7 +168,7 @@ depois do login, perde a sessão.
 
 ### RF-20 Progresso por Tema
 
-- O Aluno vê, para cada Tema do banco, quantas respostas já teve corrigidas e a média percentual, somando a Prática e as Tentativas Corrigidas com Questões vindas do banco. Questões criadas do zero não têm Tema e ficam fora.
+- O Aluno vê, para cada subcategoria (agrupada por categoria, ver RF-27), quantas respostas já teve corrigidas e a média percentual, somando a Prática e as Tentativas Corrigidas em Exercícios daquela subcategoria.
 - Classificação: com menos de 3 respostas corrigidas, "Poucos dados"; com média de 70% ou mais, "Ponto forte"; abaixo de 50%, "A melhorar"; entre as duas, "Em evolução". Cada Tema tem atalho para praticar.
 - Importar guarda a Questão de origem no banco (também ao copiar de um Exercício próprio que veio do banco). Importações anteriores foram ligadas pela migration 027 por enunciado e Resposta de referência idênticos.
 
@@ -215,6 +215,14 @@ depois do login, perde a sessão.
 - Salvar exige a senha do Admin. Cada grupo é validado e testado antes de gravar (OpenAI, login SMTP, conexão com o banco); se o teste falhar, nada muda e o Admin vê o motivo.
 - Segredos nunca aparecem inteiros (só os 4 últimos caracteres); em branco, o valor atual é mantido. Valores com quebra de linha são recusados.
 - A gravação preserva comentários, é atômica e guarda backup do arquivo anterior (5 mais recentes). A auditoria registra os nomes das chaves alteradas, sem os valores.
+
+### RF-27 Classificação: categoria e subcategoria
+
+- O Admin mantém, em Categorias, a lista de categorias e subcategorias: criar, renomear, desativar e reativar (sem excluir). Item desativado some das escolhas; as classificações existentes continuam. Tudo é auditado.
+- Todo Exercício tem uma categoria e uma ou mais subcategorias dela, escolhidas na lista (só ativas). A classificação pode ser feita ao criar, ao editar o Rascunho ou depois, em qualquer status, e é **obrigatória para concluir**.
+- Importar do banco leva a classificação: Rascunho novo ou sem categoria herda; Rascunho da mesma categoria soma as subcategorias; Rascunho de outra categoria mantém a sua. Sugerir ao banco copia a classificação do Exercício.
+- No banco, o Admin aprova, inclui direto e edita a classificação escolhendo na lista; o Docente filtra por categoria e subcategoria. A página do Exercício no Admin sempre mostra o quadro do banco, com o motivo quando a inclusão não é possível (Rascunho, Moderação, já no banco ou Sugestão pendente).
+- Prática e Progresso agrupam as subcategorias por categoria; o Progresso conta as Tentativas pelas subcategorias do Exercício (inclusive criados do zero).
 
 ## Requisitos não funcionais
 

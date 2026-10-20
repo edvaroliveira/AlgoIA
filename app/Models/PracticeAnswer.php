@@ -19,16 +19,17 @@ class PracticeAnswer extends Model
   public function themesForStudent(int $studentId): array
   {
     return $this->db->fetchAll(
-      "SELECT bt.name,
+      "SELECT bt.name, COALESCE(c.name, 'Sem categoria') AS category_name,
               COUNT(DISTINCT bq.id) AS question_count,
               COUNT(DISTINCT pa.bank_question_id) AS practiced_count
              FROM bank_themes bt
+             LEFT JOIN categories c ON c.id = bt.category_id
              JOIN bank_exercise_themes bet ON bet.theme_id = bt.id
              JOIN bank_exercises be ON be.id = bet.bank_exercise_id AND be.status = ?
              JOIN bank_questions bq ON bq.bank_exercise_id = be.id
              LEFT JOIN practice_answers pa ON pa.bank_question_id = bq.id AND pa.student_id = ?
-             GROUP BY bt.id, bt.name
-             ORDER BY bt.name",
+             GROUP BY bt.id, bt.name, c.name
+             ORDER BY category_name, bt.name",
       [BankExercise::STATUS_ACTIVE, $studentId]
     );
   }

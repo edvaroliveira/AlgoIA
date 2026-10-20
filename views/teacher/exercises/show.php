@@ -195,6 +195,34 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
       </div>
     </section>
 
+    <?php $classification = $classification ?? ['category_id' => null, 'category_name' => null, 'themes' => []]; ?>
+    <section class="surface-block info-panel info-panel--static" id="classificacao">
+      <div class="surface-block__header">
+        <div>
+          <h2 class="surface-title">Classificação</h2>
+          <p class="surface-copy">
+            <?php if ($classification['category_id'] !== null && $classification['themes'] !== []): ?>
+              <?= \Core\View::e($classification['category_name']) ?> → <?= \Core\View::e(implode(', ', array_column($classification['themes'], 'name'))) ?>
+            <?php else: ?>
+              <span class="badge badge--warning">Sem classificação</span> Obrigatória para concluir o exercício.
+            <?php endif; ?>
+          </p>
+        </div>
+      </div>
+      <div class="surface-block__body">
+        <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/classificacao') ?>">
+          <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+          <?php \Core\View::partial('partials/classification_fields', [
+            'tree' => $categoryTree ?? [],
+            'selectedCategory' => $classification['category_id'],
+            'selectedThemes' => array_column($classification['themes'], 'id'),
+            'prefix' => 'show',
+          ]); ?>
+          <button type="submit" class="btn btn--ghost btn--full">Salvar classificação</button>
+        </form>
+      </div>
+    </section>
+
     <?php if ($isDraft): ?>
       <section class="surface-block info-panel info-panel--static">
         <div class="surface-block__header">

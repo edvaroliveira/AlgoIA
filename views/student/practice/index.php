@@ -17,7 +17,10 @@ $limit = (int) ($limit ?? 0);
 <?php else: ?>
   <section class="surface-block">
     <div class="surface-block__body">
-      <?php foreach ($themes as $theme): ?>
+      <?php $lastCategory = null; foreach ($themes as $theme): ?>
+        <?php if ($theme['category_name'] !== $lastCategory): $lastCategory = $theme['category_name']; ?>
+          <h2 class="practice-category"><?= \Core\View::e($lastCategory) ?></h2>
+        <?php endif; ?>
         <article class="agenda-item">
           <div class="agenda-item__main">
             <strong><?= \Core\View::e($theme['name']) ?></strong>

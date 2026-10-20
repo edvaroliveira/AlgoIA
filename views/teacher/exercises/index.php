@@ -45,7 +45,24 @@ $openExercises = count(array_filter($exercises, static function ($exercise) use 
   <div class="alert alert--info">Há <?= $draftExercises ?> exercício(s) ainda em rascunho aguardando cadastro ou revisão das questões.</div>
 <?php endif; ?>
 
-<?php if (empty($exercises)): ?>
+<?php if (!empty($categoryTree)): ?>
+  <form method="GET" action="<?= \Core\app_url('/teacher/exercises') ?>" class="ai-filters section">
+    <div class="form-group">
+      <label class="form-label" for="filter-category">Categoria</label>
+      <select class="form-input" id="filter-category" name="category">
+        <option value="0">Todas</option>
+        <?php foreach ($categoryTree as $category): ?>
+          <option value="<?= (int) $category['id'] ?>"<?= (int) ($categoryFilter ?? 0) === (int) $category['id'] ? ' selected' : '' ?>><?= \Core\View::e($category['name']) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+    <div class="form-actions"><button type="submit" class="btn btn--ghost btn--sm">Filtrar</button></div>
+  </form>
+<?php endif; ?>
+
+<?php if (empty($exercises) && (int) ($categoryFilter ?? 0) > 0): ?>
+  <p class="empty-state">Nenhum exercício nesta categoria.</p>
+<?php elseif (empty($exercises)): ?>
   <p class="empty-state">Nenhum exercício criado. <a href="<?= \Core\app_url('/teacher/exercises/create') ?>">Criar o primeiro</a>.</p>
 <?php else: ?>
   <section class="surface-block">
@@ -78,7 +95,10 @@ $openExercises = count(array_filter($exercises, static function ($exercise) use 
             $closed = !empty($ex['closes_at']) && strtotime($ex['closes_at']) < $now;
           ?>
             <tr>
-              <td><?= \Core\View::e($ex['title']) ?></td>
+              <td>
+                <?= \Core\View::e($ex['title']) ?>
+                <br><small><?= ($ex['classification'] ?? '') !== '' ? \Core\View::e($ex['classification']) : 'Sem classificação' ?></small>
+              </td>
               <td>
                 <?php if ((int) ($ex['turma_count'] ?? 0) > 0): ?>
                   <?= \Core\View::e($ex['turma_label']) ?>

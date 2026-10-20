@@ -40,6 +40,13 @@ $router->post('/admin/settings/teacher-registration', 'AdminDashboardController@
 $router->get('/admin/ia', 'AdminAiUsageController@index', ['admin']);
 $router->post('/admin/ia/configuracoes', 'AdminAiUsageController@updateSettings', ['admin']);
 $router->get('/admin/ia/export', 'AdminAiUsageController@export', ['admin']);
+$router->get('/admin/categorias', 'AdminCategoryController@index', ['admin']);
+$router->post('/admin/categorias', 'AdminCategoryController@store', ['admin']);
+$router->post('/admin/categorias/{id}/subcategorias', 'AdminCategoryController@storeSub', ['admin']);
+$router->post('/admin/categorias/{id}/renomear', 'AdminCategoryController@renameCategory', ['admin']);
+$router->post('/admin/categorias/{id}/status', 'AdminCategoryController@statusCategory', ['admin']);
+$router->post('/admin/subcategorias/{id}/renomear', 'AdminCategoryController@renameSub', ['admin']);
+$router->post('/admin/subcategorias/{id}/status', 'AdminCategoryController@statusSub', ['admin']);
 $router->get('/admin/configuracoes', 'AdminEnvController@index', ['admin']);
 $router->post('/admin/configuracoes/{group}', 'AdminEnvController@update', ['admin']);
 $router->get('/admin/users',     'AdminUserController@users', ['admin']);
@@ -118,6 +125,7 @@ $router->get('/teacher/exercises/{id}',        'ExerciseController@show', ['teac
 $router->get('/teacher/exercises/{id}/edit',   'ExerciseController@edit', ['teacher']);
 $router->post('/teacher/exercises/{id}',       'ExerciseController@update', ['teacher']);
 $router->post('/teacher/exercises/{id}/complete', 'ExerciseController@complete', ['teacher']);
+$router->post('/teacher/exercises/{id}/classificacao', 'ExerciseController@classify', ['teacher']);
 $router->post('/teacher/exercises/{id}/activate', 'ExerciseController@activate', ['teacher']);
 $router->post('/teacher/exercises/{id}/delete', 'ExerciseController@destroy', ['teacher']);
 

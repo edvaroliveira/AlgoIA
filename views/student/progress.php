@@ -72,9 +72,12 @@ $weak = array_column(array_filter($themes, static fn(array $t): bool => $t['leve
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($themes as $theme):
+          <?php $lastCategory = null; foreach ($themes as $theme):
             [$label, $badge] = $levels[$theme['level']];
           ?>
+            <?php if ($theme['category'] !== $lastCategory): $lastCategory = $theme['category']; ?>
+              <tr class="table-group"><th colspan="4"><?= \Core\View::e($lastCategory) ?></th></tr>
+            <?php endif; ?>
             <tr>
               <td>
                 <?= \Core\View::e($theme['name']) ?><br>

@@ -58,6 +58,14 @@ global $session;
             rows="4" placeholder="Contextualize o exercício, objetivos e critérios gerais."><?= \Core\View::e($old['description'] ?? '') ?></textarea>
         </div>
 
+        <?php \Core\View::partial('partials/classification_fields', [
+          'tree' => $categoryTree ?? [],
+          'selectedCategory' => isset($old['category_id']) ? (int) $old['category_id'] : null,
+          'selectedThemes' => $old['theme_ids'] ?? [],
+          'prefix' => 'create',
+        ]); ?>
+        <p class="hint">A classificação é obrigatória para concluir o exercício; pode ser feita agora ou depois.</p>
+
         <div class="form-actions">
           <button type="submit" class="btn btn--primary">Salvar rascunho</button>
           <a href="<?= \Core\app_url('/teacher/exercises') ?>" class="btn btn--ghost">Cancelar</a>
