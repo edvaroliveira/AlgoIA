@@ -41,6 +41,13 @@ global $session;
           <textarea class="form-input form-textarea" id="description" name="description" rows="4"><?= \Core\View::e($exercise['description'] ?? '') ?></textarea>
         </div>
 
+        <?php \Core\View::partial('partials/classification_fields', [
+          'tree' => $categoryTree ?? [],
+          'selectedCategory' => $classification['category_id'] ?? null,
+          'selectedThemes' => array_column($classification['themes'] ?? [], 'id'),
+          'prefix' => 'edit',
+        ]); ?>
+
         <div class="form-actions">
           <button type="submit" class="btn btn--primary">Salvar alterações</button>
           <a href="<?= \Core\app_url('/teacher/exercises/' . $exercise['id']) ?>" class="btn btn--ghost">Cancelar</a>

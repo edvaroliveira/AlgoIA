@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Models\BankExercise;
+use App\Models\Category;
 use App\Services\AuditService;
 use Core\Auth;
 use Core\Request;
@@ -47,6 +48,7 @@ class AdminBankController extends AdminBaseController
       'tabs'       => self::TABS,
       'counts'     => $counts,
       'items'      => $this->bank->listByStatus($status, $pagination['perPage'], $pagination['offset']),
+      'categoryTree' => (new Category())->tree(true),
       'pagination' => $pagination,
     ]);
   }
@@ -54,10 +56,10 @@ class AdminBankController extends AdminBaseController
   public function approve(string $id): void
   {
     Request::validateCsrf();
-    $themes = BankExercise::normalizeThemeNames((string) Request::post('themes', ''));
+    [$categoryId, $themeIds] = $this->selection(BankExercise::STATUS_SUGGESTED);
 
-    if ($this->bank->approve((int) $id, (int) Auth::id(), $themes)) {
-      AuditService::record('admin.bank.approve', 'bank_exercise', (int) $id, ['themes' => $themes]);
+    if ($this->bank->approve((int) $id, (int) Auth::id(), $categoryId, $themeIds)) {
+      AuditService::record('admin.bank.approve', 'bank_exercise', (int) $id, ['category_id' => $categoryId, 'theme_ids' => $themeIds]);
       $this->done('success', 'Sugestão aprovada e incluída no banco.', BankExercise::STATUS_SUGGESTED);
     }
     $this->done('error', 'Sugestão não encontrada ou já revisada.', BankExercise::STATUS_SUGGESTED);
@@ -99,10 +101,22 @@ class AdminBankController extends AdminBaseController
       $this->done('error', 'Item ativo não encontrado.', BankExercise::STATUS_ACTIVE);
     }
 
-    $themes = BankExercise::normalizeThemeNames((string) Request::post('themes', ''));
-    $this->bank->setThemes((int) $id, $themes);
-    AuditService::record('admin.bank.themes', 'bank_exercise', (int) $id, ['themes' => $themes]);
-    $this->done('success', 'Temas atualizados.', BankExercise::STATUS_ACTIVE);
+    [$categoryId, $themeIds] = $this->selection(BankExercise::STATUS_ACTIVE);
+    (new Category())->classify('bank', (int) $id, $categoryId, $themeIds);
+    AuditService::record('admin.bank.themes', 'bank_exercise', (int) $id, ['category_id' => $categoryId, 'theme_ids' => $themeIds]);
+    $this->done('success', 'Classificação atualizada.', BankExercise::STATUS_ACTIVE);
+  }
+
+  /** Categoria + subcategorias do formulário, validadas; em erro, volta para a aba informada. */
+  private function selection(string $backStatus, ?string $backPath = null): array
+  {
+    try {
+      return (new Category())->validateSelection(Request::post('category_id'), Request::post('theme_ids', []));
+    } catch (\InvalidArgumentException $e) {
+      global $session;
+      $session->flash('error', $e->getMessage());
+      View::redirect($backPath ?? '/admin/bank?status=' . $backStatus);
+    }
   }
 
   /** POST /admin/exercises/{id}/add-to-bank — inclusão direta, já ativa. */
@@ -110,17 +124,17 @@ class AdminBankController extends AdminBaseController
   {
     Request::validateCsrf();
     global $session;
+    [$categoryId, $themeIds] = $this->selection(BankExercise::STATUS_ACTIVE, "/admin/exercises/{$id}#banco");
 
     try {
       $bankId = $this->bank->createFromExercise((int) $id, BankExercise::STATUS_ACTIVE, (int) Auth::id());
     } catch (\RuntimeException $e) {
       $session->flash('error', $e->getMessage());
-      View::redirect("/admin/exercises/{$id}");
+      View::redirect("/admin/exercises/{$id}#banco");
     }
 
-    $themes = BankExercise::normalizeThemeNames((string) Request::post('themes', ''));
-    $this->bank->setThemes($bankId, $themes);
-    AuditService::record('admin.bank.add', 'bank_exercise', $bankId, ['exercise_id' => (int) $id, 'themes' => $themes]);
+    (new Category())->classify('bank', $bankId, $categoryId, $themeIds);
+    AuditService::record('admin.bank.add', 'bank_exercise', $bankId, ['exercise_id' => (int) $id, 'category_id' => $categoryId, 'theme_ids' => $themeIds]);
     $session->flash('success', 'Exercício incluído no banco.');
     View::redirect("/admin/exercises/{$id}");
   }

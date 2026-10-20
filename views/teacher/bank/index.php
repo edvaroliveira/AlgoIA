@@ -2,6 +2,7 @@
 $tab        = $tab ?? 'bank';
 $search     = $search ?? '';
 $theme      = $theme ?? '';
+$category   = (int) ($category ?? 0);
 $themes     = $themes ?? [];
 $items      = $items ?? [];
 $target     = $target ?? null;
@@ -43,24 +44,39 @@ $source = $tab === 'own' ? 'own' : 'bank';
     <input type="hidden" name="tab" value="<?= \Core\View::e($tab) ?>">
     <?php if ($targetId): ?><input type="hidden" name="exercise" value="<?= $targetId ?>"><?php endif; ?>
     <?php if ($theme !== '' && $tab === 'bank'): ?><input type="hidden" name="theme" value="<?= \Core\View::e($theme) ?>"><?php endif; ?>
+    <?php if ($category > 0 && $tab === 'bank'): ?><input type="hidden" name="category" value="<?= $category ?>"><?php endif; ?>
     <input class="form-input" type="search" name="q" value="<?= \Core\View::e($search) ?>"
       placeholder="Buscar por título, descrição ou enunciado" aria-label="Buscar no banco">
     <button type="submit" class="btn">Buscar</button>
-    <?php if ($search !== '' || $theme !== ''): ?>
+    <?php if ($search !== '' || $theme !== '' || $category > 0): ?>
       <a href="<?= $bankUrl(['tab' => $tab]) ?>" class="btn btn--ghost">Limpar filtros</a>
     <?php endif; ?>
   </form>
 
-  <?php if ($tab === 'bank' && $themes !== []): ?>
-    <div class="badge-strip" aria-label="Filtrar por tema">
-      <?php foreach ($themes as $t): $isActive = $theme === $t['name']; ?>
-        <a href="<?= $bankUrl(['tab' => 'bank', 'q' => $search, 'theme' => $isActive ? '' : $t['name']]) ?>"
-          class="badge <?= $isActive ? 'badge--info' : 'badge--neutral' ?>"
-          <?= $isActive ? 'aria-current="true"' : '' ?>>
-          <?= \Core\View::e($t['name']) ?> (<?= (int) $t['item_count'] ?>)
+  <?php if ($tab === 'bank' && $themes !== []):
+    $byCategory = [];
+    foreach ($themes as $t) {
+      $byCategory[(string) $t['category_name']]['id'] = (int) ($t['category_id'] ?? 0);
+      $byCategory[(string) $t['category_name']]['subs'][] = $t;
+    }
+  ?>
+    <?php foreach ($byCategory as $categoryName => $group):
+      $categoryActive = $category > 0 && $category === $group['id'];
+    ?>
+      <div class="badge-strip" aria-label="Filtrar por categoria e subcategoria">
+        <a href="<?= $bankUrl(['tab' => 'bank', 'q' => $search, 'category' => $categoryActive ? '' : $group['id']]) ?>"
+          class="badge <?= $categoryActive ? 'badge--info' : 'badge--neutral' ?>"<?= $categoryActive ? ' aria-current="true"' : '' ?>>
+          <strong><?= \Core\View::e($categoryName) ?></strong>
         </a>
-      <?php endforeach; ?>
-    </div>
+        <?php foreach ($group['subs'] as $t): $isActive = $theme === $t['name']; ?>
+          <a href="<?= $bankUrl(['tab' => 'bank', 'q' => $search, 'category' => $group['id'] ?: '', 'theme' => $isActive ? '' : $t['name']]) ?>"
+            class="badge <?= $isActive ? 'badge--info' : 'badge--neutral' ?>"
+            <?= $isActive ? 'aria-current="true"' : '' ?>>
+            <?= \Core\View::e($t['name']) ?> (<?= (int) $t['item_count'] ?>)
+          </a>
+        <?php endforeach; ?>
+      </div>
+    <?php endforeach; ?>
   <?php endif; ?>
 </div>
 
@@ -68,7 +84,7 @@ $source = $tab === 'own' ? 'own' : 'bank';
   <p class="empty-state">
     <?php if ($tab === 'own'): ?>
       Nenhum exercício seu Concluído ou Publicado<?= $search !== '' ? ' com esse termo' : '' ?>.
-    <?php elseif ($search !== '' || $theme !== ''): ?>
+    <?php elseif ($search !== '' || $theme !== '' || $category > 0): ?>
       Nenhum exercício do banco corresponde aos filtros.
     <?php else: ?>
       O banco institucional ainda não tem exercícios. Você pode sugerir os seus a partir do detalhe de um exercício Concluído.
@@ -88,6 +104,7 @@ $source = $tab === 'own' ? 'own' : 'bank';
           <div class="badge-strip">
             <span class="badge badge--neutral"><?= (int) $item['question_count'] ?> questão(ões)</span>
             <span class="badge badge--neutral"><?= number_format((float) $item['total_score'], 1) ?> pts</span>
+            <?php if (!empty($item['category_name'])): ?><span class="badge badge--neutral"><?= \Core\View::e($item['category_name']) ?></span><?php endif; ?>
             <?php foreach ($item['themes'] as $itemTheme): ?>
               <span class="badge badge--info"><?= \Core\View::e($itemTheme) ?></span>
             <?php endforeach; ?>

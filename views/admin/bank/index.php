@@ -11,7 +11,7 @@ global $session;
 <div class="page-header">
   <div>
     <h1>Banco de exercícios</h1>
-    <p class="subtitle">Curadoria do acervo institucional: aprove Sugestões dos Docentes com os Temas certos, recuse com motivo e arquive o que não deve mais ser reaproveitado.</p>
+    <p class="subtitle">Curadoria do acervo institucional: aprove Sugestões dos Docentes com a categoria e as subcategorias certas, recuse com motivo e arquive o que não deve mais ser reaproveitado.</p>
   </div>
 </div>
 
@@ -39,8 +39,9 @@ global $session;
             · <?= $status === 'suggested' ? 'sugerido' : 'revisado' ?> em
             <?= date('d/m/Y H:i', strtotime((string) ($status === 'suggested' ? $item['created_at'] : ($item['reviewed_at'] ?? $item['created_at'])))) ?>
           </p>
-          <?php if (!empty($item['themes'])): ?>
+          <?php if (!empty($item['themes']) || !empty($item['category_name'])): ?>
             <div class="badge-strip">
+              <?php if (!empty($item['category_name'])): ?><span class="badge badge--neutral"><?= \Core\View::e($item['category_name']) ?></span><?php endif; ?>
               <?php foreach ($item['themes'] as $theme): ?>
                 <span class="badge badge--info"><?= \Core\View::e($theme) ?></span>
               <?php endforeach; ?>
@@ -69,10 +70,12 @@ global $session;
         <?php if ($status === 'suggested'): ?>
           <form method="POST" action="<?= \Core\app_url('/admin/bank/' . (int) $item['id'] . '/approve') ?>" class="form">
             <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-            <div class="form-group">
-              <label class="form-label" for="approve-themes-<?= (int) $item['id'] ?>">Temas <span class="hint">(separados por vírgula)</span></label>
-              <input id="approve-themes-<?= (int) $item['id'] ?>" name="themes" class="form-input" type="text" maxlength="500" placeholder="Ex.: Recursão, Vetores">
-            </div>
+            <?php \Core\View::partial('partials/classification_fields', [
+              'tree' => $categoryTree ?? [],
+              'selectedCategory' => isset($item['category_id']) ? (int) $item['category_id'] : null,
+              'selectedThemes' => $item['theme_ids'] ?? [],
+              'prefix' => 'approve-' . (int) $item['id'],
+            ]); ?>
             <div class="td-actions">
               <button type="submit" class="btn btn--primary">Aprovar e incluir no banco</button>
             </div>
@@ -90,14 +93,18 @@ global $session;
         <?php elseif ($status === 'active'): ?>
           <form method="POST" action="<?= \Core\app_url('/admin/bank/' . (int) $item['id'] . '/themes') ?>" class="form">
             <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-            <div class="form-group">
-              <label class="form-label" for="themes-<?= (int) $item['id'] ?>">Temas</label>
-              <input id="themes-<?= (int) $item['id'] ?>" name="themes" class="form-input" type="text" maxlength="500"
-                value="<?= \Core\View::e(implode(', ', $item['themes'])) ?>">
-            </div>
-            <div class="td-actions">
-              <button type="submit" class="btn btn--ghost">Salvar temas</button>
-            </div>
+            <details class="hint-details">
+              <summary>Editar classificação</summary>
+              <?php \Core\View::partial('partials/classification_fields', [
+                'tree' => $categoryTree ?? [],
+                'selectedCategory' => isset($item['category_id']) ? (int) $item['category_id'] : null,
+                'selectedThemes' => $item['theme_ids'] ?? [],
+                'prefix' => 'edit-' . (int) $item['id'],
+              ]); ?>
+              <div class="td-actions">
+                <button type="submit" class="btn btn--ghost">Salvar classificação</button>
+              </div>
+            </details>
           </form>
           <form method="POST" action="<?= \Core\app_url('/admin/bank/' . (int) $item['id'] . '/archive') ?>"
             data-confirm="Arquivar este item? Ele deixa de aparecer para os Docentes.">

@@ -34,7 +34,7 @@ class BankExercise extends Model
 
     try {
       $exercise = $this->db->fetchOne(
-        "SELECT id, teacher_id, title, description, status, admin_review_status
+        "SELECT id, teacher_id, title, description, status, admin_review_status, category_id
                FROM exercises WHERE id = ? FOR UPDATE",
         [$exerciseId]
       );
@@ -79,6 +79,16 @@ class BankExercise extends Model
         );
       }
 
+      // A classificação do Exercício vai junto (o Admin pode ajustar na curadoria).
+      if ($exercise['category_id'] !== null) {
+        $this->db->execute("UPDATE bank_exercises SET category_id = ? WHERE id = ?", [(int) $exercise['category_id'], $bankId]);
+        $this->db->execute(
+          "INSERT IGNORE INTO bank_exercise_themes (bank_exercise_id, theme_id)
+                 SELECT ?, theme_id FROM exercise_themes WHERE exercise_id = ?",
+          [$bankId, $exerciseId]
+        );
+      }
+
       $this->db->commit();
       return $bankId;
     } catch (\Throwable $e) {
@@ -89,8 +99,8 @@ class BankExercise extends Model
     }
   }
 
-  /** Aprova uma Sugestão: vai para o banco com os Temas informados. */
-  public function approve(int $id, int $adminId, array $themeNames): bool
+  /** Aprova uma Sugestão: vai para o banco com a classificação escolhida (já validada). */
+  public function approve(int $id, int $adminId, int $categoryId, array $themeIds): bool
   {
     $updated = $this->db->execute(
       "UPDATE bank_exercises SET status = ?, reviewed_by = ?, reviewed_at = NOW(), review_note = NULL
@@ -99,7 +109,7 @@ class BankExercise extends Model
     ) > 0;
 
     if ($updated) {
-      $this->setThemes($id, $themeNames);
+      (new Category($this->db))->classify('bank', $id, $categoryId, $themeIds);
     }
 
     return $updated;
@@ -125,22 +135,32 @@ class BankExercise extends Model
     ) > 0;
   }
 
-  /** Substitui os Temas do item. Nomes vazios são ignorados; Temas novos são criados. */
-  public function setThemes(int $id, array $themeNames): void
+  /**
+   * Classifica o item por NOMES (uso do seed): cria a categoria e as subcategorias que faltarem.
+   *
+   * @return int[] ids das subcategorias
+   */
+  public function setThemes(int $id, array $themeNames, string $categoryName = 'Algoritmos'): array
   {
     $names = self::normalizeThemeNames($themeNames);
+    $this->db->execute("INSERT IGNORE INTO categories (name) VALUES (?)", [$categoryName]);
+    $categoryId = (int) ($this->db->fetchOne("SELECT id FROM categories WHERE name = ?", [$categoryName])['id'] ?? 0);
+    $this->db->execute("UPDATE bank_exercises SET category_id = ? WHERE id = ?", [$categoryId, $id]);
 
+    $ids = [];
     $this->db->execute("DELETE FROM bank_exercise_themes WHERE bank_exercise_id = ?", [$id]);
     foreach ($names as $name) {
-      $this->db->execute("INSERT IGNORE INTO bank_themes (name) VALUES (?)", [$name]);
-      $theme = $this->db->fetchOne("SELECT id FROM bank_themes WHERE name = ?", [$name]);
+      $this->db->execute("INSERT IGNORE INTO bank_themes (category_id, name) VALUES (?, ?)", [$categoryId, $name]);
+      $theme = $this->db->fetchOne("SELECT id FROM bank_themes WHERE category_id = ? AND name = ?", [$categoryId, $name]);
       if ($theme) {
         $this->db->execute(
           "INSERT IGNORE INTO bank_exercise_themes (bank_exercise_id, theme_id) VALUES (?, ?)",
           [$id, (int) $theme['id']]
         );
+        $ids[] = (int) $theme['id'];
       }
     }
+    return $ids;
   }
 
   /** "Vetores, Laços" → ['Vetores', 'Laços'] (sem repetição, até 60 caracteres cada). */
@@ -163,14 +183,15 @@ class BankExercise extends Model
   }
 
   /** Itens ativos do banco, com filtro por texto (título, descrição, enunciado) e Tema. */
-  public function listActive(string $search, string $theme, int $limit, int $offset): array
+  public function listActive(string $search, string $theme, int $limit, int $offset, int $category = 0): array
   {
-    [$where, $params] = $this->activeFilter($search, $theme);
+    [$where, $params] = $this->activeFilter($search, $theme, $category);
     $safeLimit = max(1, $limit);
     $safeOffset = max(0, $offset);
 
     $items = $this->db->fetchAll(
-      "SELECT be.id, be.title, be.description,
+      "SELECT be.id, be.title, be.description, be.category_id,
+              (SELECT c.name FROM categories c WHERE c.id = be.category_id) AS category_name,
               (SELECT COUNT(*) FROM bank_questions bq WHERE bq.bank_exercise_id = be.id) AS question_count,
               (SELECT COALESCE(SUM(bq.max_score), 0) FROM bank_questions bq WHERE bq.bank_exercise_id = be.id) AS total_score
              FROM bank_exercises be
@@ -183,23 +204,24 @@ class BankExercise extends Model
     return $this->attachDetails($items, 'bank_questions', 'bank_exercise_id');
   }
 
-  public function countActive(string $search, string $theme): int
+  public function countActive(string $search, string $theme, int $category = 0): int
   {
-    [$where, $params] = $this->activeFilter($search, $theme);
+    [$where, $params] = $this->activeFilter($search, $theme, $category);
     $row = $this->db->fetchOne("SELECT COUNT(*) AS c FROM bank_exercises be {$where}", $params);
     return (int) ($row['c'] ?? 0);
   }
 
-  /** Temas que têm pelo menos um item ativo, para os chips de filtro. */
+  /** Subcategorias com pelo menos um item ativo, com a categoria, para os filtros. */
   public function activeThemes(): array
   {
     return $this->db->fetchAll(
-      "SELECT bt.name, COUNT(*) AS item_count
+      "SELECT bt.name, COUNT(*) AS item_count, c.id AS category_id, COALESCE(c.name, 'Sem categoria') AS category_name
              FROM bank_themes bt
+             LEFT JOIN categories c ON c.id = bt.category_id
              JOIN bank_exercise_themes bet ON bet.theme_id = bt.id
              JOIN bank_exercises be ON be.id = bet.bank_exercise_id AND be.status = ?
-             GROUP BY bt.id, bt.name
-             ORDER BY bt.name",
+             GROUP BY bt.id, bt.name, c.id, c.name
+             ORDER BY category_name, bt.name",
       [self::STATUS_ACTIVE]
     );
   }
@@ -250,7 +272,8 @@ class BankExercise extends Model
 
     $items = $this->db->fetchAll(
       "SELECT be.id, be.title, be.description, be.status, be.review_note, be.created_at, be.reviewed_at,
-              be.source_exercise_id, teacher.name AS teacher_name,
+              be.source_exercise_id, teacher.name AS teacher_name, be.category_id,
+              (SELECT c.name FROM categories c WHERE c.id = be.category_id) AS category_name,
               (SELECT COUNT(*) FROM bank_questions bq WHERE bq.bank_exercise_id = be.id) AS question_count
              FROM bank_exercises be
              LEFT JOIN users teacher ON teacher.id = be.source_teacher_id
@@ -269,7 +292,7 @@ class BankExercise extends Model
     return (int) ($row['c'] ?? 0);
   }
 
-  private function activeFilter(string $search, string $theme): array
+  private function activeFilter(string $search, string $theme, int $category = 0): array
   {
     $where = ['be.status = ?'];
     $params = [self::STATUS_ACTIVE];
@@ -284,6 +307,10 @@ class BankExercise extends Model
       $where[] = "EXISTS (SELECT 1 FROM bank_exercise_themes ft JOIN bank_themes fth ON fth.id = ft.theme_id
                           WHERE ft.bank_exercise_id = be.id AND fth.name = ?)";
       $params[] = $theme;
+    }
+    if ($category > 0) {
+      $where[] = 'be.category_id = ?';
+      $params[] = $category;
     }
 
     return ['WHERE ' . implode(' AND ', $where), $params];
@@ -324,7 +351,7 @@ class BankExercise extends Model
     );
 
     $themes = $questionTable === 'bank_questions' ? $this->db->fetchAll(
-      "SELECT bet.bank_exercise_id AS parent_id, bt.name
+      "SELECT bet.bank_exercise_id AS parent_id, bt.name, bt.id AS theme_id
              FROM bank_exercise_themes bet JOIN bank_themes bt ON bt.id = bet.theme_id
              WHERE bet.bank_exercise_id IN ({$placeholders})
              ORDER BY bt.name",
@@ -334,7 +361,9 @@ class BankExercise extends Model
     foreach ($items as &$item) {
       $id = (int) $item['id'];
       $item['questions'] = array_values(array_filter($questions, static fn(array $q): bool => (int) $q['parent_id'] === $id));
-      $item['themes'] = array_values(array_column(array_filter($themes, static fn(array $t): bool => (int) $t['parent_id'] === $id), 'name'));
+      $mine = array_filter($themes, static fn(array $t): bool => (int) $t['parent_id'] === $id);
+      $item['themes'] = array_values(array_column($mine, 'name'));
+      $item['theme_ids'] = array_values(array_map('intval', array_column($mine, 'theme_id')));
     }
     unset($item);
 

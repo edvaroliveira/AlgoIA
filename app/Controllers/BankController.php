@@ -34,6 +34,7 @@ class BankController
     $tab       = (string) Request::get('tab', 'bank') === 'own' ? 'own' : 'bank';
     $search    = mb_substr(trim((string) Request::get('q', '')), 0, 100);
     $theme     = mb_substr(trim((string) Request::get('theme', '')), 0, 60);
+    $category  = max(0, (int) Request::get('category', 0));
     $target    = null;
 
     $targetId = (int) Request::get('exercise', 0);
@@ -49,19 +50,21 @@ class BankController
 
     $total = $tab === 'own'
       ? $this->bank->countOwnSources($teacherId, $search)
-      : $this->bank->countActive($search, $theme);
+      : $this->bank->countActive($search, $theme, $category);
     $pagination = $this->pagination($total, [
-      'tab' => $tab, 'q' => $search, 'theme' => $tab === 'bank' ? $theme : '', 'exercise' => $target ? $targetId : '',
+      'tab' => $tab, 'q' => $search, 'theme' => $tab === 'bank' ? $theme : '', 'category' => $tab === 'bank' && $category > 0 ? $category : '',
+      'exercise' => $target ? $targetId : '',
     ]);
 
     $items = $tab === 'own'
       ? $this->bank->listOwnSources($teacherId, $search, BankExercise::PER_PAGE, $pagination['offset'])
-      : $this->bank->listActive($search, $theme, BankExercise::PER_PAGE, $pagination['offset']);
+      : $this->bank->listActive($search, $theme, BankExercise::PER_PAGE, $pagination['offset'], $category);
 
     View::render('teacher/bank/index', [
       'tab'        => $tab,
       'search'     => $search,
       'theme'      => $theme,
+      'category'   => $category,
       'themes'     => $tab === 'bank' ? $this->bank->activeThemes() : [],
       'items'      => $items,
       'target'     => $target ?: null,

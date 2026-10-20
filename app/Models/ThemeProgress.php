@@ -25,16 +25,17 @@ class ThemeProgress extends Model
   /**
    * Temas com item ativo no banco ou com alguma correção do Aluno.
    *
-   * @return array<int, array{id: int, name: string, answered: int, average: ?float, level: string, practicable: bool}>
+   * @return array<int, array{id: int, name: string, category: string, answered: int, average: ?float, level: string, practicable: bool}>
    */
   public function forStudent(int $studentId): array
   {
     $rows = $this->db->fetchAll(
-      "SELECT bt.id, bt.name,
+      "SELECT bt.id, bt.name, COALESCE(c.name, 'Sem categoria') AS category_name,
               COUNT(x.pct) AS answered,
               AVG(x.pct) AS average,
               MAX(active_t.theme_id) IS NOT NULL AS practicable
              FROM bank_themes bt
+             LEFT JOIN categories c ON c.id = bt.category_id
              LEFT JOIN (
                SELECT DISTINCT bet.theme_id
                  FROM bank_exercise_themes bet
@@ -47,17 +48,16 @@ class ThemeProgress extends Model
                  JOIN bank_exercise_themes bet ON bet.bank_exercise_id = bq.bank_exercise_id
                 WHERE pa.student_id = ?
                UNION ALL
-               SELECT bet.theme_id, ans.ai_score / NULLIF(q.max_score, 0) AS pct
+               SELECT et.theme_id, ans.ai_score / NULLIF(q.max_score, 0) AS pct
                  FROM answers ans
                  JOIN attempts att ON att.id = ans.attempt_id AND att.status = 'graded' AND att.student_id = ?
                  JOIN questions q ON q.id = ans.question_id
-                 JOIN bank_questions bq ON bq.id = q.bank_question_id
-                 JOIN bank_exercise_themes bet ON bet.bank_exercise_id = bq.bank_exercise_id
+                 JOIN exercise_themes et ON et.exercise_id = att.exercise_id
                 WHERE ans.ai_score IS NOT NULL
              ) x ON x.theme_id = bt.id
-             GROUP BY bt.id, bt.name
+             GROUP BY bt.id, bt.name, c.name
              HAVING practicable OR answered > 0
-             ORDER BY bt.name",
+             ORDER BY category_name, bt.name",
       [$studentId, $studentId]
     );
 
@@ -67,6 +67,7 @@ class ThemeProgress extends Model
       return [
         'id'          => (int) $row['id'],
         'name'        => (string) $row['name'],
+        'category'    => (string) $row['category_name'],
         'answered'    => $answered,
         'average'     => $average,
         'level'       => self::levelOf($answered, $average),

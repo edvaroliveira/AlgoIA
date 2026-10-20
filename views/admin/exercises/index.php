@@ -213,6 +213,9 @@ global $session;
                 </td>
                 <td class="td-actions">
                   <a href="<?= \Core\app_url('/admin/exercises/' . $exercise['id'] . ($exportQuery !== '' ? '?return_query=' . urlencode($exportQuery) : '')) ?>" class="btn btn--sm">Detalhes</a>
+                  <?php if (!$isDraft && $reviewStatus === 'approved'): ?>
+                    <a href="<?= \Core\app_url('/admin/exercises/' . $exercise['id'] . '#banco') ?>" class="btn btn--sm btn--ghost">Adicionar ao banco</a>
+                  <?php endif; ?>
                 </td>
               </tr>
             <?php endforeach; ?>

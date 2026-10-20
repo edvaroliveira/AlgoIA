@@ -106,22 +106,36 @@ global $session;
         </div>
       </form>
     </div>
-    <?php if (!$isDraft && $exerciseReviewStatus === 'approved'): ?>
-      <div class="content-note">
-        <strong>Banco de exercícios</strong>
+    <?php
+    $bankState = ($bankStatus ?? false) ? (string) $bankStatus['status'] : '';
+    $classification = $classification ?? ['category_id' => null, 'themes' => []];
+    ?>
+    <div class="content-note" id="banco">
+      <strong>Banco de exercícios</strong>
+      <?php if ($isDraft): ?>
+        <p>Rascunho não pode entrar no banco: o Docente precisa concluir o exercício antes.</p>
+      <?php elseif ($exerciseReviewStatus !== 'approved'): ?>
+        <p>Só exercícios com Moderação "Aprovado" podem entrar no banco. Ajuste a moderação acima, se for o caso.</p>
+      <?php elseif ($bankState === 'active'): ?>
+        <p><span class="badge badge--success">No banco</span> Uma cópia deste exercício já está disponível para todos os Docentes.</p>
+      <?php elseif ($bankState === 'suggested'): ?>
+        <p><span class="badge badge--warning">Sugerido</span> O Docente já sugeriu este exercício. Aprove em <a href="<?= \Core\app_url('/admin/bank') ?>">Banco de exercícios</a>.</p>
+      <?php else: ?>
         <p>Inclui uma cópia deste exercício e das questões no banco institucional, já disponível para todos os Docentes.</p>
         <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/add-to-bank') ?>" class="form">
           <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-          <div class="form-group">
-            <label class="form-label" for="exercise-bank-themes">Temas <span class="hint">(separados por vírgula)</span></label>
-            <input id="exercise-bank-themes" name="themes" class="form-input" type="text" maxlength="500" placeholder="Ex.: Recursão, Vetores">
-          </div>
+          <?php \Core\View::partial('partials/classification_fields', [
+            'tree' => $categoryTree ?? [],
+            'selectedCategory' => $classification['category_id'],
+            'selectedThemes' => array_column($classification['themes'], 'id'),
+            'prefix' => 'addbank',
+          ]); ?>
           <div class="td-actions">
-            <button type="submit" class="btn btn--ghost">Adicionar ao banco</button>
+            <button type="submit" class="btn btn--primary">Adicionar ao banco</button>
           </div>
         </form>
-      </div>
-    <?php endif; ?>
+      <?php endif; ?>
+    </div>
     <div class="meta-grid">
       <div><strong>Status</strong><?= $isDraft ? 'Rascunho' : ($isReady ? 'Pronto' : ($isClosed ? 'Encerrado' : ($isOpen ? 'Aberto' : 'Agendado'))) ?></div>
       <div><strong>Turmas</strong><?= \Core\View::e($exercise['turma_label'] ?? 'Pendente de finalização') ?></div>

@@ -54,6 +54,16 @@ $bank = new App\Models\BankExercise($db);
 $created = ['bank' => 0, 'own' => 0, 'questions' => 0];
 $skipped = ['bank' => 0, 'own' => 0];
 
+// Categoria "Algoritmos" e uma subcategoria por tópico (cria o que faltar).
+$subcategoryId = static function (string $name) use ($db): array {
+  $db->execute("INSERT IGNORE INTO categories (name) VALUES ('Algoritmos')");
+  $categoryId = (int) $db->fetchOne("SELECT id FROM categories WHERE name = 'Algoritmos'")['id'];
+  $db->execute("INSERT IGNORE INTO bank_themes (category_id, name) VALUES (?, ?)", [$categoryId, $name]);
+  $themeId = (int) $db->fetchOne("SELECT id FROM bank_themes WHERE category_id = ? AND name = ?", [$categoryId, $name])['id'];
+  return [$categoryId, $themeId];
+};
+$classifier = new App\Models\Category($db);
+
 foreach (banco_algoritmos_dados() as $topic) {
   foreach ($topic['exercicios'] as $exercise) {
     $db->beginTransaction();
@@ -77,6 +87,8 @@ foreach (banco_algoritmos_dados() as $topic) {
               [$sourceId, $q['enunciado'], $q['referencia'], $q['pontos'], $i + 1]
             );
           }
+          [$categoryId, $themeId] = $subcategoryId($topic['tema']);
+          $classifier->classify('exercise', $sourceId, $categoryId, [$themeId]);
           $created['own']++;
         }
       }

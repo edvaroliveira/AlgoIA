@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Models\Category;
 use App\Models\Exercise;
 use App\Models\Question;
 use App\Models\Turma;
@@ -32,17 +33,68 @@ class ExerciseController
   public function index(): void
   {
     $exercises = $this->exercises->findByTeacher(Auth::id());
+    $categories = new Category();
+    $categoryFilter = max(0, (int) Request::get('category', 0));
+    if ($categoryFilter > 0) {
+      $exercises = array_values(array_filter($exercises, static fn(array $e): bool => (int) ($e['category_id'] ?? 0) === $categoryFilter));
+    }
+    $labels = $categories->labelsFor('exercise', array_column($exercises, 'id'));
     foreach ($exercises as &$exercise) {
       $exercise['can_delete'] = $this->exercises->canDelete($exercise);
+      $exercise['classification'] = $labels[(int) $exercise['id']] ?? '';
     }
     unset($exercise);
 
-    View::render('teacher/exercises/index', ['exercises' => $exercises]);
+    View::render('teacher/exercises/index', [
+      'exercises'      => $exercises,
+      'categoryTree'   => $categories->tree(true),
+      'categoryFilter' => $categoryFilter,
+    ]);
   }
 
   public function create(): void
   {
-    View::render('teacher/exercises/create');
+    View::render('teacher/exercises/create', ['categoryTree' => (new Category())->tree(true)]);
+  }
+
+  /** POST /teacher/exercises/{id}/classificacao — categoria e subcategorias, em qualquer status. */
+  public function classify(string $id): void
+  {
+    Request::validateCsrf();
+    $this->getOwnedExercise((int) $id);
+    global $session;
+
+    $categories = new Category();
+    try {
+      [$categoryId, $themeIds] = $categories->validateSelection(Request::post('category_id'), Request::post('theme_ids', []));
+    } catch (\InvalidArgumentException $e) {
+      $session->flash('error', $e->getMessage());
+      View::redirect("/teacher/exercises/{$id}#classificacao");
+    }
+    $categories->classify('exercise', (int) $id, $categoryId, $themeIds);
+    AuditService::record('teacher.exercise.classify', 'exercise', (int) $id, ['category_id' => $categoryId, 'theme_ids' => $themeIds]);
+    $session->flash('success', 'Classificação salva.');
+    View::redirect("/teacher/exercises/{$id}#classificacao");
+  }
+
+  /**
+   * Classificação opcional enviada junto com criar/editar Rascunho.
+   *
+   * @return string|null mensagem de erro
+   */
+  private function applyOptionalClassification(int $exerciseId): ?string
+  {
+    if ((int) Request::post('category_id', 0) <= 0 && Request::post('theme_ids', []) === []) {
+      return null;
+    }
+    $categories = new Category();
+    try {
+      [$categoryId, $themeIds] = $categories->validateSelection(Request::post('category_id'), Request::post('theme_ids', []));
+    } catch (\InvalidArgumentException $e) {
+      return $e->getMessage();
+    }
+    $categories->classify('exercise', $exerciseId, $categoryId, $themeIds);
+    return null;
   }
 
   public function store(): void
@@ -57,7 +109,11 @@ class ExerciseController
     if ($errors) {
       View::render('teacher/exercises/create', [
         'errors' => $errors,
-        'old'    => compact('title', 'description'),
+        'old'    => compact('title', 'description') + [
+          'category_id' => (int) Request::post('category_id', 0),
+          'theme_ids'   => is_array(Request::post('theme_ids')) ? Request::post('theme_ids') : [],
+        ],
+        'categoryTree' => (new Category())->tree(true),
       ]);
       return;
     }
@@ -69,6 +125,11 @@ class ExerciseController
     ]);
 
     global $session;
+    $classificationError = $this->applyOptionalClassification($id);
+    if ($classificationError !== null) {
+      $session->flash('error', 'Rascunho criado, mas a classificação não foi salva: ' . $classificationError);
+      View::redirect("/teacher/exercises/{$id}#classificacao");
+    }
     $session->flash('success', 'Exercício criado como pendente de finalização. Cadastre as questões antes de ativar para turmas.');
     View::redirect("/teacher/exercises/{$id}/questions/create");
   }
@@ -77,8 +138,11 @@ class ExerciseController
   {
     $exercise = $this->getOwnedExercise((int) $id);
 
+    $categories = new Category();
     View::render('teacher/exercises/show', [
       'exercise'  => $exercise,
+      'classification' => $categories->classificationOf('exercise', (int) $id),
+      'categoryTree'   => $categories->tree(true),
       'questions' => $this->questions->findByExercise((int) $id),
       'results'   => $this->exercises->isActive($exercise) ? $this->exercises->getResultsForTeacher((int) $id) : [],
       'maxScore'  => $this->questions->getTotalMaxScore((int) $id),
@@ -94,7 +158,12 @@ class ExerciseController
     $exercise = $this->getOwnedExercise((int) $id);
     $this->ensureDraftExercise($exercise);
 
-    View::render('teacher/exercises/edit', ['exercise' => $exercise]);
+    $categories = new Category();
+    View::render('teacher/exercises/edit', [
+      'exercise'       => $exercise,
+      'categoryTree'   => $categories->tree(true),
+      'classification' => $categories->classificationOf('exercise', (int) $id),
+    ]);
   }
 
   public function update(string $id): void
@@ -113,9 +182,12 @@ class ExerciseController
       $exercise['title'] = $title;
       $exercise['description'] = $description;
 
+      $categories = new Category();
       View::render('teacher/exercises/edit', [
-        'errors'   => $errors,
-        'exercise' => $exercise,
+        'errors'         => $errors,
+        'exercise'       => $exercise,
+        'categoryTree'   => $categories->tree(true),
+        'classification' => $categories->classificationOf('exercise', (int) $id),
       ]);
       return;
     }
@@ -125,6 +197,11 @@ class ExerciseController
       'title' => $title,
       'status' => 'metadata-updated',
     ]);
+    $classificationError = $this->applyOptionalClassification((int) $id);
+    if ($classificationError !== null) {
+      global $session;
+      $session->flash('error', 'Dados salvos, mas a classificação não: ' . $classificationError);
+    }
     View::redirect("/teacher/exercises/{$id}");
   }
 
@@ -140,6 +217,11 @@ class ExerciseController
       global $session;
       $session->flash('error', 'Adicione pelo menos uma questão antes de concluir o exercício.');
       View::redirect("/teacher/exercises/{$id}");
+    }
+    if (!(new Category())->isClassified('exercise', (int) $id)) {
+      global $session;
+      $session->flash('error', 'Classifique o exercício (categoria e subcategorias) antes de concluir.');
+      View::redirect("/teacher/exercises/{$id}#classificacao");
     }
 
     $this->exercises->markReady((int) $id);

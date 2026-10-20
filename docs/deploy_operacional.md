@@ -52,6 +52,7 @@ traz de volta, se algum banco anterior a essa data aparecer).
 | `030_student_achievements.sql` | Cria `student_achievements` (conquistas do Aluno). Idempotente. |
 | `031_ranking.sql` | `turmas.ranking_mode` e `users.ranking_anonymous` (ranking opcional da Turma). Idempotente. |
 | `032_ai_usage_logs.sql` | Cria `ai_usage_logs` (uso e custo da IA por chamada). Idempotente. |
+| `033_categories.sql` | Categoria e subcategoria: cria `categories` e `exercise_themes`; `bank_themes` vira subcategoria (`category_id`, `active`, nome único por categoria); `category_id` em `exercises` e `bank_exercises`. Temas existentes viram subcategorias de "Algoritmos" e Exercícios com Questões do banco herdam a classificação. Idempotente. |
 
 ### Dados de teste (seed 003)
 

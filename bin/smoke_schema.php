@@ -31,6 +31,8 @@ $requiredTables = [
   'turma_posts',
   'student_achievements',
   'ai_usage_logs',
+  'categories',
+  'exercise_themes',
 ];
 
 $requiredColumns = [
@@ -40,12 +42,14 @@ $requiredColumns = [
   'answers' => ['attempt_id', 'question_id', 'student_answer', 'ai_score', 'ai_feedback', 'deduction_reasons_json'],
   'login_attempts' => ['email', 'ip_address', 'user_agent', 'succeeded', 'created_at'],
   'grading_jobs' => ['attempt_id', 'status', 'attempts', 'last_error', 'available_at', 'locked_at', 'worker_id', 'completed_at'],
-  'bank_exercises' => ['id', 'title', 'description', 'source_exercise_id', 'source_teacher_id', 'status', 'review_note', 'reviewed_by', 'reviewed_at'],
+  'bank_exercises' => ['id', 'title', 'description', 'category_id', 'source_exercise_id', 'source_teacher_id', 'status', 'review_note', 'reviewed_by', 'reviewed_at'],
   'bank_questions' => ['id', 'bank_exercise_id', 'text', 'expected_answer_hint', 'max_score', 'order_index'],
-  'bank_themes' => ['id', 'name'],
+  'bank_themes' => ['id', 'name', 'category_id', 'active'],
   'bank_exercise_themes' => ['bank_exercise_id', 'theme_id'],
   'notifications' => ['user_id', 'type', 'title', 'link', 'dedupe_key', 'read_at', 'emailed_at', 'email_attempts'],
   'questions' => ['bank_question_id'],
+  'categories' => ['id', 'name', 'active'],
+  'exercise_themes' => ['exercise_id', 'theme_id'],
   'ai_usage_logs' => ['kind', 'teacher_id', 'turma_id', 'student_id', 'prompt_tokens', 'completion_tokens', 'cost_usd', 'status'],
   'student_achievements' => ['student_id', 'code', 'earned_at'],
   'turmas' => ['ranking_mode'],
@@ -151,6 +155,9 @@ try {
     ['exercises', 'admin_reviewed_by', 'users'],
     ['questions', 'admin_reviewed_by', 'users'],
     ['questions', 'bank_question_id', 'bank_questions'],
+    ['exercises', 'category_id', 'categories'],
+    ['bank_exercises', 'category_id', 'categories'],
+    ['bank_themes', 'category_id', 'categories'],
   ];
 
   foreach ($requiredForeignKeys as [$table, $column, $referencedTable]) {

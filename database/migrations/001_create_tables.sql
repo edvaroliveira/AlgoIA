@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS exercises (
     teacher_id   INT UNSIGNED NOT NULL,
     title        VARCHAR(200) NOT NULL,
     description  TEXT,
+    category_id  INT UNSIGNED NULL,
     status       ENUM('draft','ready','active') NOT NULL DEFAULT 'draft',
     admin_review_status ENUM('approved','flagged','blocked') NOT NULL DEFAULT 'approved',
     admin_review_note TEXT NULL,
@@ -219,6 +220,7 @@ CREATE TABLE IF NOT EXISTS bank_exercises (
     id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     title              VARCHAR(200) NOT NULL,
     description        TEXT NULL,
+    category_id        INT UNSIGNED NULL,
     source_exercise_id INT UNSIGNED NULL,
     source_teacher_id  INT UNSIGNED NULL,
     status             ENUM('suggested','active','rejected','archived') NOT NULL DEFAULT 'suggested',
@@ -246,9 +248,11 @@ CREATE TABLE IF NOT EXISTS bank_questions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS bank_themes (
-    id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(60) NOT NULL,
-    UNIQUE KEY uk_bank_themes_name (name)
+    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    category_id INT UNSIGNED NULL COMMENT 'Subcategoria (antes Tema) pertence a uma categoria',
+    name        VARCHAR(60) NOT NULL,
+    active      TINYINT(1)  NOT NULL DEFAULT 1,
+    UNIQUE KEY uk_bank_themes_category_name (category_id, name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS bank_exercise_themes (
@@ -387,6 +391,24 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
     INDEX idx_ai_usage_kind (kind, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Categoria e subcategoria (migration 033). As chaves estrangeiras para
+-- categories vêm no fim, protegidas, porque exercises é criada antes.
+CREATE TABLE IF NOT EXISTS categories (
+    id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(80)  NOT NULL,
+    active     TINYINT(1)   NOT NULL DEFAULT 1,
+    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_categories_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS exercise_themes (
+    exercise_id INT UNSIGNED NOT NULL,
+    theme_id    INT UNSIGNED NOT NULL,
+    PRIMARY KEY (exercise_id, theme_id),
+    INDEX idx_exercise_themes_theme (theme_id),
+    CONSTRAINT fk_exercise_themes_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+    CONSTRAINT fk_exercise_themes_theme FOREIGN KEY (theme_id) REFERENCES bank_themes(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Origem das Questões importadas (migration 027). A chave estrangeira vem por
 -- último porque bank_questions é criada depois de questions. Num banco antigo
 -- (questions sem a coluna), quem acrescenta coluna e chave é a 027.
@@ -397,4 +419,28 @@ SET @has_fk := (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
 SET @sql := IF(@has_col = 1 AND @has_fk = 0,
   'ALTER TABLE questions ADD CONSTRAINT fk_questions_bank_question FOREIGN KEY (bank_question_id) REFERENCES bank_questions(id) ON DELETE SET NULL',
   'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Chaves de categoria (migration 033). Num banco antigo (sem as colunas), quem
+-- acrescenta colunas e chaves é a 033.
+SET @has_col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'exercises' AND COLUMN_NAME = 'category_id');
+SET @has_fk := (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'exercises' AND CONSTRAINT_NAME = 'fk_exercises_category');
+SET @sql := IF(@has_col = 1 AND @has_fk = 0,
+  'ALTER TABLE exercises ADD CONSTRAINT fk_exercises_category FOREIGN KEY (category_id) REFERENCES categories(id)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @has_col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'bank_exercises' AND COLUMN_NAME = 'category_id');
+SET @has_fk := (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'bank_exercises' AND CONSTRAINT_NAME = 'fk_bank_ex_category');
+SET @sql := IF(@has_col = 1 AND @has_fk = 0,
+  'ALTER TABLE bank_exercises ADD CONSTRAINT fk_bank_ex_category FOREIGN KEY (category_id) REFERENCES categories(id)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @has_col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'bank_themes' AND COLUMN_NAME = 'category_id');
+SET @has_fk := (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'bank_themes' AND CONSTRAINT_NAME = 'fk_bank_themes_category');
+SET @sql := IF(@has_col = 1 AND @has_fk = 0,
+  'ALTER TABLE bank_themes ADD CONSTRAINT fk_bank_themes_category FOREIGN KEY (category_id) REFERENCES categories(id)', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

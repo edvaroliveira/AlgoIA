@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Category;
 use App\Models\Exercise;
 use Core\Database;
 
@@ -38,6 +39,7 @@ class BankImportService
 
       $draftId = (new Exercise($db))->createDraft($teacherId, mb_substr($title, 0, 200), $origin['description']);
       $this->copyQuestions($draftId, $origin['questions'], 1);
+      $this->inheritClassification($draftId, $origin['classification']);
 
       $db->commit();
       return $draftId;
@@ -70,6 +72,7 @@ class BankImportService
         [$exerciseId]
       )['last'] ?? 0) + 1;
       $this->copyQuestions($exerciseId, $origin['questions'], $next);
+      $this->inheritClassification($exerciseId, $origin['classification']);
 
       $db->commit();
       return count($origin['questions']);
@@ -125,10 +128,31 @@ class BankImportService
     }
 
     return [
-      'title'       => (string) $exercise['title'],
-      'description' => $exercise['description'] !== null ? (string) $exercise['description'] : null,
-      'questions'   => $questions,
+      'title'          => (string) $exercise['title'],
+      'description'    => $exercise['description'] !== null ? (string) $exercise['description'] : null,
+      'questions'      => $questions,
+      'classification' => (new Category($this->db))->classificationOf($source === self::SOURCE_BANK ? 'bank' : 'exercise', $sourceId),
     ];
+  }
+
+  /**
+   * Classificação da origem vai para o Rascunho: sem categoria → herda tudo;
+   * mesma categoria → soma as subcategorias; categoria diferente → mantém a dele.
+   */
+  private function inheritClassification(int $draftId, array $origin): void
+  {
+    if ($origin['category_id'] === null || $origin['themes'] === []) {
+      return;
+    }
+    $categories = new Category($this->db);
+    $current = $categories->classificationOf('exercise', $draftId);
+    $themeIds = array_column($origin['themes'], 'id');
+
+    if ($current['category_id'] === null) {
+      $categories->classify('exercise', $draftId, (int) $origin['category_id'], $themeIds);
+    } elseif ($current['category_id'] === $origin['category_id']) {
+      $categories->addThemes('exercise', $draftId, $themeIds);
+    }
   }
 
   private function copyQuestions(int $exerciseId, array $questions, int $firstOrder): void

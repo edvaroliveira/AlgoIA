@@ -76,9 +76,13 @@ _Evitar_: Número de chances
 Acervo institucional de Exercícios curado pelo Admin, do qual qualquer Docente pode Importar Questões. Cada item é uma cópia independente do Exercício de origem.
 _Evitar_: Biblioteca (já é o nome da lista de Exercícios do Docente), repositório, compartilhados
 
-**Tema**:
-Rótulo definido pelo Admin para classificar itens do Banco de exercícios e filtrá-los.
-_Evitar_: Tag, categoria, assunto
+**Categoria**:
+Primeiro nível da classificação de Exercícios e itens do Banco de exercícios (ex.: Algoritmos, Estruturas de Dados). Mantida pelo Admin.
+_Evitar_: Disciplina, área, tag
+
+**Subcategoria** (`bank_themes`):
+Segundo nível da classificação, dentro de uma Categoria (ex.: Algoritmos → Vetores). Todo Exercício tem uma Categoria e uma ou mais Subcategorias dela, obrigatórias para concluir. Antes chamada Tema; o nome técnico da tabela foi mantido.
+_Evitar_: Tema (nome antigo), tag, assunto
 
 **Sugestão ao banco**:
 Pedido de um Docente para que um Exercício seu, Concluído ou Publicado, entre no Banco de exercícios. O Admin aprova (com Temas) ou recusa (com motivo).
@@ -157,7 +161,7 @@ Treino do Aluno com Questões do Banco de exercícios, fora de Turma e de Public
 _Evitar_: Simulado, treino livre, Tentativa de prática
 
 **Progresso por Tema**:
-Média percentual do Aluno em cada Tema, somando as correções da Prática e as Respostas corrigidas de Tentativas cujas Questões vieram do Banco de exercícios. Classifica o Tema como ponto forte, em evolução ou a melhorar quando há correções suficientes.
+Média percentual do Aluno em cada Subcategoria, agrupada por Categoria, somando as correções da Prática e as Respostas corrigidas de Tentativas em Exercícios daquela Subcategoria. Classifica como ponto forte, em evolução ou a melhorar quando há correções suficientes.
 _Evitar_: Boletim, ranking, nota do Tema
 
 **Desempenho da Turma**:
