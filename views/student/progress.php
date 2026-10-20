@@ -1,6 +1,7 @@
 <?php
 $themes = $themes ?? [];
 $evolution = $evolution ?? [];
+$achievements = $achievements ?? [];
 $levels = [
   \App\Models\ThemeProgress::LEVEL_STRONG   => ['Ponto forte', 'badge--success'],
   \App\Models\ThemeProgress::LEVEL_MIDDLE   => ['Em evolução', 'badge--info'],
@@ -17,6 +18,34 @@ $weak = array_column(array_filter($themes, static fn(array $t): bool => $t['leve
     <p class="subtitle">Seu desempenho por Tema (Prática e Tentativas com Questões do banco) e a evolução nos exercícios que você refez.</p>
   </div>
 </div>
+
+<?php if ($achievements !== []):
+  $earnedCount = count(array_filter($achievements, static fn(array $a): bool => $a['earned_at'] !== null));
+  // Obtidas primeiro, mantendo a ordem do catálogo dentro de cada grupo.
+  $achievements = array_merge(
+    array_values(array_filter($achievements, static fn(array $a): bool => $a['earned_at'] !== null)),
+    array_values(array_filter($achievements, static fn(array $a): bool => $a['earned_at'] === null))
+  );
+?>
+  <section class="surface-block">
+    <div class="surface-block__body">
+      <p><strong>Conquistas</strong> — <?= $earnedCount ?> de <?= count($achievements) ?>. Só você vê.</p>
+      <ul class="conquista-grid">
+        <?php foreach ($achievements as $achievement): ?>
+          <li class="conquista <?= $achievement['earned_at'] !== null ? 'conquista--earned' : 'conquista--locked' ?>">
+            <strong><?= \Core\View::e($achievement['label']) ?></strong>
+            <small>
+              <?= $achievement['earned_at'] !== null
+                ? 'Obtida em ' . date('d/m/Y', strtotime((string) $achievement['earned_at']))
+                : \Core\View::e($achievement['hint']) ?>
+            </small>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+    </div>
+  </section>
+  <div class="section"></div>
+<?php endif; ?>
 
 <?php if ($themes === []): ?>
   <p class="empty-state">Ainda não há Temas no banco de exercícios.</p>

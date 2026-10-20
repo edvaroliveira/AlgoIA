@@ -159,6 +159,7 @@ try {
 }
 
 $allTables = [
+  'student_achievements',
   'turma_posts',
   'practice_answers',
   'notifications',
@@ -1689,6 +1690,77 @@ if (!extension_loaded('curl')) {
       postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaDes['id']}/mural/{$firstPost}/excluir");
       check($postCount() === 2 && !str_contains(httpAs($jarAlta, 'GET', "{$base}/student/mural")['body'], 'Prova remarcada')
         && $auditCount('teacher.turma.post.delete', $turmaDes['id']) === 1, 'MUR-05: Docente exclui o recado (auditado)');
+
+      // ACH-01 — Conquistas: visíveis só para o Aluno, obtidas uma vez, com Aviso
+      $alunoConq = $mkUser('Aluno Conquistas', 'student');
+      $jarConq = loginAs($base, $alunoConq['email'], $pw);
+      $earned = static function (string $html, string $label): bool {
+        return preg_match('#class="conquista conquista--earned"(?:(?!</li>).)*' . preg_quote($label, '#') . '#s', $html) === 1;
+      };
+      $locked = static function (string $html, string $label): bool {
+        return preg_match('#class="conquista conquista--locked"(?:(?!</li>).)*' . preg_quote($label, '#') . '#s', $html) === 1;
+      };
+      $conqPage = httpAs($jarConq, 'GET', "{$base}/student/progresso")['body'];
+      check($locked($conqPage, 'Primeiros passos') && !$earned($conqPage, 'Primeiros passos'), 'ACH-01: sem respostas, conquistas aparecem bloqueadas');
+      check($countRows("SELECT COUNT(*) FROM student_achievements WHERE student_id = {$alunoConq['id']}") === 0, 'ACH-01: nenhuma conquista sem atividade');
+
+      // Primeira correção na Prática (IA falsa): Primeiros passos + Explorador do Tema, na hora
+      postAs($base, $jarConq, "/student/pratica/questao/{$praticaQ1}", ['answer' => 'minha primeira resposta']);
+      $achNotes = array_column($notes($alunoConq['id'], 'achievement'), 'title');
+      check(in_array('Conquista desbloqueada: Primeiros passos', $achNotes, true) && in_array('Conquista desbloqueada: Explorador: Tema de Pratica', $achNotes, true),
+        'ACH-01: primeira correção desbloqueia Primeiros passos e o Explorador do Tema, com Aviso');
+
+      // ACH-02 — Sequência, volume, nota máxima, volta por cima e ponto forte
+      $pdoA->exec("INSERT INTO practice_answers (student_id, bank_question_id, student_answer, score, max_score, feedback, created_at) VALUES
+                   ({$alunoConq['id']}, {$praticaQ1}, 'x', 5, 10, 'f', NOW() - INTERVAL 1 DAY),
+                   ({$alunoConq['id']}, {$praticaQ1}, 'x', 5, 10, 'f', NOW() - INTERVAL 2 DAY),
+                   ({$alunoConq['id']}, {$praticaQ1}, 'x', 5, 10, 'f', NOW() - INTERVAL 5 DAY)");
+      for ($i = 0; $i < 3; $i++) {
+        $pdoA->exec("INSERT INTO practice_answers (student_id, bank_question_id, student_answer, score, max_score, feedback, created_at)
+                     VALUES ({$alunoConq['id']}, {$newQ}, 'x', 9, 10, 'f', NOW() - INTERVAL 10 DAY)");
+      }
+      for ($i = 0; $i < 3; $i++) {
+        $pdoA->exec("INSERT INTO practice_answers (student_id, bank_question_id, student_answer, score, max_score, feedback, created_at)
+                     VALUES ({$alunoConq['id']}, {$weakQ}, 'x', 1, 10, 'f', NOW() - INTERVAL 20 DAY)");
+      }
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, status, total_score, submitted_at) VALUES
+                   ({$desEx2['id']}, {$alunoConq['id']}, 'graded', 5.0, NOW() - INTERVAL 30 DAY),
+                   ({$desEx1['id']}, {$alunoConq['id']}, 'graded', 2.0, NOW() - INTERVAL 31 DAY),
+                   ({$desEx1['id']}, {$alunoConq['id']}, 'graded', 4.0, NOW() - INTERVAL 29 DAY)");
+      $conqPage = httpAs($jarConq, 'GET', "{$base}/student/progresso")['body'];
+      check($earned($conqPage, 'Sequência de 3 dias') && $locked($conqPage, 'Sequência de 7 dias'), 'ACH-02: 3 dias seguidos desbloqueiam a sequência de 3, não a de 7');
+      check($earned($conqPage, 'Praticante') && $locked($conqPage, 'Praticante dedicado'), 'ACH-02: 10 correções de prática desbloqueiam Praticante, não a de 50');
+      check($earned($conqPage, 'Nota máxima'), 'ACH-02: nota máxima em um Exercício desbloqueia a conquista');
+      check($earned($conqPage, 'Volta por cima'), 'ACH-02: melhorar a nota ao refazer desbloqueia Volta por cima');
+      check($earned($conqPage, 'Ponto forte'), 'ACH-02: Tema com 70% ou mais desbloqueia Ponto forte');
+      $mkThemeList('Tema Intocado', 'Questao do tema intocado');
+      $conqPage = httpAs($jarConq, 'GET', "{$base}/student/progresso")['body'];
+      check($earned($conqPage, 'Explorador: Tema Fraco') && $locked($conqPage, 'Explorador: Tema Intocado'), 'ACH-02: Explorador por Tema só onde houve resposta corrigida');
+
+      // Correção de Tentativa (worker) também desbloqueia, sem abrir o app
+      $alunoGrad = $mkUser('Aluno Corrigido', 'student');
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, status) VALUES ({$desEx2['id']}, {$alunoGrad['id']}, 'submitted')");
+      $gradAttempt = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO answers (attempt_id, question_id, student_answer, ai_score, evaluated_at)
+                   VALUES ({$gradAttempt}, {$desEx2['questions'][0]}, 'r', 1, NOW())");
+      (new App\Models\Attempt($dbA))->markGraded($gradAttempt, 1.0);
+      check(in_array('Conquista desbloqueada: Primeiros passos', array_column($notes($alunoGrad['id'], 'achievement'), 'title'), true),
+        'ACH-02: Tentativa Corrigida desbloqueia conquista na hora da correção');
+
+      // Sequência contada também por Tentativas enviadas (sem Prática)
+      $pdoA->exec("UPDATE attempts SET submitted_at = NOW() WHERE id = {$gradAttempt}");
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, status, submitted_at) VALUES
+                   ({$desEx2['id']}, {$alunoGrad['id']}, 'submitted', NOW() - INTERVAL 1 DAY),
+                   ({$desEx2['id']}, {$alunoGrad['id']}, 'submitted', NOW() - INTERVAL 2 DAY)");
+      $gradPage = httpAs(loginAs($base, $alunoGrad['email'], $pw), 'GET', "{$base}/student/progresso")['body'];
+      check($earned($gradPage, 'Sequência de 3 dias'), 'ACH-02: Tentativas enviadas em dias seguidos contam na sequência');
+      check($locked(httpAs($jarPratica, 'GET', "{$base}/student/progresso")['body'], 'Ponto forte'), 'ACH-02: Tema só abaixo de 50% não dá Ponto forte');
+
+      // ACH-03 — Idempotente e privado
+      httpAs($jarConq, 'GET', "{$base}/student/progresso");
+      check(count(array_filter($notes($alunoConq['id'], 'achievement'), static fn(array $n): bool => $n['title'] === 'Conquista desbloqueada: Primeiros passos')) === 1,
+        'ACH-03: conquista não se repete nem gera Aviso de novo');
+      check(!$earned(httpAs($jarPratica, 'GET', "{$base}/student/progresso")['body'], 'Volta por cima'), 'ACH-03: conquistas são de cada Aluno');
 
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);

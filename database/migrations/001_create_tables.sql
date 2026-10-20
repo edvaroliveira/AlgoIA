@@ -351,6 +351,15 @@ CREATE TABLE IF NOT EXISTS turma_posts (
     CONSTRAINT fk_turma_posts_teacher FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Conquistas do Aluno (migration 030).
+CREATE TABLE IF NOT EXISTS student_achievements (
+    student_id INT UNSIGNED NOT NULL,
+    code       VARCHAR(100) NOT NULL,
+    earned_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (student_id, code),
+    CONSTRAINT fk_achievements_student FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Origem das Questões importadas (migration 027). A chave estrangeira vem por
 -- último porque bank_questions é criada depois de questions. Num banco antigo
 -- (questions sem a coluna), quem acrescenta coluna e chave é a 027.

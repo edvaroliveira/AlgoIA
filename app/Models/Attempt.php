@@ -51,6 +51,7 @@ class Attempt extends Model
         'Sua tentativa foi corrigida. Veja a nota e o que faltou para a nota máxima.',
         'graded:' . $attemptId
       );
+      (new \App\Services\AchievementService($this->db))->syncSafely((int) $attempt['student_id']);
     }
   }
 
