@@ -84,6 +84,7 @@ class DashboardController
       'available' => $available,
       'all'       => $all,
       'turmas'    => $myTurmas,
+      'muralPosts' => (new \App\Models\TurmaPost())->forStudent((int) $studentId, 3),
     ]);
   }
 

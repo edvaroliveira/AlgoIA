@@ -19,6 +19,7 @@ class Notification extends Model
   public const TYPE_REVIEW_ANSWERED      = 'review_answered';
   public const TYPE_ENROLLMENT_REQUESTED = 'enrollment_requested';
   public const TYPE_TEACHER_REGISTRATION = 'teacher_registration';
+  public const TYPE_TURMA_POST           = 'turma_post';
 
   protected string $table = 'notifications';
 

@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Models\LoginAttempt;
 use App\Models\Turma;
 use App\Models\TurmaPerformance;
+use App\Models\TurmaPost;
 use App\Services\AuditService;
 use Core\Auth;
 use Core\Request;
@@ -61,7 +62,86 @@ class TurmaController
       'turma'    => $turma,
       'pending'  => $this->turmas->getPendingStudents((int) $id),
       'students' => $this->turmas->getActiveStudents((int) $id),
+      'posts'    => (new TurmaPost())->forTurma((int) $id),
     ]);
+  }
+
+  // ── Teacher: mural ───────────────────────────────────────────────────────
+
+  /** POST /teacher/turmas/{id}/mural — publica recado e avisa os Alunos. */
+  public function storePost(string $id): void
+  {
+    Request::validateCsrf();
+    $turma = $this->getOwnedTurma((int) $id);
+    global $session;
+    $back = '/teacher/turmas/' . (int) $id . '#mural';
+
+    $title = trim(Request::str('title'));
+    $body = trim(Request::text('body'));
+    $expiresOn = trim(Request::str('expires_on'));
+    $expiresAt = null;
+
+    if ($title === '' || mb_strlen($title) > TurmaPost::TITLE_MAX) {
+      $session->flash('error', 'Informe um título de até ' . TurmaPost::TITLE_MAX . ' caracteres.');
+      View::redirect($back);
+    }
+    if ($body === '' || mb_strlen($body) > TurmaPost::BODY_MAX) {
+      $session->flash('error', 'Escreva o recado (até ' . TurmaPost::BODY_MAX . ' caracteres).');
+      View::redirect($back);
+    }
+    if ($expiresOn !== '') {
+      $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $expiresOn);
+      if ($date === false || $date->format('Y-m-d') !== $expiresOn || $date->setTime(23, 59, 59) < new \DateTimeImmutable()) {
+        $session->flash('error', 'A data de expiração deve ser hoje ou uma data futura.');
+        View::redirect($back);
+      }
+      $expiresAt = $date->format('Y-m-d') . ' 23:59:59';
+    }
+
+    $postId = (new TurmaPost())->create((int) $id, (int) Auth::id(), $title, $body, Request::post('pinned') === '1', $expiresAt);
+    AuditService::record('teacher.turma.post', 'turma', (int) $id, ['post_id' => $postId]);
+    (new \App\Models\Notification())->notifyTurmaStudents(
+      [(int) $id],
+      \App\Models\Notification::TYPE_TURMA_POST,
+      'Recado na turma ' . $turma['name'] . ': ' . $title,
+      '/student/mural',
+      mb_strimwidth($body, 0, 200, '…'),
+      'post:' . $postId
+    );
+
+    $session->flash('success', 'Recado publicado no mural.');
+    View::redirect($back);
+  }
+
+  /** POST /teacher/turmas/{id}/mural/{postId}/fixar — fixa ou desafixa. */
+  public function togglePostPin(string $id, string $postId): void
+  {
+    Request::validateCsrf();
+    $this->getOwnedTurma((int) $id);
+    global $session;
+
+    if ((new TurmaPost())->togglePin((int) $postId, (int) $id)) {
+      AuditService::record('teacher.turma.post.pin', 'turma', (int) $id, ['post_id' => (int) $postId]);
+    } else {
+      $session->flash('error', 'Recado não encontrado.');
+    }
+    View::redirect('/teacher/turmas/' . (int) $id . '#mural');
+  }
+
+  /** POST /teacher/turmas/{id}/mural/{postId}/excluir */
+  public function deletePost(string $id, string $postId): void
+  {
+    Request::validateCsrf();
+    $this->getOwnedTurma((int) $id);
+    global $session;
+
+    if ((new TurmaPost())->deleteFromTurma((int) $postId, (int) $id)) {
+      AuditService::record('teacher.turma.post.delete', 'turma', (int) $id, ['post_id' => (int) $postId]);
+      $session->flash('success', 'Recado excluído.');
+    } else {
+      $session->flash('error', 'Recado não encontrado.');
+    }
+    View::redirect('/teacher/turmas/' . (int) $id . '#mural');
   }
 
   // ── Teacher: desempenho ──────────────────────────────────────────────────

@@ -28,6 +28,7 @@ $requiredTables = [
   'score_reviews',
   'notifications',
   'practice_answers',
+  'turma_posts',
 ];
 
 $requiredColumns = [
@@ -43,6 +44,7 @@ $requiredColumns = [
   'bank_exercise_themes' => ['bank_exercise_id', 'theme_id'],
   'notifications' => ['user_id', 'type', 'title', 'link', 'dedupe_key', 'read_at', 'emailed_at', 'email_attempts'],
   'questions' => ['bank_question_id'],
+  'turma_posts' => ['turma_id', 'teacher_id', 'title', 'body', 'pinned', 'expires_at'],
   'practice_answers' => ['student_id', 'bank_question_id', 'score', 'max_score', 'feedback', 'deduction_reasons_json'],
   'score_reviews' => ['answer_id', 'status', 'request_message', 'requested_by', 'previous_score', 'new_score', 'justification', 'reviewed_by'],
 ];

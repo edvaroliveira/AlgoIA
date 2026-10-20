@@ -168,6 +168,10 @@ _Evitar_: Relatório, boletim, dashboard
 Comparação, numa mesma Publicação, entre a nota da primeira e a da última Tentativa Corrigida de um Aluno que refez o Exercício: melhorou, manteve ou caiu.
 _Evitar_: Histórico de notas, progresso (que é por Tema)
 
+**Mural** (`turma_posts`):
+Recados do Docente para os Alunos de uma Turma. Um recado pode ser fixado no topo e ter data de expiração; depois dela some para o Aluno. Só o Docente da Turma escreve.
+_Evitar_: Fórum, chat, comunicado
+
 **Suspeita de injeção** (`injection_logs`):
 Registro de que uma Resposta continha um padrão de tentativa de manipular a Correção por IA.
 _Evitar_: Fraude, ataque

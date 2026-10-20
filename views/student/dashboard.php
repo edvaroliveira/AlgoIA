@@ -29,6 +29,23 @@ $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pe
   </div>
 <?php endif; ?>
 
+<?php if (!empty($muralPosts)): ?>
+<!-- Mural -->
+<div class="section">
+  <div class="section-header">
+    <h2>Mural</h2>
+    <a href="<?= \Core\app_url('/student/mural') ?>" class="btn btn--ghost btn--sm">Ver todos os recados</a>
+  </div>
+  <section class="surface-block">
+    <div class="surface-block__body">
+      <?php foreach ($muralPosts as $post): ?>
+        <?php \Core\View::partial('partials/mural_post', ['post' => $post, 'showTurma' => true]); ?>
+      <?php endforeach; ?>
+    </div>
+  </section>
+</div>
+<?php endif; ?>
+
 <!-- Exercícios disponíveis -->
 <div class="section">
   <h2>Disponíveis agora</h2>
