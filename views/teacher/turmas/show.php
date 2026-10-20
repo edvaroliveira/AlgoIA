@@ -3,6 +3,8 @@ $turma = $turma ?? [];
 $pending = $pending ?? [];
 $students = $students ?? [];
 $posts = $posts ?? [];
+$ranking = $ranking ?? [];
+$rankingMode = (string) ($turma['ranking_mode'] ?? 'off');
 $pageTitle = 'Turma — ' . ($turma['name'] ?? '');
 global $session;
 ?>
@@ -99,6 +101,49 @@ global $session;
     </section>
   </div>
 <?php endif; ?>
+
+<!-- Ranking -->
+<div class="section" id="ranking">
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Ranking <span class="badge badge--neutral"><?= \App\Models\TurmaRanking::modeLabel($rankingMode) ?></span></h2>
+        <p class="surface-copy">Opcional, só com a Prática. Cada aluno vê o top 5 e a própria posição; quem quiser aparece como anônimo para os colegas. Aqui você vê a lista completa.</p>
+      </div>
+    </div>
+    <div class="surface-block__body">
+      <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . (int) ($turma['id'] ?? 0) . '/ranking') ?>" class="ranking-form">
+        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+        <div class="form-group">
+          <label class="form-label" for="ranking-mode">Período</label>
+          <select class="form-input" id="ranking-mode" name="ranking_mode">
+            <?php foreach (\App\Models\TurmaRanking::MODES as $mode): ?>
+              <option value="<?= $mode ?>"<?= $mode === $rankingMode ? ' selected' : '' ?>><?= \App\Models\TurmaRanking::modeLabel($mode) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary btn--sm">Salvar</button>
+        </div>
+      </form>
+      <?php if ($rankingMode !== 'off'): ?>
+        <?php if ($ranking === []): ?>
+          <p>Ninguém pontuou neste período ainda.</p>
+        <?php else: ?>
+          <ol class="ranking-list">
+            <?php foreach ($ranking as $row): ?>
+              <li class="ranking-row">
+                <span class="ranking-row__pos"><?= $row['position'] ?>º</span>
+                <span class="ranking-row__name"><?= \Core\View::e($row['name']) ?><?= $row['anonymous'] ? ' <small>(anônimo para os colegas)</small>' : '' ?></span>
+                <span class="ranking-row__pts"><?= number_format($row['points'], 1, ',', '') ?> pts</span>
+              </li>
+            <?php endforeach; ?>
+          </ol>
+        <?php endif; ?>
+      <?php endif; ?>
+    </div>
+  </section>
+</div>
 
 <!-- Mural -->
 <div class="section" id="mural">

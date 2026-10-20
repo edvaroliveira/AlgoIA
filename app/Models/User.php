@@ -36,6 +36,11 @@ class User extends Model
     return password_verify($password, $hash);
   }
 
+  public function setRankingAnonymous(int $id, bool $anonymous): void
+  {
+    $this->db->execute("UPDATE users SET ranking_anonymous = ? WHERE id = ?", [$anonymous ? 1 : 0, $id]);
+  }
+
   public function setEmailNotifications(int $id, bool $enabled): void
   {
     $this->db->execute("UPDATE users SET email_notifications = ? WHERE id = ?", [$enabled ? 1 : 0, $id]);

@@ -103,3 +103,26 @@ $backUrl = \Core\Auth::isAdmin()
     </form>
   </div>
 </section>
+
+<?php if (\Core\Auth::isStudent()): ?>
+<section class="surface-block account-card">
+  <div class="surface-block__header">
+    <div>
+      <h2 class="surface-title">Ranking</h2>
+      <p class="surface-copy">Nas turmas com ranking, seus colegas veem seu nome no top 5. Você pode aparecer como "Aluno anônimo"; o docente sempre vê seu nome.</p>
+    </div>
+  </div>
+  <div class="surface-block__body">
+    <form method="POST" action="<?= \Core\app_url('/conta/ranking') ?>">
+      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+      <label class="checkbox-label" for="ranking-anonymous">
+        <input type="checkbox" id="ranking-anonymous" name="ranking_anonymous" value="1"<?= (int) ($user['ranking_anonymous'] ?? 0) === 1 ? ' checked' : '' ?>>
+        Aparecer como "Aluno anônimo" para os colegas
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary btn--sm">Salvar preferência</button>
+      </div>
+    </form>
+  </div>
+</section>
+<?php endif; ?>

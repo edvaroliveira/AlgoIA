@@ -1815,6 +1815,76 @@ if (!extension_loaded('curl')) {
       }
       @unlink($smtpLog);
 
+      // RANK-01 — Ranking da Turma: desligado por padrão; Docente escolhe o período
+      $turmaRank = $mkTurma($docenteA['id'], 'Turma Ranking');
+      $pdoA->exec("UPDATE turmas SET created_at = NOW() - INTERVAL 60 DAY WHERE id = {$turmaRank['id']}");
+      $rankers = [];
+      foreach (['Um', 'Dois', 'Tres', 'Quatro', 'Cinco', 'Seis'] as $n) {
+        $rankers[$n] = $mkUser("Ranking {$n}", 'student');
+        $pdoA->exec("INSERT INTO student_turma (student_id, turma_id, status) VALUES ({$rankers[$n]['id']}, {$turmaRank['id']}, 'active')");
+      }
+      $practiced = function (array $student, int $questionId, float $score, string $when = 'NOW()') use ($pdoA): void {
+        $pdoA->exec("INSERT INTO practice_answers (student_id, bank_question_id, student_answer, score, max_score, feedback, created_at)
+                     VALUES ({$student['id']}, {$questionId}, 'x', {$score}, 10, 'f', {$when})");
+      };
+      // Semana atual: Um 20 (10 + 10; a 2ª correção da mesma Questão não soma), Dois 18, Tres 15, Quatro 12, Cinco 8, Seis 5
+      $practiced($rankers['Um'], $praticaQ1, 10); $practiced($rankers['Um'], $praticaQ1, 10); $practiced($rankers['Um'], $praticaQ2, 10);
+      $practiced($rankers['Dois'], $praticaQ1, 9); $practiced($rankers['Dois'], $praticaQ2, 9);
+      $practiced($rankers['Tres'], $praticaQ1, 6); $practiced($rankers['Tres'], $praticaQ1, 8); $practiced($rankers['Tres'], $praticaQ2, 7);
+      $practiced($rankers['Quatro'], $newQ, 7); $practiced($rankers['Quatro'], $weakQ, 5);
+      $practiced($rankers['Cinco'], $newQ, 8); $practiced($rankers['Cinco'], $praticaQ2, 4); // 12, empata com Quatro
+      $practiced($rankers['Seis'], $weakQ, 5);
+      // Semana passada: Cinco faz 30 (campeão da semana passada); 40 dias atrás: Seis faz 100
+      $practiced($rankers['Cinco'], $praticaQ1, 10, 'NOW() - INTERVAL 7 DAY'); $practiced($rankers['Cinco'], $praticaQ2, 10, 'NOW() - INTERVAL 7 DAY');
+      $practiced($rankers['Cinco'], $weakQ, 10, 'NOW() - INTERVAL 7 DAY');
+      foreach ([$praticaQ1, $praticaQ2, $newQ, $weakQ] as $q) {
+        $practiced($rankers['Seis'], $q, 10, 'NOW() - INTERVAL 40 DAY');
+      }
+      // Aluno ativo de OUTRA Turma, com muitos pontos nesta semana, não entra neste ranking
+      foreach ([$praticaQ1, $praticaQ2, $newQ, $weakQ] as $q) {
+        $practiced($desAlta, $q, 10);
+      }
+      $jarSeis = loginAs($base, $rankers['Seis']['email'], $pw);
+      $jarTres = loginAs($base, $rankers['Tres']['email'], $pw);
+      $rankPage = fn(string $jar): string => httpAs($jar, 'GET', "{$base}/student/ranking")['body'];
+      check(str_contains($rankPage($jarSeis), 'Turma Ranking') && !str_contains($rankPage($jarSeis), 'Ranking Um'),
+        'RANK-01: ranking começa desligado (Aluno não vê colegas)');
+
+      $r = postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaRank['id']}/ranking", ['ranking_mode' => 'weekly']);
+      check($r['code'] === 302 && $auditCount('teacher.turma.ranking', $turmaRank['id']) === 1, 'RANK-01: Docente liga o ranking semanal (auditado)');
+      $r = postAs($base, $jarDocenteB, "/teacher/turmas/{$turmaRank['id']}/ranking", ['ranking_mode' => 'all']);
+      check($r['code'] === 403, 'RANK-01: outro Docente não altera o ranking');
+
+      // RANK-02 — Top 5 + própria posição; melhor nota por Questão; campeão da semana passada
+      $seis = $rankPage($jarSeis);
+      $pos = static fn(string $html, string $name): int|false => strpos($html, $name);
+      check($pos($seis, 'Ranking Um') !== false && $pos($seis, 'Ranking Um') < $pos($seis, 'Ranking Dois')
+        && $pos($seis, 'Ranking Dois') < $pos($seis, 'Ranking Tres') && $pos($seis, 'Ranking Cinco') !== false,
+        'RANK-02: top 5 em ordem de pontos');
+      check(!str_contains($seis, 'Aluna Nota Alta'), 'RANK-02: só Alunos desta Turma entram no ranking');
+      check(substr_count($seis, '<span class="ranking-row__pos">4º</span>') === 2 && str_contains($seis, 'Você está em 6º de 6'),
+        'RANK-02: empate divide a posição (1, 2, 3, 4, 4, 6)');
+      check(str_contains($seis, '20,0 pts') && !str_contains($seis, '30,0 pts'), 'RANK-02: só a melhor nota de cada Questão conta');
+      check(str_contains($seis, 'Você está em 6º de 6') && !preg_match('#<li[^>]*class="ranking-row[^"]*"[^>]*>(?:(?!</li>).)*Ranking Seis#s', $seis),
+        'RANK-02: fora do top 5, o Aluno vê só a própria posição');
+      check(str_contains($seis, 'Campeão da semana passada: Ranking Cinco'), 'RANK-02: mostra o campeão do período anterior');
+
+      // RANK-03 — Anônimo para os colegas, nome real para o Docente
+      $r = postAs($base, $jarTres, '/conta/ranking', ['ranking_anonymous' => '1']);
+      $seis = $rankPage($jarSeis);
+      check($r['code'] === 302 && !str_contains($seis, 'Ranking Tres') && str_contains($seis, 'Aluno anônimo'), 'RANK-03: Aluno pode aparecer como anônimo');
+      check(str_contains($rankPage($jarTres), 'Você está em 3º de 6'), 'RANK-03: anônimo continua vendo a própria posição');
+      $docRank = httpAs($jarDocenteA, 'GET', "{$base}/teacher/turmas/{$turmaRank['id']}")['body'];
+      check(str_contains($docRank, 'Ranking Tres') && str_contains($docRank, 'Ranking Seis'), 'RANK-03: Docente vê o ranking completo com nomes');
+
+      // RANK-04 — Desde o início da Turma: pontos antigos contam
+      postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaRank['id']}/ranking", ['ranking_mode' => 'all']);
+      check(str_contains($rankPage($jarSeis), 'Você está em 1º de 6'), 'RANK-04: período "desde o início" inclui pontos antigos');
+      postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaRank['id']}/ranking", ['ranking_mode' => 'monthly']);
+      check(!str_contains($rankPage($jarSeis), 'Você está em 1º de 6'), 'RANK-04: período mensal não inclui pontos de 40 dias atrás');
+      $r = postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaRank['id']}/ranking", ['ranking_mode' => 'diario']);
+      check($r['code'] === 302 && $countRows("SELECT COUNT(*) FROM turmas WHERE id = {$turmaRank['id']} AND ranking_mode = 'monthly'") === 1, 'RANK-04: período inválido é recusado');
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);

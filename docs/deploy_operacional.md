@@ -50,6 +50,7 @@ traz de volta, se algum banco anterior a essa data aparecer).
 | `028_email_notifications.sql` | `users.email_notifications` e fila de e-mail em `notifications` (`emailed_at`, `email_attempts`). Idempotente. |
 | `029_turma_posts.sql` | Cria `turma_posts` (mural da Turma). Idempotente. |
 | `030_student_achievements.sql` | Cria `student_achievements` (conquistas do Aluno). Idempotente. |
+| `031_ranking.sql` | `turmas.ranking_mode` e `users.ranking_anonymous` (ranking opcional da Turma). Idempotente. |
 
 ### Dados de teste (seed 003)
 
