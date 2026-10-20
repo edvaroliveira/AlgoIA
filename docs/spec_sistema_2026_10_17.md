@@ -208,6 +208,13 @@ depois do login, perde a sessão.
 - Em `/admin/ia` (só Admin): filtros por período, Docente, Turma e tipo; indicadores (custo em US$ e R$, chamadas, taxa de falha, tokens, custo por Resposta, latência média e p95); gráficos (custo por dia, chamadas e falhas, top Docentes, top Turmas, Correção x Prática); tabelas por Docente, Turma, Exercício e Alunos da Prática; falhas recentes; exportação CSV.
 - O Admin edita na tela o preço por 1M de tokens (entrada e saída), a cotação US$→R$ e o orçamento mensal em R$ (auditado). Ao cruzar 80% e 100% do orçamento do mês, os Admins recebem Aviso (e e-mail), uma vez por limite. Nada é bloqueado.
 
+### RF-26 Configurações do ambiente (Admin)
+
+- Em `/admin/configuracoes`, o Admin edita o `.env` em quatro grupos: IA (chave, modelo, tempo limite, tentativas), E-mail (forma de envio, remetente, SMTP), Banco de dados e Aplicação/fila (nome, URL, ambiente, depuração, proxies confiáveis, limites da fila).
+- Salvar exige a senha do Admin. Cada grupo é validado e testado antes de gravar (OpenAI, login SMTP, conexão com o banco); se o teste falhar, nada muda e o Admin vê o motivo.
+- Segredos nunca aparecem inteiros (só os 4 últimos caracteres); em branco, o valor atual é mantido. Valores com quebra de linha são recusados.
+- A gravação preserva comentários, é atômica e guarda backup do arquivo anterior (5 mais recentes). A auditoria registra os nomes das chaves alteradas, sem os valores.
+
 ## Requisitos não funcionais
 
 ### RNF-01 Segurança

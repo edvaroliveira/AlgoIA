@@ -18,16 +18,26 @@ class Env
       return;
     }
 
-    $lines = file($this->path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach (self::parse((string) file_get_contents($this->path)) as $key => $value) {
+      if (!array_key_exists($key, $_ENV)) {
+        $_ENV[$key] = $value;
+        putenv("{$key}={$value}");
+      }
+    }
+  }
 
-    foreach ($lines as $line) {
+  /**
+   * Interpreta o conteúdo de um .env (fonte única: load() e o editor do Admin).
+   *
+   * @return array<string, string>
+   */
+  public static function parse(string $contents): array
+  {
+    $values = [];
+    foreach (preg_split('/\r\n|\r|\n/', $contents) ?: [] as $line) {
       $line = trim($line);
 
-      if ($line === '' || str_starts_with($line, '#')) {
-        continue;
-      }
-
-      if (!str_contains($line, '=')) {
+      if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
         continue;
       }
 
@@ -43,11 +53,9 @@ class Env
         $value = trim((string) preg_replace('/\s#.*$/', '', $value));
       }
 
-      if (!array_key_exists($key, $_ENV)) {
-        $_ENV[$key] = $value;
-        putenv("{$key}={$value}");
-      }
+      $values[$key] = $value;
     }
+    return $values;
   }
 }
 

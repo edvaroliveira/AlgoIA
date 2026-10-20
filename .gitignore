@@ -1,4 +1,6 @@
 .env
+.env.backup-*
+.env.tmp-*
 /public/assets/uploads/*
 !/public/assets/uploads/.htaccess
 *.log
