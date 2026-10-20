@@ -171,7 +171,7 @@ class Attempt extends Model
              {$where}
              ORDER BY COALESCE(a.submitted_at, a.started_at) ASC
              LIMIT {$safeLimit} OFFSET {$safeOffset}",
-      [$studentId, $exerciseId, $turmaId]
+      $params
     );
   }
 
@@ -193,7 +193,7 @@ class Attempt extends Model
              {$where}
              ORDER BY COALESCE(a.submitted_at, a.started_at) ASC
              LIMIT {$safeLimit} OFFSET {$safeOffset}",
-      [$studentId, $exerciseId, $turmaId]
+      $params
     );
   }
 
@@ -209,7 +209,7 @@ class Attempt extends Model
              JOIN users teacher ON teacher.id = e.teacher_id
              LEFT JOIN turmas t ON t.id = a.turma_id
              {$where}",
-      [$studentId, $exerciseId, $turmaId]
+      $params
     );
 
     return (int) ($row['total'] ?? 0);
