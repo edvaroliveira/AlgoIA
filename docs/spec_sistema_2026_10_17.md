@@ -150,7 +150,7 @@ depois do login, perde a sessão.
 ### RF-17a Avisos por e-mail
 
 - Cada Aviso não lido criado nas últimas 24 h é enviado uma vez por e-mail a quem deixou a opção ligada em Minha conta (ligada por padrão). Aviso já lido no app não vira e-mail.
-- Um worker no cron (a cada 5 minutos) gera antes o lembrete de prazo para todos os Alunos, mesmo os que não abriram o app, e então envia. Envio pelo mail() do PHP; sem remetente configurado nada é enviado.
+- Um worker no cron (a cada 5 minutos) gera antes o lembrete de prazo para todos os Alunos, mesmo os que não abriram o app, e então envia. Envio por SMTP autenticado na caixa do domínio (no-reply@, no Titan), com SSL ou STARTTLS; o mail() do PHP continua disponível como alternativa. Sem remetente ou SMTP configurado, nada é enviado.
 - A decisão do cadastro docente é enviada também a quem foi recusado. Todo e-mail traz o link completo do assunto e o caminho para desligar os avisos.
 
 ### RF-18 Agenda do Aluno

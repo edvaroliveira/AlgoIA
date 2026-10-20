@@ -495,6 +495,22 @@ same('Titulo Bcc: alvo@exemplo.com', json_decode((string) file_get_contents($mai
 check(!$mailer->send("aluno@algoia.test\r\nBcc: x@y.z", 'T', 'c'), 'MAIL: destinatário inválido é recusado');
 @unlink($mailFile);
 
+// MAIL — driver SMTP: configuração e mensagem
+$smtpCfg = static fn(array $over): array => $mailCfg(array_merge(
+  ['driver' => 'smtp', 'smtp_host' => 'smtp.titan.email', 'smtp_port' => 465, 'smtp_encryption' => 'ssl', 'smtp_user' => 'u', 'smtp_password' => 'p'],
+  $over
+));
+same([], (new App\Services\Mailer($smtpCfg([])))->configErrors(), 'MAIL: SMTP completo (Titan, ssl) não tem erros');
+check((new App\Services\Mailer($smtpCfg(['smtp_host' => ''])))->configErrors() !== [], 'MAIL: SMTP sem host é erro');
+check((new App\Services\Mailer($smtpCfg(['smtp_encryption' => 'none'])))->configErrors() !== [], 'MAIL: SMTP sem criptografia para host remoto é recusado');
+same([], (new App\Services\Mailer($smtpCfg(['smtp_host' => '127.0.0.1', 'smtp_encryption' => 'none'])))->configErrors(), 'MAIL: SMTP sem criptografia só na máquina local');
+check((new App\Services\Mailer($smtpCfg(['smtp_encryption' => 'starttls'])))->configErrors() !== [], 'MAIL: criptografia desconhecida é erro');
+$built = (new App\Services\Mailer($smtpCfg(['from' => 'no-reply@edvar.pro.br'])))->buildMessage('aluno@algoia.test', 'Correção concluída: ação', "Olá\nAcesse.");
+[$builtHead, $builtBody] = explode("\r\n\r\n", $built, 2);
+same('Correção concluída: ação', preg_match('/^Subject: (.*)$/m', str_replace("\r\n ", ' ', $builtHead), $bm) ? mb_decode_mimeheader(trim($bm[1])) : '', 'MAIL: assunto UTF-8 codificado e recuperável');
+same("Olá\nAcesse.", base64_decode($builtBody), 'MAIL: corpo em base64 recupera o texto');
+check(preg_match('/^Message-ID: <[0-9a-f]+@edvar\.pro\.br>\r?$/m', $builtHead) === 1, 'MAIL: Message-ID no domínio do remetente');
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];

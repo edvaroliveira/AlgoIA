@@ -101,7 +101,7 @@ Configurar no `.env`:
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
 - `TRUSTED_PROXIES`
-- `MAIL_DRIVER`, `MAIL_FROM`, `MAIL_FROM_NAME` (avisos por e-mail; ver abaixo)
+- `MAIL_DRIVER`, `MAIL_FROM`, `MAIL_FROM_NAME` e, com SMTP, `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT`, `MAIL_SMTP_ENCRYPTION`, `MAIL_SMTP_USER`, `MAIL_SMTP_PASSWORD` (avisos por e-mail; ver abaixo)
 
 `OPENAI_MODEL` tem fallback em `config/openai.php`, mas deve ser definido no ambiente para facilitar troca sem edicao de codigo.
 
@@ -109,7 +109,24 @@ Configurar no `.env`:
 
 ## Avisos por E-mail
 
-Os Avisos do app tambem saem por e-mail, para quem nao desligou em Minha conta. Configure no `.env` `MAIL_FROM` (endereco do proprio dominio, com SPF/DKIM ativos no cPanel) e agende no cron, a cada 5 minutos:
+Os Avisos do app tambem saem por e-mail, para quem nao desligou em Minha conta.
+
+O e-mail do dominio `edvar.pro.br` fica no **Titan** (MX `mx1.titan.email`), e o SPF autoriza so o Titan (`include:spf.titan.email`). Por isso o envio deve ser por **SMTP autenticado** na caixa `no-reply@edvar.pro.br`; o `mail()` do servidor web nao esta no SPF e o Gmail recusa. Configuracao no `.env` do servidor:
+
+```
+MAIL_DRIVER=smtp
+MAIL_FROM=no-reply@edvar.pro.br
+MAIL_FROM_NAME="AlgoIA"
+MAIL_SMTP_HOST=smtp.titan.email
+MAIL_SMTP_PORT=465
+MAIL_SMTP_ENCRYPTION=ssl
+MAIL_SMTP_USER=no-reply@edvar.pro.br
+MAIL_SMTP_PASSWORD=<senha da caixa no Titan>
+```
+
+`MAIL_SMTP_ENCRYPTION=none` so e aceito para `127.0.0.1`/`localhost` (testes). Para conferir se o servidor alcanca o Titan: `php -r 'var_dump((bool) @fsockopen("ssl://smtp.titan.email", 465, $e, $s, 10));'`. Falhas de SMTP vao para o `error_log` com a resposta do servidor (sem a senha).
+
+Agende no cron, a cada 5 minutos:
 
 ```bash
 php bin/send_notification_emails.php 200
@@ -120,8 +137,8 @@ Regras do worker:
 - Antes de enviar, gera o lembrete de prazo (Publicacao que encerra em ate 24 h, sem envio) para todos os Alunos ativos, mesmo que nao abram o app.
 - Envia uma unica vez cada Aviso nao lido criado nas ultimas 24 h. Aviso ja lido no app nao vira e-mail; avisos antigos nao sao enviados quando o cron e ligado pela primeira vez.
 - Ate 3 tentativas por Aviso; dois workers simultaneos nao enviam o mesmo Aviso.
-- Codigos de saida: `0` ok, `1` algum e-mail falhou, `2` configuracao invalida (`MAIL_FROM` ausente ou `MAIL_DRIVER` desconhecido) — nada e enviado.
-- `MAIL_DRIVER=log` grava cada e-mail como linha JSON em `MAIL_LOG_PATH` (usado nos testes de integracao).
+- Codigos de saida: `0` ok, `1` algum e-mail falhou (ex.: senha SMTP errada), `2` configuracao invalida (`MAIL_FROM` ausente, `MAIL_DRIVER` desconhecido, SMTP sem host) — nada e enviado.
+- `MAIL_DRIVER=log` grava cada e-mail como linha JSON em `MAIL_LOG_PATH` (usado nos testes de integracao); o driver `smtp` e testado contra `bin/fixtures/fake_smtp_server.php`.
 
 ## Cadastro Publico de Docentes
 

@@ -1762,6 +1762,59 @@ if (!extension_loaded('curl')) {
         'ACH-03: conquista não se repete nem gera Aviso de novo');
       check(!$earned(httpAs($jarPratica, 'GET', "{$base}/student/progresso")['body'], 'Volta por cima'), 'ACH-03: conquistas são de cada Aluno');
 
+      // MAIL-08 — Driver SMTP (servidor SMTP falso local, sem TLS)
+      $smtpPort = $port + 2000;
+      $smtpLog = tempnam(sys_get_temp_dir(), 'fake_smtp_');
+      $smtpProc = proc_open(
+        [PHP_BINARY, ROOT_PATH . '/bin/fixtures/fake_smtp_server.php', (string) $smtpPort],
+        [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $smtpPipes,
+        ROOT_PATH,
+        array_merge(getenv(), ['FAKE_SMTP_LOG' => $smtpLog])
+      );
+      for ($i = 0; $i < 30 && @fsockopen('127.0.0.1', $smtpPort) === false; $i++) {
+        usleep(100_000);
+      }
+      $smtpEnv = static fn(string $password): array => [
+        'MAIL_DRIVER' => 'smtp', 'MAIL_FROM' => 'no-reply@algoia.test', 'MAIL_FROM_NAME' => 'AlgoIA',
+        'MAIL_SMTP_HOST' => '127.0.0.1', 'MAIL_SMTP_PORT' => (string) $smtpPort, 'MAIL_SMTP_ENCRYPTION' => 'none',
+        'MAIL_SMTP_USER' => 'no-reply@algoia.test', 'MAIL_SMTP_PASSWORD' => $password,
+      ];
+      $pdoA->exec("INSERT INTO notifications (user_id, type, title, body, link) VALUES
+                   ({$desAlta['id']}, 'exercise_published', 'Teste SMTP do AlgoIA: ação', 'Corpo com acentuação.\n.linha que começa com ponto', '/student/mural')");
+      $smtpNote = (int) $pdoA->lastInsertId();
+      $noteState = fn(): array => $pdoA->query("SELECT emailed_at, email_attempts FROM notifications WHERE id = {$smtpNote}")->fetch();
+
+      check($runMailer($smtpEnv('senha-errada')) === 1 && $noteState()['emailed_at'] === null && (int) $noteState()['email_attempts'] === 1,
+        'MAIL-08: senha SMTP errada falha (código 1) sem marcar como enviado');
+      check($runMailer($smtpEnv('senha-certa')) === 0 && $noteState()['emailed_at'] !== null, 'MAIL-08: envio por SMTP autenticado marca o Aviso como enviado');
+      $smtpMsgs = array_values(array_filter(array_map(
+        static fn(string $l): array => json_decode($l, true) ?: [],
+        array_filter(explode("\n", (string) file_get_contents($smtpLog)))
+      ), static fn(array $m): bool => in_array($desAlta['email'], $m['to'] ?? [], true)));
+      $smtpMsg = null;
+      foreach ($smtpMsgs as $m) {
+        [$head, $body] = array_pad(explode("\r\n\r\n", (string) $m['data'], 2), 2, '');
+        $head = str_replace("\r\n", "\n", preg_replace("/\r\n[ \t]+/", ' ', $head));
+        $subject = preg_match('/^Subject: (.*)$/mi', $head, $sm) ? mb_decode_mimeheader(trim($sm[1])) : '';
+        if ($subject === 'Teste SMTP do AlgoIA: ação') {
+          $smtpMsg = ['head' => $head, 'body' => base64_decode(preg_replace('/\s+/', '', $body)), 'm' => $m];
+        }
+      }
+      check(
+        $smtpMsg !== null && $smtpMsg['m']['auth_user'] === 'no-reply@algoia.test' && $smtpMsg['m']['from'] === 'no-reply@algoia.test'
+          && str_contains($smtpMsg['head'], 'From: ') && str_contains($smtpMsg['head'], '<no-reply@algoia.test>')
+          && preg_match('/^Message-ID: <[^@>]+@algoia\.test>$/mi', $smtpMsg['head']) === 1 && preg_match('/^Date: /mi', $smtpMsg['head']) === 1,
+        'MAIL-08: mensagem SMTP com autenticação, remetente, Message-ID e Date'
+      );
+      check($smtpMsg !== null && str_contains($smtpMsg['body'], 'Corpo com acentuação.') && str_contains($smtpMsg['body'], '.linha que começa com ponto')
+        && str_contains($smtpMsg['body'], 'https://algoia.test/student/mural'), 'MAIL-08: corpo chega íntegro (UTF-8 e linha iniciada por ponto)');
+      if (is_resource($smtpProc)) {
+        proc_terminate($smtpProc);
+        proc_close($smtpProc);
+      }
+      @unlink($smtpLog);
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);
