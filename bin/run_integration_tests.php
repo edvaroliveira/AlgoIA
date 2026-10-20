@@ -1608,6 +1608,37 @@ if (!extension_loaded('curl')) {
       check(count($mails()) === $sentOnce, 'MAIL-01: rodar o worker de novo não repete e-mails');
       @unlink($mailLog);
 
+      // EVO-01 — Histórico de evolução do Aluno: primeira x última Tentativa Corrigida
+      $desAttempt($desAlta, $desEx1, 'graded', 5.0, [[2.0, []], [3.0, []]]);
+      // Tentativa em andamento depois das Corrigidas não vira "última"; Aluno fora da Turma não entra.
+      $desAttempt($desBaixa, $desEx1, 'in_progress', null, []);
+      $desAttempt($desFora, $desEx1, 'graded', 4.0, [[2.0, []], [2.0, []]]);
+      $jarAlta = loginAs($base, $desAlta['email'], $pw);
+      $jarBaixa = loginAs($base, $desBaixa['email'], $pw);
+      $evoAlta = httpAs($jarAlta, 'GET', "{$base}/student/progresso");
+      $altaRow = $desRow($evoAlta['body'], 'Desempenho Prova 1');
+      check($evoAlta['code'] === 200 && str_contains($altaRow, '4,0') && str_contains($altaRow, '5,0') && str_contains($altaRow, '+1,0')
+        && str_contains($altaRow, 'Melhorou') && str_contains($altaRow, '2 Tentativas'),
+        'EVO-01: Aluno vê a primeira e a última nota da Publicação e quanto melhorou');
+      check(!str_contains($evoAlta['body'], 'Desempenho Prova 2'), 'EVO-01: Publicação com uma só Tentativa Corrigida não entra na evolução');
+      $baixaRow = $desRow(httpAs($jarBaixa, 'GET', "{$base}/student/progresso")['body'], 'Desempenho Prova 1');
+      check(str_contains($baixaRow, '1,0') && str_contains($baixaRow, '0,5') && str_contains($baixaRow, '-0,5') && str_contains($baixaRow, 'Caiu'),
+        'EVO-01: queda de nota também aparece');
+
+      foreach ([3.0, 1.0, 3.0] as $total) {
+        $desAttempt($desAusente, $desEx2, 'graded', $total, []);
+      }
+      $ausenteRow = $desRow(httpAs(loginAs($base, $desAusente['email'], $pw), 'GET', "{$base}/student/progresso")['body'], 'Desempenho Prova 2');
+      check(str_contains($ausenteRow, '3 Tentativas') && str_contains($ausenteRow, 'Manteve') && str_contains($ausenteRow, '0,0'),
+        'EVO-01: compara a primeira com a última (não com a do meio); mesma nota aparece como "Manteve"');
+
+      // EVO-02 — Docente vê a evolução de quem refez o Exercício
+      $evoDoc = httpAs($jarDocenteA, 'GET', "{$base}/teacher/turmas/{$turmaDes['id']}/desempenho?exercicio={$desEx1['id']}");
+      $evoSection = preg_match('#Evolução de quem refez.*#s', $evoDoc['body'], $em) ? $em[0] : '';
+      check(str_contains($desRow($evoSection, 'Aluna Nota Alta'), '+1,0') && str_contains($desRow($evoSection, 'Aluno Nota Baixa'), '-0,5')
+        && str_contains($evoSection, '1 de 2 melhoraram') && !str_contains($evoSection, 'Aluno de Fora'),
+        'EVO-02: Docente vê primeira x última nota de quem refez e quantos melhoraram');
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);

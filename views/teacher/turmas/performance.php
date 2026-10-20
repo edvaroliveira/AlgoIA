@@ -7,6 +7,7 @@ $students = $grid['students'] ?? [];
 $turmaAverage = $grid['turmaAverage'] ?? null;
 $selected = $selected ?? null;
 $byQuestion = $byQuestion ?? [];
+$evolution = $evolution ?? [];
 $turmaId = (int) ($turma['id'] ?? 0);
 $fmt = static fn($n): string => number_format((float) $n, 1, ',', '');
 $cellBadge = [
@@ -113,6 +114,39 @@ $cellBadge = [
               <?php endforeach; ?>
             </tbody>
           </table>
+
+          <?php
+          $improved = count(array_filter($evolution, static fn(array $e): bool => $e['trend'] === \App\Models\AttemptEvolution::TREND_UP));
+          ?>
+          <p class="section"><strong>Evolução de quem refez</strong> — primeira e última Tentativa Corrigida.
+            <?php if ($evolution !== []): ?><?= $improved ?> de <?= count($evolution) ?> melhoraram.<?php endif; ?>
+          </p>
+          <?php if ($evolution === []): ?>
+            <p>Nenhum Aluno refez este Exercício.</p>
+          <?php else: ?>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Aluno</th>
+                  <th>Primeira</th>
+                  <th>Última</th>
+                  <th>Diferença</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($evolution as $item):
+                  [$trendLabel, $trendBadge] = \App\Models\AttemptEvolution::trendBadge($item['trend']);
+                ?>
+                  <tr>
+                    <td><?= \Core\View::e($item['student_name']) ?><br><small><?= $item['attempts'] ?> Tentativas</small></td>
+                    <td><?= $fmt($item['first']) ?></td>
+                    <td><?= $fmt($item['last']) ?></td>
+                    <td><?= \App\Models\AttemptEvolution::deltaText($item['delta']) ?> <span class="badge <?= $trendBadge ?>"><?= $trendLabel ?></span></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          <?php endif; ?>
         <?php endif; ?>
       </div>
     </section>

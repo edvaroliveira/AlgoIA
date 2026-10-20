@@ -172,11 +172,16 @@ depois do login, perde a sessão.
 - Classificação: com menos de 3 respostas corrigidas, "Poucos dados"; com média de 70% ou mais, "Ponto forte"; abaixo de 50%, "A melhorar"; entre as duas, "Em evolução". Cada Tema tem atalho para praticar.
 - Importar guarda a Questão de origem no banco (também ao copiar de um Exercício próprio que veio do banco). Importações anteriores foram ligadas pela migration 027 por enunciado e Resposta de referência idênticos.
 
+### RF-20a Evolução do Aluno
+
+- Em Progresso, o Aluno vê cada Publicação em que tem duas ou mais Tentativas Corrigidas: nota da primeira, nota da última (em ordem de envio), diferença e "Melhorou", "Manteve" ou "Caiu". Tentativa em andamento ou aguardando correção não conta.
+
 ### RF-21 Desempenho da Turma
 
 - Na Turma, o Docente abre "Desempenho": grade com os Alunos de Matrícula ativa e os Exercícios publicados nela, com a melhor nota de cada Aluno. Também mostra "Pendente" (Tentativa Enviada aguardando correção) e "Em andamento". Só contam Tentativas feitas nesta Turma.
 - Média do Aluno: média percentual das melhores notas que ele tem. Média da Turma: média das médias dos Alunos. Ficam destacados quem está abaixo da média da Turma e quem nunca tentou.
 - Ao escolher um Exercício, a página mostra, por Questão, a média percentual e até três Motivos de desconto mais comuns, considerando a melhor Tentativa Corrigida de cada Aluno.
+- Ao escolher um Exercício, a página também mostra a Evolução de quem refez: primeira e última Tentativa Corrigida de cada Aluno ativo e quantos melhoraram.
 - "Exportar CSV" gera as mesmas colunas da grade (separador ";", vírgula decimal). A exportação é auditada. Só o Docente dono da Turma acessa.
 
 ## Requisitos não funcionais

@@ -15,7 +15,8 @@ class ProgressController
   public function student(): void
   {
     View::render('student/progress', [
-      'themes' => (new ThemeProgress())->forStudent((int) Auth::id()),
+      'themes'    => (new ThemeProgress())->forStudent((int) Auth::id()),
+      'evolution' => (new \App\Models\AttemptEvolution())->forStudent((int) Auth::id()),
     ]);
   }
 }
