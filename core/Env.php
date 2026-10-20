@@ -32,12 +32,15 @@ class Env
       }
 
       [$key, $value] = explode('=', $line, 2);
-      $key   = trim($key);
-      $value = trim($value);
+      $key = trim($key);
 
-      // Strip surrounding quotes
-      if (preg_match('/^(["\'])(.*)\1$/', $value, $m)) {
+      if (preg_match('/^\s*(["\'])(.*?)\1(?:\s+#.*)?\s*$/', $value, $m)) {
+        // Entre aspas o valor é literal (pode conter " #"); comentário só depois das aspas.
         $value = $m[2];
+      } else {
+        // Sem aspas: "#" precedido de espaço/tab inicia comentário. "#" colado ao
+        // texto (ex.: Senha#123) ou logo após o "=" faz parte do valor.
+        $value = trim((string) preg_replace('/\s#.*$/', '', $value));
       }
 
       if (!array_key_exists($key, $_ENV)) {

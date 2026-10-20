@@ -511,6 +511,36 @@ same('Correção concluída: ação', preg_match('/^Subject: (.*)$/m', str_repla
 same("Olá\nAcesse.", base64_decode($builtBody), 'MAIL: corpo em base64 recupera o texto');
 check(preg_match('/^Message-ID: <[0-9a-f]+@edvar\.pro\.br>\r?$/m', $builtHead) === 1, 'MAIL: Message-ID no domínio do remetente');
 
+// ENV — leitor do .env: comentário no fim da linha, aspas e '#' dentro do valor
+$envFile = tempnam(sys_get_temp_dir(), 'env_');
+file_put_contents($envFile, implode("\n", [
+  '# comentário de linha inteira',
+  'ENVT_PLAIN=ssl',
+  'ENVT_INLINE=ssl     # ssl (465) ou tls (587)',
+  "ENVT_TAB=valor\t# comentário depois de tab",
+  'ENVT_HASH_INSIDE=Senha#123',
+  'ENVT_HASH_START=#nao-e-comentario',
+  'ENVT_QUOTED="com # dentro"   # comentário depois das aspas',
+  "ENVT_SINGLE='a b'",
+  'ENVT_EQUALS=a=b=c  # fim',
+  'ENVT_TWO_QUOTES="x" # "y"',
+  'ENVT_EMPTY=',
+  'ENVT_EMPTY_COMMENT=   # só comentário',
+]));
+(new Core\Env($envFile))->load();
+@unlink($envFile);
+same('ssl', getenv('ENVT_PLAIN'), 'ENV: valor simples');
+same('ssl', getenv('ENVT_INLINE'), 'ENV: comentário depois de espaço é ignorado');
+same('valor', getenv('ENVT_TAB'), 'ENV: comentário depois de tab é ignorado');
+same('Senha#123', getenv('ENVT_HASH_INSIDE'), 'ENV: # sem espaço antes faz parte do valor (senhas)');
+same('#nao-e-comentario', getenv('ENVT_HASH_START'), 'ENV: valor que começa com # é mantido');
+same('com # dentro', getenv('ENVT_QUOTED'), 'ENV: entre aspas, # é valor; comentário depois das aspas é ignorado');
+same('a b', getenv('ENVT_SINGLE'), 'ENV: aspas simples');
+same('a=b=c', getenv('ENVT_EQUALS'), 'ENV: = dentro do valor');
+same('x', getenv('ENVT_TWO_QUOTES'), 'ENV: aspas no comentário não estendem o valor');
+same('', getenv('ENVT_EMPTY'), 'ENV: valor vazio');
+same('', getenv('ENVT_EMPTY_COMMENT'), 'ENV: só comentário vira vazio');
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];
