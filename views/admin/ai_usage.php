@@ -131,6 +131,22 @@ $table = static function (array $rows, string $title, string $labelHeader) use (
 <div class="section">
   <section class="surface-block">
     <div class="surface-block__body">
+      <p><strong>Modelo em uso</strong></p>
+      <p class="ai-model">
+        <span class="badge badge--info"><?= \Core\View::e($currentModel ?? '') ?></span>
+        entrada <?= $usd((float) $settings['price_input']) ?> · saída <?= $usd((float) $settings['price_output']) ?> por 1 milhão de tokens
+        <?php if ($summary['ok_calls'] > 0): ?>
+          · custo médio por resposta corrigida no período: <?= $usd($costPerAnswer) ?> (<?= $brl($costPerAnswer * $rate) ?>)
+        <?php endif; ?>
+      </p>
+      <p><small>O modelo vem de <code>OPENAI_MODEL</code> no .env do servidor. Ao trocar de modelo, atualize os preços abaixo; o custo já registrado não muda.</small></p>
+    </div>
+  </section>
+</div>
+
+<div class="section">
+  <section class="surface-block">
+    <div class="surface-block__body">
       <p><strong>Orçamento do mês</strong></p>
       <?php if ($budget <= 0): ?>
         <p>Sem orçamento definido. Gasto do mês: <?= $brl($monthBrl) ?>.</p>
@@ -155,6 +171,7 @@ $table = static function (array $rows, string $title, string $labelHeader) use (
 
 <div class="section"><?php $table($byTeacher, 'Por Docente', 'Docente'); ?></div>
 <div class="section"><?php $table($byTurma, 'Por Turma', 'Turma'); ?></div>
+<div class="section"><?php $table($byModel ?? [], 'Por modelo', 'Modelo'); ?></div>
 <div class="section"><?php $table($byExercise, 'Por Exercício (top 20)', 'Exercício'); ?></div>
 <div class="section"><?php $table($topStudents, 'Alunos que mais usam a Prática (top 10)', 'Aluno'); ?></div>
 
