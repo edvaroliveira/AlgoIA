@@ -25,6 +25,7 @@ $router->get('/notificacoes', 'NotificationController@index', ['auth']);
 $router->get('/conta',               'AccountController@show', ['auth']);
 $router->post('/conta/foto',         'AccountController@uploadAvatar', ['auth']);
 $router->post('/conta/foto/remover', 'AccountController@deleteAvatar', ['auth']);
+$router->post('/conta/avisos-email', 'AccountController@updateEmailNotifications', ['auth']);
 
 // ── Teacher ──────────────────────────────────────────────────────────────────
 $router->get('/teacher/dashboard', 'DashboardController@teacher', ['teacher']);

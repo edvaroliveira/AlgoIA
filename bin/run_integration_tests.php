@@ -1535,6 +1535,79 @@ if (!extension_loaded('curl')) {
       check($auditCount('teacher.turma.export', $turmaDes['id']) === 1, 'DES-03: exportação é auditada');
       check(httpAs($jarDocenteB, 'GET', "{$base}/teacher/turmas/{$turmaDes['id']}/desempenho/csv")['code'] === 403, 'DES-03: outro Docente não exporta');
 
+      // MAIL — Avisos por e-mail: fila + worker (driver "log" grava cada e-mail como JSON)
+      $mailLog = tempnam(sys_get_temp_dir(), 'mail_log_');
+      $runMailer = static function (array $env) use ($mailLog): int {
+        $proc = proc_open(
+          [PHP_BINARY, '-d', 'variables_order=EGPCS', ROOT_PATH . '/bin/send_notification_emails.php'],
+          [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+          $pipes,
+          ROOT_PATH,
+          array_merge(getenv(), ['MAIL_DRIVER' => 'log', 'MAIL_LOG_PATH' => $mailLog, 'APP_URL' => 'https://algoia.test'], $env)
+        );
+        stream_get_contents($pipes[1]);
+        stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        return proc_close($proc);
+      };
+      $mails = static function () use ($mailLog): array {
+        $lines = array_filter(explode("\n", (string) file_get_contents($mailLog)));
+        return array_values(array_map(static fn(string $l): array => json_decode($l, true) ?: [], $lines));
+      };
+      $mailsTo = static fn(string $email): array => array_values(array_filter($mails(), static fn(array $m): bool => ($m['to'] ?? '') === $email));
+      $hasSubject = static fn(array $list, string $subject): bool => array_filter($list, static fn(array $m): bool => str_contains((string) ($m['subject'] ?? ''), $subject)) !== [];
+
+      // MAIL-02 (antes do envio) — Aluno desliga o e-mail em Minha conta
+      $optOut = postAs($base, $jarAlunoA, '/conta/avisos-email', []);
+      $conta = httpAs($jarAlunoA, 'GET', "{$base}/conta");
+      check($optOut['code'] === 302 && str_contains($conta['body'], 'id="email-notifications"')
+        && preg_match('#id="email-notifications"[^>]*checked#', $conta['body']) !== 1,
+        'MAIL-02: Aluno desliga os avisos por e-mail em Minha conta');
+
+      // MAIL-03 — Decisão do cadastro docente
+      $reqOk = $mkUser('Docente Aprovado', 'teacher');
+      $reqNo = $mkUser('Docente Recusado', 'teacher');
+      $pdoA->exec("UPDATE users SET status = 'pending', registration_source = 'teacher_public' WHERE id IN ({$reqOk['id']}, {$reqNo['id']})");
+      postAs($base, $jarAdmin, "/admin/teacher-requests/{$reqOk['id']}/approve");
+      postAs($base, $jarAdmin, "/admin/teacher-requests/{$reqNo['id']}/reject");
+
+      // MAIL-04 — Pedido de Matrícula avisa o Docente
+      postAs($base, $jarProg, '/student/turma/join', ['turma_key' => $turmaDes['key']]);
+      check(count($notes($docenteA['id'], 'enrollment_requested')) === 1, 'MAIL-04: pedido de Matrícula vira Aviso para o Docente');
+
+      // MAIL-05 — Prazo encerrando chega por e-mail mesmo sem abrir o app
+      $flashEx = $mkExercise($docenteA['id'], 'Prova relampago', 'active', ['Questao R1']);
+      $pdoA->exec("INSERT INTO exercise_turmas (exercise_id, turma_id, opens_at, closes_at, max_attempts)
+                   VALUES ({$flashEx['id']}, {$turmaDes['id']}, NOW() - INTERVAL 1 HOUR, NOW() + INTERVAL 3 HOUR, 1)");
+
+      // MAIL-06 — Aviso antigo (mais de 1 dia) não vira e-mail
+      $pdoA->exec("INSERT INTO notifications (user_id, type, title, created_at)
+                   VALUES ({$alunoPratica['id']}, 'exercise_published', 'Aviso antigo demais', NOW() - INTERVAL 3 DAY)");
+
+      // MAIL-07 — Sem remetente configurado o worker não envia nada
+      check($runMailer(['MAIL_FROM' => '']) === 2 && $mails() === [], 'MAIL-07: sem MAIL_FROM o worker sai com código 2 e não envia');
+
+      check($runMailer(['MAIL_FROM' => 'nao-responda@algoia.test']) === 0, 'MAIL-01: worker de e-mail termina sem erro');
+      $toB = $mailsTo($alunoB['email']);
+      check(
+        $hasSubject($toB, 'Correção concluída: Exercício para avisar')
+          && array_filter($toB, static fn(array $m): bool => str_contains((string) $m['body'], "https://algoia.test/student/attempts/{$submittedId}/result")
+            && str_contains((string) $m['body'], 'https://algoia.test/conta')) !== [],
+        'MAIL-01: Aviso não lido vira e-mail com link completo e caminho para desligar'
+      );
+      check(!$hasSubject($toB, 'Novo exercício: Exercício para avisar'), 'MAIL-01: Aviso já lido no app não vira e-mail');
+      check($mailsTo($alunoA['email']) === [], 'MAIL-02: quem desligou não recebe e-mail');
+      check($hasSubject($mailsTo($reqOk['email']), 'Cadastro de docente aprovado'), 'MAIL-03: aprovação do cadastro docente chega por e-mail');
+      check($hasSubject($mailsTo($reqNo['email']), 'Cadastro de docente não aprovado'), 'MAIL-03: recusa do cadastro docente chega por e-mail');
+      check($hasSubject($mailsTo($docenteA['email']), 'Pedido de Matrícula na turma Turma Desempenho'), 'MAIL-04: Docente recebe o pedido de Matrícula por e-mail');
+      check($hasSubject($mailsTo($desAusente['email']), 'Prazo encerrando: Prova relampago'), 'MAIL-05: Aluno recebe o prazo encerrando por e-mail sem abrir o app');
+      check(!$hasSubject($mailsTo($alunoPratica['email']), 'Aviso antigo demais'), 'MAIL-06: Aviso antigo não vira e-mail');
+      $sentOnce = count($mails());
+      $runMailer(['MAIL_FROM' => 'nao-responda@algoia.test']);
+      check(count($mails()) === $sentOnce, 'MAIL-01: rodar o worker de novo não repete e-mails');
+      @unlink($mailLog);
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);

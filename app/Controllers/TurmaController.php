@@ -223,7 +223,9 @@ class TurmaController
     if (!$turma) {
       $session->flash('error', 'Chave de turma inválida ou inativa.');
     } else {
-      $this->turmas->enrollStudent(Auth::id(), (int) $turma['id']);
+      if ($this->turmas->enrollStudent((int) Auth::id(), (int) $turma['id'])) {
+        $this->turmas->notifyEnrollmentRequest($turma, (int) Auth::id(), (string) (Auth::user()['name'] ?? 'Um Aluno'));
+      }
       $session->flash('success', 'Solicitação enviada para a turma "' . $turma['name'] . '". Aguarde aprovação.');
     }
 

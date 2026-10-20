@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     name          VARCHAR(100)  NOT NULL,
     email         VARCHAR(150)  NOT NULL UNIQUE,
     avatar_path   VARCHAR(255)  NULL,
+    email_notifications TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Avisos também por e-mail (Minha conta)',
     password_hash VARCHAR(255)  NOT NULL,
     must_change_password TINYINT(1) NOT NULL DEFAULT 0,
     password_reset_at DATETIME NULL,
@@ -293,7 +294,10 @@ CREATE TABLE IF NOT EXISTS notifications (
     link       VARCHAR(255) NULL,
     dedupe_key VARCHAR(120) NULL,
     read_at    DATETIME     NULL,
+    emailed_at DATETIME NULL,
+    email_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
     created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_notifications_email_queue (emailed_at, created_at),
     INDEX idx_notifications_user_read (user_id, read_at),
     UNIQUE KEY uk_notifications_dedupe (user_id, dedupe_key),
     CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

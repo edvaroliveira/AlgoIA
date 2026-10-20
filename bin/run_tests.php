@@ -480,6 +480,21 @@ same('http://127.0.0.1:9999/v1/chat/completions', $openAiUrl('http://127.0.0.1:9
 same('https://api.openai.com/v1/chat/completions', $openAiUrl('http://exemplo.com/v1/chat/completions'), 'PRA: recusa http fora da máquina local');
 same('https://api.openai.com/v1/chat/completions', $openAiUrl('http://127.0.0.1.exemplo.com/x'), 'PRA: recusa host que só começa com 127.0.0.1');
 
+// MAIL — Mailer: configuração e assunto sem quebra de linha
+$mailCfg = static fn(array $over): array => array_merge(
+  ['driver' => 'log', 'from' => 'nao-responda@algoia.test', 'from_name' => 'AlgoIA', 'log_path' => '/tmp/x', 'app_url' => 'https://algoia.test'],
+  $over
+);
+same([], (new App\Services\Mailer($mailCfg([])))->configErrors(), 'MAIL: configuração completa não tem erros');
+check((new App\Services\Mailer($mailCfg(['from' => '']))->configErrors()) !== [], 'MAIL: sem MAIL_FROM é erro');
+check((new App\Services\Mailer($mailCfg(['driver' => 'smtp'])))->configErrors() !== [], 'MAIL: driver desconhecido é erro');
+$mailFile = tempnam(sys_get_temp_dir(), 'mailer_');
+$mailer = new App\Services\Mailer($mailCfg(['log_path' => $mailFile]));
+check($mailer->send('aluno@algoia.test', "Titulo\r\nBcc: alvo@exemplo.com", 'corpo'), 'MAIL: envio pelo driver log');
+same('Titulo Bcc: alvo@exemplo.com', json_decode((string) file_get_contents($mailFile), true)['subject'] ?? null, 'MAIL: assunto perde quebras de linha (sem injeção de cabeçalho)');
+check(!$mailer->send("aluno@algoia.test\r\nBcc: x@y.z", 'T', 'c'), 'MAIL: destinatário inválido é recusado');
+@unlink($mailFile);
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];

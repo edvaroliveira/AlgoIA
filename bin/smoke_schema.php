@@ -31,7 +31,7 @@ $requiredTables = [
 ];
 
 $requiredColumns = [
-  'users' => ['id', 'email', 'role', 'status', 'must_change_password', 'registration_source', 'avatar_path'],
+  'users' => ['id', 'email', 'role', 'status', 'must_change_password', 'registration_source', 'avatar_path', 'email_notifications'],
   'student_turma' => ['student_id', 'turma_id', 'status'],
   'attempts' => ['id', 'exercise_id', 'student_id', 'turma_id', 'status', 'submitted_at', 'total_score'],
   'answers' => ['attempt_id', 'question_id', 'student_answer', 'ai_score', 'ai_feedback', 'deduction_reasons_json'],
@@ -41,7 +41,7 @@ $requiredColumns = [
   'bank_questions' => ['id', 'bank_exercise_id', 'text', 'expected_answer_hint', 'max_score', 'order_index'],
   'bank_themes' => ['id', 'name'],
   'bank_exercise_themes' => ['bank_exercise_id', 'theme_id'],
-  'notifications' => ['user_id', 'type', 'title', 'link', 'dedupe_key', 'read_at'],
+  'notifications' => ['user_id', 'type', 'title', 'link', 'dedupe_key', 'read_at', 'emailed_at', 'email_attempts'],
   'questions' => ['bank_question_id'],
   'practice_answers' => ['student_id', 'bank_question_id', 'score', 'max_score', 'feedback', 'deduction_reasons_json'],
   'score_reviews' => ['answer_id', 'status', 'request_message', 'requested_by', 'previous_score', 'new_score', 'justification', 'reviewed_by'],

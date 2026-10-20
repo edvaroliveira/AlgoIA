@@ -312,6 +312,7 @@ class AuthController
       $userId = $this->users->create($name, $email, $password, 'student', 'pending', null, 'student_public');
       $turmaModel->enrollStudent($userId, (int) $turma['id']);
       $this->users->commit();
+      $turmaModel->notifyEnrollmentRequest($turma, $userId, $name);
     } catch (\PDOException $e) {
       $this->users->rollback();
       if ((string) $e->getCode() === '23000') {

@@ -82,6 +82,15 @@ class AdminTeacherRequestController extends AdminBaseController
       'teacher_email' => $user['email'] ?? null,
     ]);
 
+    (new \App\Models\Notification())->notifySafely(
+      $userId,
+      \App\Models\Notification::TYPE_TEACHER_REGISTRATION,
+      'Cadastro de docente aprovado',
+      '/login',
+      'Sua solicitação de acesso como Docente foi aprovada. Você já pode entrar no AlgoIA.',
+      'teacher_registration:approved:' . $userId
+    );
+
     $session->flash('success', 'Solicitação aprovada. O docente já pode acessar o sistema.');
     View::redirect('/admin/teacher-requests');
   }
@@ -104,6 +113,15 @@ class AdminTeacherRequestController extends AdminBaseController
       'teacher_name'  => $user['name']  ?? null,
       'teacher_email' => $user['email'] ?? null,
     ]);
+
+    (new \App\Models\Notification())->notifySafely(
+      $userId,
+      \App\Models\Notification::TYPE_TEACHER_REGISTRATION,
+      'Cadastro de docente não aprovado',
+      null,
+      'Sua solicitação de acesso como Docente não foi aprovada. Em caso de dúvida, procure a administração da instituição.',
+      'teacher_registration:rejected:' . $userId
+    );
 
     $session->flash('success', 'Solicitação rejeitada.');
     View::redirect('/admin/teacher-requests');
