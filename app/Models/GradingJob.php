@@ -162,12 +162,23 @@ class GradingJob extends Model
 
   public function renewLease(int $jobId, string $workerId): bool
   {
-    return $this->db->execute(
+    $renewed = $this->db->execute(
       "UPDATE grading_jobs
              SET locked_at = NOW()
              WHERE id = ? AND worker_id = ? AND status = ?",
       [$jobId, $workerId, self::STATUS_PROCESSING]
     ) > 0;
+    if ($renewed) {
+      return true;
+    }
+
+    // No MySQL, "linhas afetadas" conta só as ALTERADAS: renovar no mesmo segundo
+    // do claim (locked_at já é NOW()) devolve 0 e o job era abandonado em
+    // processing. Confirma a posse antes de concluir que o lease foi perdido.
+    return (bool) $this->db->fetchOne(
+      "SELECT 1 AS ok FROM grading_jobs WHERE id = ? AND worker_id = ? AND status = ?",
+      [$jobId, $workerId, self::STATUS_PROCESSING]
+    );
   }
 
   public function operationalSummary(?int $teacherId = null): array

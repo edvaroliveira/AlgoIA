@@ -60,6 +60,17 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
 </section>
 
 <div class="overview-grid">
+  <?php $aiUsage = $aiUsage ?? ['month_brl' => 0.0, 'budget_brl' => 0.0]; ?>
+  <article class="overview-card">
+    <span class="overview-card__label">Uso da IA no mês</span>
+    <strong class="overview-card__value">R$ <?= number_format((float) $aiUsage['month_brl'], 2, ',', '.') ?></strong>
+    <p class="overview-card__copy">
+      <?= (float) $aiUsage['budget_brl'] > 0
+        ? 'de R$ ' . number_format((float) $aiUsage['budget_brl'], 2, ',', '.') . ' de orçamento.'
+        : 'Sem orçamento definido.' ?>
+      <a href="<?= \Core\app_url('/admin/ia') ?>">Ver detalhes</a>
+    </p>
+  </article>
   <article class="overview-card">
     <span class="overview-card__label">Usuários</span>
     <strong class="overview-card__value"><?= $totalUsers ?></strong>

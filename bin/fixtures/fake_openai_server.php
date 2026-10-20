@@ -29,4 +29,7 @@ $content = json_encode([
   'correct' => false,
   'deduction_reasons' => ['missing_concept'],
 ]);
-echo json_encode(['choices' => [['message' => ['content' => $content]]]]);
+echo json_encode([
+  'choices' => [['message' => ['content' => $content]]],
+  'usage' => ['prompt_tokens' => 1000, 'completion_tokens' => 200, 'total_tokens' => 1200],
+]);

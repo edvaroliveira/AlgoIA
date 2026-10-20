@@ -202,6 +202,12 @@ depois do login, perde a sessão.
 - Pontos: soma, por Questão do banco, da melhor nota de Prática do Aluno no período (escala 0 a 10). Repetir a mesma Questão não soma de novo. Só entram Alunos com Matrícula ativa na Turma. Empates dividem a posição (1, 2, 2, 4).
 - O Aluno vê o top 5 e a própria posição ("Você está em Nº de T"); no semanal e no mensal, também o campeão do período anterior. Em Minha conta pode aparecer como "Aluno anônimo" para os colegas. O Docente vê a lista completa com nomes.
 
+### RF-25 Uso da IA (Admin)
+
+- Cada chamada à IA (correção de Tentativa pelo worker e Prática) é registrada com tipo, Docente, Turma, Exercício, Tentativa, Resposta, Aluno ou Questão do banco, modelo, tokens de entrada e saída, latência, status (ok ou erro, com categoria) e custo em US$. O custo usa os preços vigentes no momento, e mudar o preço não reescreve o histórico. O registro nunca derruba a correção.
+- Em `/admin/ia` (só Admin): filtros por período, Docente, Turma e tipo; indicadores (custo em US$ e R$, chamadas, taxa de falha, tokens, custo por Resposta, latência média e p95); gráficos (custo por dia, chamadas e falhas, top Docentes, top Turmas, Correção x Prática); tabelas por Docente, Turma, Exercício e Alunos da Prática; falhas recentes; exportação CSV.
+- O Admin edita na tela o preço por 1M de tokens (entrada e saída), a cotação US$→R$ e o orçamento mensal em R$ (auditado). Ao cruzar 80% e 100% do orçamento do mês, os Admins recebem Aviso (e e-mail), uma vez por limite. Nada é bloqueado.
+
 ## Requisitos não funcionais
 
 ### RNF-01 Segurança

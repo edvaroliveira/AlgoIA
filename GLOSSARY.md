@@ -180,6 +180,10 @@ _Evitar_: Medalha, badge, troféu, ranking
 Classificação opcional dos Alunos de uma Turma pelos pontos da Prática no período escolhido pelo Docente (semanal, mensal ou desde o início da Turma). Cada Aluno vê o top 5 e a própria posição, e pode aparecer como anônimo para os colegas.
 _Evitar_: Placar, competição, nota da Turma
 
+**Uso da IA** (`ai_usage_logs`):
+Registro de cada chamada à IA feita por uma Correção por IA (Tentativa ou Prática), com tokens, latência, falha e custo estimado no momento da chamada. Visível só para o Admin, com orçamento mensal opcional.
+_Evitar_: Consumo da OpenAI, billing, fatura
+
 **Suspeita de injeção** (`injection_logs`):
 Registro de que uma Resposta continha um padrão de tentativa de manipular a Correção por IA.
 _Evitar_: Fraude, ataque

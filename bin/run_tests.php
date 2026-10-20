@@ -541,6 +541,21 @@ same('x', getenv('ENVT_TWO_QUOTES'), 'ENV: aspas no comentário não estendem o 
 same('', getenv('ENVT_EMPTY'), 'ENV: valor vazio');
 same('', getenv('ENVT_EMPTY_COMMENT'), 'ENV: só comentário vira vazio');
 
+// IA — custo por chamada e filtros do painel de uso
+same(0.0045, App\Models\AiUsageLog::costUsd(1000, 200, 2.50, 10.00), 'IA: custo = entrada x preço + saída x preço, por 1M tokens');
+same(0.0, App\Models\AiUsageLog::costUsd(0, 0, 2.50, 10.00), 'IA: chamada sem tokens não custa');
+same(0.009, App\Models\AiUsageLog::costUsd(1000, 200, 5.0, 20.0), 'IA: preço novo dobra o custo');
+$aiBase = ['period' => '30d', 'from' => '', 'to' => '', 'teacher_id' => 0, 'turma_id' => 0, 'kind' => ''];
+[$w, $p] = App\Models\AiUsageLog::where($aiBase);
+check(str_contains($w, 'INTERVAL 30 DAY') && $p === [], 'IA: período padrão é 30 dias');
+[$w, $p] = App\Models\AiUsageLog::where(['period' => 'custom', 'from' => '2026-10-01', 'to' => '2026-10-15'] + $aiBase);
+same(['2026-10-01 00:00:00', '2026-10-15 23:59:59'], $p, 'IA: intervalo personalizado cobre o dia inteiro');
+[$w, $p] = App\Models\AiUsageLog::where(['teacher_id' => 7, 'turma_id' => 3, 'kind' => 'practice'] + $aiBase);
+check(str_contains($w, 'l.teacher_id = ?') && str_contains($w, 'l.turma_id = ?') && str_contains($w, 'l.kind = ?') && $p === [7, 3, 'practice'],
+  'IA: filtros de Docente, Turma e tipo viram parâmetros');
+[$w, $p] = App\Models\AiUsageLog::where(['kind' => "x' OR 1=1"] + $aiBase);
+check(!str_contains($w, 'kind') && $p === [], 'IA: tipo desconhecido é ignorado');
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];

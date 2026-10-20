@@ -108,7 +108,8 @@ class PracticeController
         $answer,
         (float) $question['max_score'],
         null,
-        $studentId
+        $studentId,
+        ['kind' => \App\Models\AiUsageLog::KIND_PRACTICE, 'student_id' => $studentId, 'bank_question_id' => (int) $id]
       );
       $this->practice->record($studentId, (int) $id, $answer, $result, (float) $question['max_score']);
       (new \App\Services\AchievementService())->syncSafely($studentId);

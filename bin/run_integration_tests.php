@@ -159,6 +159,7 @@ try {
 }
 
 $allTables = [
+  'ai_usage_logs',
   'student_achievements',
   'turma_posts',
   'practice_answers',
@@ -1884,6 +1885,105 @@ if (!extension_loaded('curl')) {
       check(!str_contains($rankPage($jarSeis), 'Você está em 1º de 6'), 'RANK-04: período mensal não inclui pontos de 40 dias atrás');
       $r = postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaRank['id']}/ranking", ['ranking_mode' => 'diario']);
       check($r['code'] === 302 && $countRows("SELECT COUNT(*) FROM turmas WHERE id = {$turmaRank['id']} AND ranking_mode = 'monthly'") === 1, 'RANK-04: período inválido é recusado');
+
+      // IA-01 — Cada correção na Prática registra tokens e custo (IA falsa devolve 1000 + 200 tokens)
+      $aiRows = fn(string $where): array => $pdoA->query("SELECT * FROM ai_usage_logs WHERE {$where} ORDER BY id")->fetchAll();
+      $alunoIa = $mkUser('Aluno Uso IA', 'student');
+      $jarIa = loginAs($base, $alunoIa['email'], $pw);
+      postAs($base, $jarIa, "/student/pratica/questao/{$praticaQ1}", ['answer' => 'resposta para medir uso']);
+      $iaPractice = $aiRows("student_id = {$alunoIa['id']}");
+      check(
+        count($iaPractice) === 1 && $iaPractice[0]['kind'] === 'practice' && $iaPractice[0]['status'] === 'ok'
+          && (int) $iaPractice[0]['prompt_tokens'] === 1000 && (int) $iaPractice[0]['completion_tokens'] === 200
+          && (int) $iaPractice[0]['bank_question_id'] === $praticaQ1 && $iaPractice[0]['teacher_id'] === null
+          && abs((float) $iaPractice[0]['cost_usd'] - 0.0045) < 0.000001,
+        'IA-01: correção na Prática registra tokens e custo (preço padrão US$ 2,50 / 10,00 por 1M)'
+      );
+
+      // IA-02 — Worker de correção registra Docente, Turma, Exercício e Tentativa
+      $iaEx = $mkExercise($docenteA['id'], 'Exercicio medido', 'active', ['Questao IA1', 'Questao IA2']);
+      $pdoA->exec("INSERT INTO attempts (exercise_id, student_id, turma_id, status, submitted_at)
+                   VALUES ({$iaEx['id']}, {$desAusente['id']}, {$turmaDes['id']}, 'submitted', NOW())");
+      $iaAttempt = (int) $pdoA->lastInsertId();
+      $pdoA->exec("INSERT INTO answers (attempt_id, question_id, student_answer) VALUES
+                   ({$iaAttempt}, {$iaEx['questions'][0]}, 'resposta um'), ({$iaAttempt}, {$iaEx['questions'][1]}, 'resposta dois')");
+      $pdoA->exec("INSERT INTO grading_jobs (attempt_id) VALUES ({$iaAttempt})");
+      $workerProc = proc_open(
+        [PHP_BINARY, '-d', 'variables_order=EGPCS', ROOT_PATH . '/bin/process_grading_jobs.php', '50'],
+        [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $workerPipes,
+        ROOT_PATH
+      );
+      stream_get_contents($workerPipes[1]);
+      stream_get_contents($workerPipes[2]);
+      fclose($workerPipes[1]);
+      fclose($workerPipes[2]);
+      proc_close($workerProc);
+      $iaGrading = $aiRows("attempt_id = {$iaAttempt}");
+      check(
+        count($iaGrading) === 2 && $iaGrading[0]['kind'] === 'grading' && (int) $iaGrading[0]['teacher_id'] === $docenteA['id']
+          && (int) $iaGrading[0]['turma_id'] === $turmaDes['id'] && (int) $iaGrading[0]['exercise_id'] === $iaEx['id']
+          && (int) $iaGrading[0]['student_id'] === $desAusente['id'] && $iaGrading[0]['answer_id'] !== null,
+        'IA-02: correção de Tentativa pelo worker registra Docente, Turma, Exercício e Resposta'
+      );
+      check(
+        $countRows("SELECT COUNT(*) FROM attempts WHERE id = {$iaAttempt} AND status = 'graded'") === 1
+          && $countRows("SELECT COUNT(*) FROM grading_jobs WHERE attempt_id = {$iaAttempt} AND status = 'completed'") === 1,
+        'GRADE-01: worker conclui a correção mesmo renovando o lease no mesmo segundo do claim'
+      );
+
+      // IA-03 — Painel do Admin: totais, US$/R$, por Docente e Turma; filtros; só Admin
+      $iaPage = httpAs($jarAdmin, 'GET', "{$base}/admin/ia?period=30d");
+      check($iaPage['code'] === 200 && str_contains($iaPage['body'], 'Uso da IA') && str_contains($iaPage['body'], 'US$')
+        && str_contains($iaPage['body'], 'R$') && str_contains($iaPage['body'], '<td>Turma Desempenho</td>')
+        && str_contains($iaPage['body'], 'id="ai-usage-data"'), 'IA-03: Admin vê o painel com custos, Turmas e dados dos gráficos');
+      $filtered = httpAs($jarAdmin, 'GET', "{$base}/admin/ia?period=30d&teacher_id={$docenteB['id']}")['body'];
+      check(!str_contains($filtered, '<td>Turma Desempenho</td>'), 'IA-03: filtro por Docente restringe os dados');
+      check($page($jarDocenteA, '/admin/ia')['code'] !== 200 && $page($jarIa, '/admin/ia')['code'] !== 200, 'IA-03: só o Admin acessa o painel');
+
+      // IA-04 — Preço novo vale só para chamadas novas (auditado)
+      $r = postAs($base, $jarAdmin, '/admin/ia/configuracoes', [
+        'price_input' => '5', 'price_output' => '20', 'usd_brl_rate' => '6', 'monthly_budget_brl' => '0',
+      ]);
+      check($r['code'] === 302 && $countRows("SELECT COUNT(*) FROM audit_logs WHERE action = 'admin.ai_settings.update'") === 1, 'IA-04: Admin altera preços e câmbio (auditado)');
+      postAs($base, $jarIa, "/student/pratica/questao/{$praticaQ2}", ['answer' => 'outra resposta']);
+      $iaPractice = $aiRows("student_id = {$alunoIa['id']}");
+      check(count($iaPractice) === 2 && abs((float) $iaPractice[0]['cost_usd'] - 0.0045) < 0.000001
+        && abs((float) $iaPractice[1]['cost_usd'] - 0.009) < 0.000001, 'IA-04: custo antigo não muda; chamada nova usa o preço novo');
+
+      // IA-05 — Orçamento: Aviso aos Admins ao cruzar 80% e 100%, uma vez por mês e por limite
+      $pdoA->exec("UPDATE ai_usage_logs SET created_at = created_at - INTERVAL 40 DAY");
+      postAs($base, $jarAdmin, '/admin/ia/configuracoes', [
+        'price_input' => '5', 'price_output' => '20', 'usd_brl_rate' => '6', 'monthly_budget_brl' => '0.06',
+      ]);
+      $budgetNotes = fn(): array => array_column($notes($admin['id'], 'ai_budget'), 'title');
+      $alunoIa2 = $mkUser('Aluno Uso IA 2', 'student');
+      $jarIa2 = loginAs($base, $alunoIa2['email'], $pw);
+      postAs($base, $jarIa2, "/student/pratica/questao/{$praticaQ1}", ['answer' => 'primeira']); // R$ 0,054 = 90%
+      $afterFirst = $budgetNotes();
+      postAs($base, $jarIa2, "/student/pratica/questao/{$praticaQ2}", ['answer' => 'segunda']); // 180%
+      postAs($base, $jarIa2, "/student/pratica/questao/{$newQ}", ['answer' => 'terceira']);
+      $afterAll = $budgetNotes();
+      check(count($afterFirst) === 1 && str_contains($afterFirst[0], '80%'), 'IA-05: passar de 80% do orçamento avisa os Admins');
+      check(count($afterAll) === 2 && count(array_filter($afterAll, static fn(string $t): bool => str_contains($t, '100%'))) === 1,
+        'IA-05: passar de 100% avisa uma vez; novas chamadas não repetem o aviso');
+
+      postAs($base, $jarAdmin, '/admin/ia/configuracoes', [
+        'price_input' => 'abc', 'price_output' => '-1', 'usd_brl_rate' => '6', 'monthly_budget_brl' => '0.06',
+      ]);
+      check($countRows("SELECT COUNT(*) FROM system_settings WHERE setting_key = 'ai_price_input_per_1m_usd' AND setting_value = '5'") === 1,
+        'IA-04: valores inválidos são recusados sem alterar a configuração');
+
+      // IA-06 — Falha da IA vira log de erro sem derrubar a Prática; CSV exporta
+      $alunoIa3 = $mkUser('Aluno Uso IA 3', 'student');
+      $jarIa3 = loginAs($base, $alunoIa3['email'], $pw);
+      postAs($base, $jarIa3, "/student/pratica/questao/{$praticaQ1}", ['answer' => 'FALHA_SIMULADA aqui']);
+      $iaFail = $aiRows("student_id = {$alunoIa3['id']}");
+      check(count($iaFail) === 1 && $iaFail[0]['status'] === 'error' && (int) $iaFail[0]['prompt_tokens'] === 0
+        && (float) $iaFail[0]['cost_usd'] === 0.0, 'IA-06: falha da IA registra log de erro, sem custo');
+      $iaCsv = httpAs($jarAdmin, 'GET', "{$base}/admin/ia/export?period=7d");
+      check($iaCsv['code'] === 200 && str_contains($iaCsv['headers'], 'text/csv') && str_contains($iaCsv['body'], 'tipo;')
+        && str_contains($iaCsv['body'], 'Aluno Uso IA 3'), 'IA-06: exportação CSV do uso da IA');
 
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
