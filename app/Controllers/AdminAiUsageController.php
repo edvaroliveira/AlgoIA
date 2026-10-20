@@ -36,6 +36,8 @@ class AdminAiUsageController extends AdminBaseController
       'byTeacher'       => $byTeacher,
       'byTurma'         => $byTurma,
       'byExercise'      => $usage->byExercise($filters),
+      'byModel'         => $usage->byModel($filters),
+      'currentModel'    => (string) ((require ROOT_PATH . '/config/openai.php')['model'] ?? ''),
       'topStudents'     => $usage->topPracticeStudents($filters),
       'recentFailures'  => $usage->recentFailures($filters),
       'teacherOptions'  => $usage->teacherOptions(),

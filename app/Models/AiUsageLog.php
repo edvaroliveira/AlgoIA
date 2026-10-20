@@ -249,6 +249,11 @@ class AiUsageLog extends Model
     return $this->grouped($filters, 'l.turma_id', "LEFT JOIN turmas t ON t.id = l.turma_id", "COALESCE(t.name, 'Prática (sem Turma)')", $limit);
   }
 
+  public function byModel(array $filters, int $limit = 20): array
+  {
+    return $this->grouped($filters, 'l.model', '', 'l.model', $limit);
+  }
+
   public function byExercise(array $filters, int $limit = 20): array
   {
     return $this->grouped($filters, 'l.exercise_id', "JOIN exercises e ON e.id = l.exercise_id", 'e.title', $limit);

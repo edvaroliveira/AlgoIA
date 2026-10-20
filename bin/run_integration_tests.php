@@ -1999,6 +1999,14 @@ if (!extension_loaded('curl')) {
       check($countRows("SELECT COUNT(*) FROM system_settings WHERE setting_key = 'ai_price_input_per_1m_usd' AND setting_value = '5'") === 1,
         'IA-04: valores inválidos são recusados sem alterar a configuração');
 
+      // IA-07 — Modelo em uso e custo por modelo
+      $pdoA->exec("UPDATE ai_usage_logs SET model = 'gpt-4o-mini' WHERE student_id = {$alunoIa2['id']} LIMIT 1");
+      $iaModels = httpAs($jarAdmin, 'GET', "{$base}/admin/ia?period=custom&from=" . date('Y-m-d', strtotime('-90 days')))['body'];
+      check(preg_match('#Modelo em uso.*?gpt-4o.*?US\$ 5,00.*?US\$ 20,00#s', $iaModels) === 1,
+        'IA-07: painel mostra o modelo configurado e o preço vigente por 1M tokens');
+      check(str_contains($iaModels, '<td>gpt-4o</td>') && str_contains($iaModels, '<td>gpt-4o-mini</td>'),
+        'IA-07: tabela por modelo separa chamadas e custo de cada modelo');
+
       // IA-06 — Falha da IA vira log de erro sem derrubar a Prática; CSV exporta
       $alunoIa3 = $mkUser('Aluno Uso IA 3', 'student');
       $jarIa3 = loginAs($base, $alunoIa3['email'], $pw);

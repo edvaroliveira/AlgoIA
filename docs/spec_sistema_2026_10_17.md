@@ -206,6 +206,7 @@ depois do login, perde a sessão.
 
 - Cada chamada à IA (correção de Tentativa pelo worker e Prática) é registrada com tipo, Docente, Turma, Exercício, Tentativa, Resposta, Aluno ou Questão do banco, modelo, tokens de entrada e saída, latência, status (ok ou erro, com categoria) e custo em US$. O custo usa os preços vigentes no momento, e mudar o preço não reescreve o histórico. O registro nunca derruba a correção.
 - Em `/admin/ia` (só Admin): filtros por período, Docente, Turma e tipo; indicadores (custo em US$ e R$, chamadas, taxa de falha, tokens, custo por Resposta, latência média e p95); gráficos (custo por dia, chamadas e falhas, top Docentes, top Turmas, Correção x Prática); tabelas por Docente, Turma, Exercício e Alunos da Prática; falhas recentes; exportação CSV.
+- O painel mostra o modelo em uso (`OPENAI_MODEL`) com o preço vigente e o custo médio por resposta, e uma tabela por modelo (chamadas, tokens, custo), para comparar modelos quando houver troca.
 - O Admin edita na tela o preço por 1M de tokens (entrada e saída), a cotação US$→R$ e o orçamento mensal em R$ (auditado). Ao cruzar 80% e 100% do orçamento do mês, os Admins recebem Aviso (e e-mail), uma vez por limite. Nada é bloqueado.
 
 ### RF-26 Configurações do ambiente (Admin)
