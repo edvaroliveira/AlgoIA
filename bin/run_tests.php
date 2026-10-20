@@ -486,7 +486,7 @@ $mailCfg = static fn(array $over): array => array_merge(
   $over
 );
 same([], (new App\Services\Mailer($mailCfg([])))->configErrors(), 'MAIL: configuração completa não tem erros');
-check((new App\Services\Mailer($mailCfg(['from' => '']))->configErrors()) !== [], 'MAIL: sem MAIL_FROM é erro');
+check((new App\Services\Mailer($mailCfg(['from' => ''])))->configErrors() !== [], 'MAIL: sem MAIL_FROM é erro');
 check((new App\Services\Mailer($mailCfg(['driver' => 'smtp'])))->configErrors() !== [], 'MAIL: driver desconhecido é erro');
 $mailFile = tempnam(sys_get_temp_dir(), 'mailer_');
 $mailer = new App\Services\Mailer($mailCfg(['log_path' => $mailFile]));
