@@ -25,12 +25,12 @@ class ThemeProgress extends Model
   /**
    * Temas com item ativo no banco ou com alguma correção do Aluno.
    *
-   * @return array<int, array{name: string, answered: int, average: ?float, level: string, practicable: bool}>
+   * @return array<int, array{id: int, name: string, answered: int, average: ?float, level: string, practicable: bool}>
    */
   public function forStudent(int $studentId): array
   {
     $rows = $this->db->fetchAll(
-      "SELECT bt.name,
+      "SELECT bt.id, bt.name,
               COUNT(x.pct) AS answered,
               AVG(x.pct) AS average,
               MAX(active_t.theme_id) IS NOT NULL AS practicable
@@ -65,6 +65,7 @@ class ThemeProgress extends Model
       $answered = (int) $row['answered'];
       $average = $row['average'] !== null ? (float) $row['average'] : null;
       return [
+        'id'          => (int) $row['id'],
         'name'        => (string) $row['name'],
         'answered'    => $answered,
         'average'     => $average,

@@ -14,7 +14,15 @@ class ProgressController
   /** GET /student/progresso */
   public function student(): void
   {
+    $achievements = [];
+    try {
+      $achievements = (new \App\Services\AchievementService())->sync((int) Auth::id());
+    } catch (\Throwable $e) {
+      error_log('achievements failed: ' . $e->getMessage());
+    }
+
     View::render('student/progress', [
+      'achievements' => $achievements,
       'themes'    => (new ThemeProgress())->forStudent((int) Auth::id()),
       'evolution' => (new \App\Models\AttemptEvolution())->forStudent((int) Auth::id()),
     ]);

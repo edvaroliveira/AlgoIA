@@ -49,6 +49,7 @@ traz de volta, se algum banco anterior a essa data aparecer).
 | `027_questions_bank_origin.sql` | `questions.bank_question_id` (origem no banco, para o progresso por Tema) e liga importações antigas por texto idêntico. Idempotente. |
 | `028_email_notifications.sql` | `users.email_notifications` e fila de e-mail em `notifications` (`emailed_at`, `email_attempts`). Idempotente. |
 | `029_turma_posts.sql` | Cria `turma_posts` (mural da Turma). Idempotente. |
+| `030_student_achievements.sql` | Cria `student_achievements` (conquistas do Aluno). Idempotente. |
 
 ### Dados de teste (seed 003)
 

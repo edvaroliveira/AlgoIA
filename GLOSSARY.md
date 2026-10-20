@@ -172,6 +172,10 @@ _Evitar_: Histórico de notas, progresso (que é por Tema)
 Recados do Docente para os Alunos de uma Turma. Um recado pode ser fixado no topo e ter data de expiração; depois dela some para o Aluno. Só o Docente da Turma escreve.
 _Evitar_: Fórum, chat, comunicado
 
+**Conquista** (`student_achievements`):
+Marco que o Aluno atinge pela própria atividade (primeira correção, primeira resposta num Tema, dias seguidos de estudo, volume de Prática, nota máxima, ponto forte, melhora ao refazer). Obtida uma única vez e visível só para ele.
+_Evitar_: Medalha, badge, troféu, ranking
+
 **Suspeita de injeção** (`injection_logs`):
 Registro de que uma Resposta continha um padrão de tentativa de manipular a Correção por IA.
 _Evitar_: Fraude, ataque

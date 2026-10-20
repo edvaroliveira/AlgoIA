@@ -111,6 +111,7 @@ class PracticeController
         $studentId
       );
       $this->practice->record($studentId, (int) $id, $answer, $result, (float) $question['max_score']);
+      (new \App\Services\AchievementService())->syncSafely($studentId);
       $session->flash('success', 'Resposta corrigida.');
     } catch (\Throwable $e) {
       error_log('practice grading failed: ' . $e->getMessage());

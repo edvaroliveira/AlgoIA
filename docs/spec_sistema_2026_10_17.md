@@ -190,6 +190,12 @@ depois do login, perde a sessão.
 - Cada recado novo vira Aviso (e e-mail) para os Alunos com Matrícula ativa na Turma.
 - O Aluno lê os recados vigentes de todas as Turmas ativas em que tem Matrícula ativa na página Mural e os 3 mais recentes no painel. Ordem: fixados primeiro, depois os mais novos. Recado expirado some para o Aluno; o Docente continua vendo, marcado como "Expirado".
 
+### RF-23 Conquistas
+
+- Catálogo: Primeiros passos (primeira resposta corrigida); Explorador de cada Tema do banco (primeira resposta corrigida no Tema); Sequência de 3 e de 7 dias (dias seguidos com Prática corrigida ou Tentativa enviada); Praticante e Praticante dedicado (10 e 50 correções na Prática); Nota máxima (Tentativa Corrigida com a Pontuação máxima do Exercício); Ponto forte (Tema com 70% ou mais e 3+ respostas); Volta por cima (melhorou a nota ao refazer).
+- Cada conquista é gravada uma única vez, com a data, e gera Aviso (e e-mail). São recalculadas após cada correção na Prática, cada Tentativa Corrigida e ao abrir Progresso.
+- Em Progresso, o Aluno vê as obtidas (primeiro) e as bloqueadas, com o que falta. Só o próprio Aluno vê; não há ranking.
+
 ## Requisitos não funcionais
 
 ### RNF-01 Segurança
