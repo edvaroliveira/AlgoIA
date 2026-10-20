@@ -2262,6 +2262,13 @@ if (!extension_loaded('curl')) {
       check(str_contains($progCat, 'Estruturas de Dados') && str_contains(httpAs($jarProg, 'GET', "{$base}/student/pratica")['body'], 'Algoritmos Teste'),
         'CAT-05: Progresso e Prática agrupam por categoria');
 
+      // PEND-01 — Correções pendentes abrem para Docente e Admin (regressão: 500 por parâmetros indefinidos)
+      $pendTeacher = httpAs($jarDocenteA, 'GET', "{$base}/teacher/attempts/pending");
+      $pendAdmin = httpAs($jarAdmin, 'GET', "{$base}/admin/attempts/pending");
+      check($pendTeacher['code'] === 200 && str_contains($pendTeacher['body'], 'Correções pendentes')
+        && $pendAdmin['code'] === 200 && str_contains($pendAdmin['body'], 'Correções pendentes'),
+        'PEND-01: telas de Correções pendentes abrem (Docente e Admin)');
+
       // UI-01 — Layout: um único <h1>, título da aba com o nome da página, sem Bootstrap
       $uiPages = [
         [$jarAdmin, '/admin/users'], [$jarAdmin, '/admin/ia'], [$jarAdmin, '/admin/dashboard'],
