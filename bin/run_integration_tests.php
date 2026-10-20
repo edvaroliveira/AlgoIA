@@ -159,6 +159,7 @@ try {
 }
 
 $allTables = [
+  'turma_posts',
   'practice_answers',
   'notifications',
   'score_reviews',
@@ -1638,6 +1639,56 @@ if (!extension_loaded('curl')) {
       check(str_contains($desRow($evoSection, 'Aluna Nota Alta'), '+1,0') && str_contains($desRow($evoSection, 'Aluno Nota Baixa'), '-0,5')
         && str_contains($evoSection, '1 de 2 melhoraram') && !str_contains($evoSection, 'Aluno de Fora'),
         'EVO-02: Docente vê primeira x última nota de quem refez e quantos melhoraram');
+
+      // MUR-01 — Docente publica recado no mural; Alunos da Turma leem e recebem Aviso
+      $postCount = fn(): int => $countRows("SELECT COUNT(*) FROM turma_posts WHERE turma_id = {$turmaDes['id']}");
+      $r = postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaDes['id']}/mural", [
+        'title' => 'Prova remarcada', 'body' => "A prova passa para sexta.\nTragam calculadora.", 'pinned' => '1', 'expires_on' => '',
+      ]);
+      $firstPost = (int) $pdoA->query("SELECT MAX(id) FROM turma_posts")->fetchColumn();
+      check($r['code'] === 302 && $postCount() === 1 && $auditCount('teacher.turma.post', $turmaDes['id']) === 1, 'MUR-01: Docente publica recado no mural (auditado)');
+      check(str_contains(httpAs($jarDocenteA, 'GET', "{$base}/teacher/turmas/{$turmaDes['id']}")['body'], 'Prova remarcada'), 'MUR-01: recado aparece na página da Turma');
+      $muralAlta = httpAs($jarAlta, 'GET', "{$base}/student/mural");
+      check($muralAlta['code'] === 200 && str_contains($muralAlta['body'], 'Prova remarcada') && str_contains($muralAlta['body'], 'Tragam calculadora.')
+        && str_contains($muralAlta['body'], 'Turma Desempenho'), 'MUR-01: Aluno da Turma lê o recado no Mural');
+      $postNotes = $notes($desAlta['id'], 'turma_post');
+      check(count($postNotes) === 1 && str_contains($postNotes[0]['title'], 'Prova remarcada') && str_ends_with((string) $postNotes[0]['link'], '/student/mural'),
+        'MUR-01: recado vira Aviso para os Alunos da Turma');
+      check(!str_contains(httpAs($jarAlunoA, 'GET', "{$base}/student/mural")['body'], 'Prova remarcada'), 'MUR-01: Aluno de outra Turma não vê o recado');
+
+      // MUR-02 — Fixados primeiro; painel do Aluno mostra os recados mais recentes
+      postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaDes['id']}/mural", ['title' => 'Recado comum', 'body' => 'Lembrete geral.', 'expires_on' => '']);
+      $muralAlta = httpAs($jarAlta, 'GET', "{$base}/student/mural")['body'];
+      check(strpos($muralAlta, 'Prova remarcada') < strpos($muralAlta, 'Recado comum'), 'MUR-02: recado fixado vem antes do mais novo');
+      check(str_contains(httpAs($jarAlta, 'GET', "{$base}/student/dashboard")['body'], 'Prova remarcada'), 'MUR-02: painel do Aluno mostra o mural');
+
+      // MUR-03 — Expiração
+      $r = postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaDes['id']}/mural", [
+        'title' => 'Data no passado', 'body' => 'x', 'expires_on' => date('Y-m-d', time() - 86400),
+      ]);
+      check($postCount() === 2, 'MUR-03: data de expiração no passado é recusada');
+      $pdoA->exec("INSERT INTO turma_posts (turma_id, teacher_id, title, body, expires_at)
+                   VALUES ({$turmaDes['id']}, {$docenteA['id']}, 'Recado vencido', 'x', NOW() - INTERVAL 1 HOUR)");
+      check(!str_contains(httpAs($jarAlta, 'GET', "{$base}/student/mural")['body'], 'Recado vencido'), 'MUR-03: recado expirado some do Mural do Aluno');
+      $turmaPage = httpAs($jarDocenteA, 'GET', "{$base}/teacher/turmas/{$turmaDes['id']}")['body'];
+      check(str_contains($turmaPage, 'Recado vencido') && str_contains($turmaPage, 'Expirado'), 'MUR-03: Docente continua vendo o recado expirado, marcado');
+
+      // MUR-04 — Validação e acesso
+      postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaDes['id']}/mural", ['title' => '', 'body' => 'sem título', 'expires_on' => '']);
+      check($postCount() === 3, 'MUR-04: recado sem título é recusado');
+      $r = postAs($base, $jarDocenteB, "/teacher/turmas/{$turmaDes['id']}/mural", ['title' => 'Intruso', 'body' => 'x', 'expires_on' => '']);
+      check($r['code'] === 403 && $postCount() === 3, 'MUR-04: outro Docente não publica na Turma');
+      check($page($jarAlta, '/teacher/turmas/' . $turmaDes['id'])['code'] === 302, 'MUR-04: Aluno não acessa a gestão do mural');
+
+      // MUR-05 — Desafixar e excluir
+      postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaDes['id']}/mural/{$firstPost}/fixar");
+      $muralAlta = httpAs($jarAlta, 'GET', "{$base}/student/mural")['body'];
+      check(strpos($muralAlta, 'Recado comum') < strpos($muralAlta, 'Prova remarcada'), 'MUR-05: desafixar volta o recado para a ordem por data');
+      $r = postAs($base, $jarDocenteB, "/teacher/turmas/{$turmaDes['id']}/mural/{$firstPost}/excluir");
+      check($r['code'] === 403 && $postCount() === 3, 'MUR-05: outro Docente não exclui o recado');
+      postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaDes['id']}/mural/{$firstPost}/excluir");
+      check($postCount() === 2 && !str_contains(httpAs($jarAlta, 'GET', "{$base}/student/mural")['body'], 'Prova remarcada')
+        && $auditCount('teacher.turma.post.delete', $turmaDes['id']) === 1, 'MUR-05: Docente exclui o recado (auditado)');
 
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);

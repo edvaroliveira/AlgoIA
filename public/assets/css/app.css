@@ -348,6 +348,64 @@ summary:focus-visible {
   accent-color: var(--primary, #17613f);
 }
 
+.mural-post {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.mural-post:first-child {
+  border-top: 0;
+}
+
+.mural-post-admin {
+  border-top: 1px solid var(--border-soft);
+}
+
+.mural-post--pinned {
+  background: #eff9f3;
+}
+
+.mural-post__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mural-post__body {
+  margin: 0;
+}
+
+.mural-post small {
+  color: var(--text-muted);
+}
+
+.mural-post-admin__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0 1rem 0.75rem;
+}
+
+.mural-post-admin--expired .mural-post {
+  opacity: 0.6;
+}
+
+.mural-form {
+  margin-bottom: 1rem;
+}
+
+.mural-form__options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem 2rem;
+}
+
 .agenda-item {
   display: flex;
   flex-wrap: wrap;

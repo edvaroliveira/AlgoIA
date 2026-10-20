@@ -2,6 +2,7 @@
 $turma = $turma ?? [];
 $pending = $pending ?? [];
 $students = $students ?? [];
+$posts = $posts ?? [];
 $pageTitle = 'Turma — ' . ($turma['name'] ?? '');
 global $session;
 ?>
@@ -98,6 +99,64 @@ global $session;
     </section>
   </div>
 <?php endif; ?>
+
+<!-- Mural -->
+<div class="section" id="mural">
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Mural <span class="badge badge--neutral"><?= count($posts) ?></span></h2>
+        <p class="surface-copy">Recados para os alunos ativos da turma. Cada recado novo vira aviso para eles.</p>
+      </div>
+    </div>
+    <div class="surface-block__body">
+      <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . (int) ($turma['id'] ?? 0) . '/mural') ?>" class="mural-form">
+        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+        <div class="form-group">
+          <label class="form-label" for="post-title">Título</label>
+          <input class="form-input" type="text" id="post-title" name="title" maxlength="<?= \App\Models\TurmaPost::TITLE_MAX ?>" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="post-body">Recado</label>
+          <textarea class="form-input" id="post-body" name="body" rows="4" maxlength="<?= \App\Models\TurmaPost::BODY_MAX ?>" required></textarea>
+        </div>
+        <div class="mural-form__options">
+          <label class="checkbox-label" for="post-pinned">
+            <input type="checkbox" id="post-pinned" name="pinned" value="1"> Fixar no topo
+          </label>
+          <div class="form-group">
+            <label class="form-label" for="post-expires">Expira em (opcional)</label>
+            <input class="form-input" type="date" id="post-expires" name="expires_on" min="<?= date('Y-m-d') ?>">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary">Publicar recado</button>
+        </div>
+      </form>
+
+      <?php foreach ($posts as $post): ?>
+        <div class="mural-post-admin<?= (int) $post['expired'] === 1 ? ' mural-post-admin--expired' : '' ?>">
+          <?php \Core\View::partial('partials/mural_post', ['post' => $post]); ?>
+          <div class="mural-post-admin__actions">
+            <?php if ((int) $post['expired'] === 1): ?>
+              <span class="badge badge--neutral">Expirado</span>
+            <?php elseif ($post['expires_at'] !== null): ?>
+              <small>Expira em <?= date('d/m/Y', strtotime((string) $post['expires_at'])) ?></small>
+            <?php endif; ?>
+            <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . (int) $turma['id'] . '/mural/' . (int) $post['id'] . '/fixar') ?>">
+              <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+              <button type="submit" class="btn btn--ghost btn--sm"><?= (int) $post['pinned'] === 1 ? 'Desafixar' : 'Fixar' ?></button>
+            </form>
+            <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . (int) $turma['id'] . '/mural/' . (int) $post['id'] . '/excluir') ?>" data-confirm="Excluir este recado?">
+              <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+              <button type="submit" class="btn btn--ghost btn--sm">Excluir</button>
+            </form>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  </section>
+</div>
 
 <!-- Alunos ativos -->
 <div class="section">

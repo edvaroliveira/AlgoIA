@@ -184,6 +184,12 @@ depois do login, perde a sessão.
 - Ao escolher um Exercício, a página também mostra a Evolução de quem refez: primeira e última Tentativa Corrigida de cada Aluno ativo e quantos melhoraram.
 - "Exportar CSV" gera as mesmas colunas da grade (separador ";", vírgula decimal). A exportação é auditada. Só o Docente dono da Turma acessa.
 
+### RF-22 Mural da Turma
+
+- Na página da Turma, o Docente publica recados (título até 150 caracteres, texto até 5000), com opção de fixar no topo e data de expiração (fim do dia escolhido; não pode estar no passado). Pode fixar ou desafixar e excluir. Publicar e excluir são auditados. Não há edição.
+- Cada recado novo vira Aviso (e e-mail) para os Alunos com Matrícula ativa na Turma.
+- O Aluno lê os recados vigentes de todas as Turmas ativas em que tem Matrícula ativa na página Mural e os 3 mais recentes no painel. Ordem: fixados primeiro, depois os mais novos. Recado expirado some para o Aluno; o Docente continua vendo, marcado como "Expirado".
+
 ## Requisitos não funcionais
 
 ### RNF-01 Segurança

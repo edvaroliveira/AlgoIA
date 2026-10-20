@@ -93,6 +93,9 @@ $router->get('/teacher/turmas',                                   'TurmaControll
 $router->get('/teacher/turmas/create',                            'TurmaController@create', ['teacher']);
 $router->post('/teacher/turmas',                                  'TurmaController@store', ['teacher']);
 $router->get('/teacher/turmas/{id}',                              'TurmaController@show', ['teacher']);
+$router->post('/teacher/turmas/{id}/mural',                       'TurmaController@storePost', ['teacher']);
+$router->post('/teacher/turmas/{id}/mural/{postId}/fixar',        'TurmaController@togglePostPin', ['teacher']);
+$router->post('/teacher/turmas/{id}/mural/{postId}/excluir',      'TurmaController@deletePost', ['teacher']);
 $router->get('/teacher/turmas/{id}/desempenho',                   'TurmaController@performance', ['teacher']);
 $router->get('/teacher/turmas/{id}/desempenho/csv',               'TurmaController@performanceCsv', ['teacher']);
 $router->post('/teacher/turmas/{id}/key',                         'TurmaController@regenerateKey', ['teacher']);
@@ -135,6 +138,7 @@ $router->get('/student/dashboard',                  'DashboardController@student
 $router->get('/student/exercises',                  'ExerciseController@studentIndex', ['student']);
 $router->get('/student/agenda',                     'ExerciseController@studentAgenda', ['student']);
 $router->get('/student/pratica',                    'PracticeController@index', ['student']);
+$router->get('/student/mural',                      'MuralController@student', ['student']);
 $router->get('/student/progresso',                  'ProgressController@student', ['student']);
 $router->get('/student/pratica/sortear',            'PracticeController@draw', ['student']);
 $router->get('/student/pratica/questao/{id}',       'PracticeController@show', ['student']);
