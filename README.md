@@ -144,6 +144,18 @@ Enquanto não corrigida, a Tentativa fica *Enviada* (`submitted`, mostrada como 
 
 ---
 
+## Avisos por e-mail (worker)
+
+Os Avisos do app (exercício publicado, prazo encerrando, correção concluída, Revisão de nota, Matrícula, decisão do cadastro docente) também saem por e-mail para quem não desligou em Minha conta. Configure `MAIL_FROM` no `.env` e agende no cron, a cada 5 minutos:
+
+```bash
+php bin/send_notification_emails.php 200
+```
+
+Detalhes em [docs/deploy_operacional.md](docs/deploy_operacional.md#avisos-por-e-mail).
+
+---
+
 ## Cadastro de docentes
 
 O cadastro público de Docentes **nasce desabilitado**. Um Admin habilita/desabilita pela área de solicitações docentes; a flag fica em `system_settings.teacher_registration_enabled` e toda alteração gera auditoria.

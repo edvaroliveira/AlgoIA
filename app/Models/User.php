@@ -36,6 +36,11 @@ class User extends Model
     return password_verify($password, $hash);
   }
 
+  public function setEmailNotifications(int $id, bool $enabled): void
+  {
+    $this->db->execute("UPDATE users SET email_notifications = ? WHERE id = ?", [$enabled ? 1 : 0, $id]);
+  }
+
   public function updateStatus(int $id, string $status): void
   {
     $this->db->execute(

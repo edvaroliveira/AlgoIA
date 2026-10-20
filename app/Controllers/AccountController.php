@@ -106,6 +106,20 @@ class AccountController
     View::redirect('/conta');
   }
 
+  /** POST /conta/avisos-email — liga ou desliga os Avisos por e-mail. */
+  public function updateEmailNotifications(): void
+  {
+    Request::validateCsrf();
+
+    global $session;
+    $enabled = (string) Request::post('email_notifications', '') === '1';
+    (new User())->setEmailNotifications((int) Auth::id(), $enabled);
+    AuditService::record('account.email_notifications', 'user', (int) Auth::id(), ['enabled' => $enabled]);
+
+    $session->flash('success', $enabled ? 'Avisos por e-mail ligados.' : 'Avisos por e-mail desligados.');
+    View::redirect('/conta');
+  }
+
   /** Retorna mensagem de erro ou null se o upload for válido. */
   private function validateUpload(?array $file): ?string
   {

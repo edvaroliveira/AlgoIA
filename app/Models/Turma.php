@@ -155,11 +155,25 @@ class Turma extends Model
 
   // ── Enrollment ───────────────────────────────────────────────────────────
 
-  public function enrollStudent(int $studentId, int $turmaId): void
+  /** Pede Matrícula (pendente). Retorna false se o Aluno já tinha vínculo com a Turma. */
+  public function enrollStudent(int $studentId, int $turmaId): bool
   {
-    $this->db->execute(
+    return $this->db->execute(
       "INSERT IGNORE INTO student_turma (student_id, turma_id, status) VALUES (?, ?, 'pending')",
       [$studentId, $turmaId]
+    ) > 0;
+  }
+
+  /** Aviso ao Docente: novo pedido de Matrícula na Turma. */
+  public function notifyEnrollmentRequest(array $turma, int $studentId, string $studentName): void
+  {
+    (new Notification($this->db))->notifySafely(
+      (int) $turma['teacher_id'],
+      Notification::TYPE_ENROLLMENT_REQUESTED,
+      'Pedido de Matrícula na turma ' . $turma['name'],
+      '/teacher/turmas/' . (int) $turma['id'],
+      $studentName . ' pediu para entrar na turma. Aprove ou recuse na página da turma.',
+      'enroll_request:' . (int) $turma['id'] . ':' . $studentId
     );
   }
 

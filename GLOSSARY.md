@@ -145,8 +145,8 @@ Solicitação do Aluno, com uma explicação, para que o Docente reveja a Pontua
 _Evitar_: Recurso, contestação, reclamação
 
 **Aviso** (`notifications`):
-Mensagem curta dentro do app para um Usuário sobre um acontecimento que pede atenção: Publicação nova, prazo encerrando, Tentativa Corrigida, Matrícula aprovada, Pedido de revisão recebido ou respondido. Fica não lido até o Usuário abrir a página de avisos.
-_Evitar_: Notificação push, e-mail, Mural
+Mensagem curta dentro do app para um Usuário sobre um acontecimento que pede atenção: Publicação nova, prazo encerrando, Tentativa Corrigida, Matrícula aprovada, Pedido de revisão recebido ou respondido. Fica não lido até o Usuário abrir a página de avisos. Um Aviso não lido também é enviado por e-mail, uma vez, a quem não desligou essa opção.
+_Evitar_: Notificação push, Mural
 
 **Agenda**:
 Lista, para o Aluno, das Publicações abertas e futuras de todas as suas Turmas, ordenadas pelo prazo, com as Tentativas já usadas.

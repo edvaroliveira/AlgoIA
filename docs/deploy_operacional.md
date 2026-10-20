@@ -47,6 +47,7 @@ traz de volta, se algum banco anterior a essa data aparecer).
 | `025_notifications.sql` | Cria `notifications` (avisos dentro do app). Idempotente. |
 | `026_practice_answers.sql` | Cria `practice_answers` (modo prática). Idempotente. |
 | `027_questions_bank_origin.sql` | `questions.bank_question_id` (origem no banco, para o progresso por Tema) e liga importações antigas por texto idêntico. Idempotente. |
+| `028_email_notifications.sql` | `users.email_notifications` e fila de e-mail em `notifications` (`emailed_at`, `email_attempts`). Idempotente. |
 
 ### Dados de teste (seed 003)
 
@@ -98,10 +99,27 @@ Configurar no `.env`:
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
 - `TRUSTED_PROXIES`
+- `MAIL_DRIVER`, `MAIL_FROM`, `MAIL_FROM_NAME` (avisos por e-mail; ver abaixo)
 
 `OPENAI_MODEL` tem fallback em `config/openai.php`, mas deve ser definido no ambiente para facilitar troca sem edicao de codigo.
 
 `TRUSTED_PROXIES` e a lista (separada por virgula) de IPs ou blocos CIDR dos proxies/CDN na frente da aplicacao. Vazio e o padrao seguro: os cabecalhos `X-Forwarded-For` e `CF-Connecting-IP` sao ignorados e `audit_logs.ip_address` usa apenas `REMOTE_ADDR`. So preencha com os IPs do seu proxy — qualquer cliente pode forjar esses cabecalhos.
+
+## Avisos por E-mail
+
+Os Avisos do app tambem saem por e-mail, para quem nao desligou em Minha conta. Configure no `.env` `MAIL_FROM` (endereco do proprio dominio, com SPF/DKIM ativos no cPanel) e agende no cron, a cada 5 minutos:
+
+```bash
+php bin/send_notification_emails.php 200
+```
+
+Regras do worker:
+
+- Antes de enviar, gera o lembrete de prazo (Publicacao que encerra em ate 24 h, sem envio) para todos os Alunos ativos, mesmo que nao abram o app.
+- Envia uma unica vez cada Aviso nao lido criado nas ultimas 24 h. Aviso ja lido no app nao vira e-mail; avisos antigos nao sao enviados quando o cron e ligado pela primeira vez.
+- Ate 3 tentativas por Aviso; dois workers simultaneos nao enviam o mesmo Aviso.
+- Codigos de saida: `0` ok, `1` algum e-mail falhou, `2` configuracao invalida (`MAIL_FROM` ausente ou `MAIL_DRIVER` desconhecido) — nada e enviado.
+- `MAIL_DRIVER=log` grava cada e-mail como linha JSON em `MAIL_LOG_PATH` (usado nos testes de integracao).
 
 ## Cadastro Publico de Docentes
 

@@ -334,6 +334,20 @@ summary:focus-visible {
   color: var(--text-muted);
 }
 
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.9rem;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--primary, #17613f);
+}
+
 .agenda-item {
   display: flex;
   flex-wrap: wrap;

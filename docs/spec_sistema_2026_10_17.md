@@ -143,8 +143,15 @@ depois do login, perde a sessão.
 
 - Um sino no topo mostra quantos Avisos não lidos o Usuário tem. A página de avisos lista os 50 mais recentes, com link para o assunto, e marca todos como lidos ao abrir.
 - Geram Aviso: a Publicação de um Exercício (para os Alunos com Matrícula ativa nas Turmas escolhidas), a Tentativa Corrigida (para o Aluno), a Matrícula aprovada (para o Aluno), o Pedido de revisão (para o Docente) e a Revisão de nota, alterando ou mantendo a nota (para o Aluno).
+- Também geram Aviso: o pedido de Matrícula (para o Docente) e a decisão do cadastro docente, aprovado ou recusado (para quem pediu).
 - Prazo encerrando: ao abrir o app, o Aluno recebe um Aviso para cada Publicação aberta que encerra em até 24 h e na qual ainda não enviou Tentativa. Não há tarefa agendada.
 - O mesmo Aviso não se repete (mesmo evento para o mesmo Usuário). Uma falha ao gerar Aviso nunca impede a ação que o originou nem derruba a página.
+
+### RF-17a Avisos por e-mail
+
+- Cada Aviso não lido criado nas últimas 24 h é enviado uma vez por e-mail a quem deixou a opção ligada em Minha conta (ligada por padrão). Aviso já lido no app não vira e-mail.
+- Um worker no cron (a cada 5 minutos) gera antes o lembrete de prazo para todos os Alunos, mesmo os que não abriram o app, e então envia. Envio pelo mail() do PHP; sem remetente configurado nada é enviado.
+- A decisão do cadastro docente é enviada também a quem foi recusado. Todo e-mail traz o link completo do assunto e o caminho para desligar os avisos.
 
 ### RF-18 Agenda do Aluno
 

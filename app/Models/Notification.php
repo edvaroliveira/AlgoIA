@@ -17,6 +17,8 @@ class Notification extends Model
   public const TYPE_ENROLLMENT_APPROVED  = 'enrollment_approved';
   public const TYPE_REVIEW_REQUESTED     = 'review_requested';
   public const TYPE_REVIEW_ANSWERED      = 'review_answered';
+  public const TYPE_ENROLLMENT_REQUESTED = 'enrollment_requested';
+  public const TYPE_TEACHER_REGISTRATION = 'teacher_registration';
 
   protected string $table = 'notifications';
 
@@ -65,16 +67,19 @@ class Notification extends Model
 
   /**
    * Lembra o Aluno das Publicações que encerram nas próximas 24 h e que ele
-   * ainda não enviou. Um lembrete por Publicação (dedupe).
+   * ainda não enviou. Um lembrete por Publicação (dedupe). Sem Aluno (null),
+   * gera para todos os Alunos ativos (worker de e-mail).
    */
-  public function generateDeadlineReminders(int $studentId): void
+  public function generateDeadlineReminders(?int $studentId): void
   {
+    $studentFilter = $studentId !== null ? 'AND st.student_id = ?' : '';
     $due = $this->db->fetchAll(
-      "SELECT et.exercise_id, et.turma_id, et.closes_at, e.title
+      "SELECT st.student_id, et.exercise_id, et.turma_id, et.closes_at, e.title
              FROM exercise_turmas et
              JOIN exercises e ON e.id = et.exercise_id AND e.status = 'active' AND e.admin_review_status <> 'blocked'
              JOIN turmas t ON t.id = et.turma_id AND t.active = 1
-             JOIN student_turma st ON st.turma_id = et.turma_id AND st.student_id = ? AND st.status = 'active'
+             JOIN student_turma st ON st.turma_id = et.turma_id {$studentFilter} AND st.status = 'active'
+             JOIN users u ON u.id = st.student_id AND u.status = 'active'
              WHERE et.opens_at <= NOW()
                AND et.closes_at > NOW()
                AND NOT EXISTS (
@@ -87,12 +92,12 @@ class Notification extends Model
                  WHERE a.student_id = st.student_id AND a.exercise_id = et.exercise_id
                    AND a.turma_id = et.turma_id AND a.status IN ('submitted', 'graded')
                )",
-      [$studentId]
+      $studentId !== null ? [$studentId] : []
     );
 
     foreach ($due as $publication) {
       $this->notify(
-        $studentId,
+        (int) $publication['student_id'],
         self::TYPE_DEADLINE,
         'Prazo encerrando: ' . $publication['title'],
         '/student/exercises/' . (int) $publication['exercise_id'],

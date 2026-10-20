@@ -82,3 +82,24 @@ $backUrl = \Core\Auth::isAdmin()
     </dl>
   </div>
 </section>
+
+<section class="surface-block account-card">
+  <div class="surface-block__header">
+    <div>
+      <h2 class="surface-title">Avisos por e-mail</h2>
+      <p class="surface-copy">Receba por e-mail os avisos que ainda não viu no AlgoIA: novos exercícios, prazos encerrando, correções e respostas às revisões.</p>
+    </div>
+  </div>
+  <div class="surface-block__body">
+    <form method="POST" action="<?= \Core\app_url('/conta/avisos-email') ?>">
+      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+      <label class="checkbox-label" for="email-notifications">
+        <input type="checkbox" id="email-notifications" name="email_notifications" value="1"<?= (int) ($user['email_notifications'] ?? 1) === 1 ? ' checked' : '' ?>>
+        Receber avisos por e-mail em <?= \Core\View::e($email) ?>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary btn--sm">Salvar preferência</button>
+      </div>
+    </form>
+  </div>
+</section>
