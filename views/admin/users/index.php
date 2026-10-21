@@ -240,10 +240,11 @@ global $session;
             <span class="selection-summary" data-selection-breakdown="admin-users-list"></span>
             <span class="selection-summary" data-selection-compatibility="admin-users-list"></span>
             <span class="batch-actions__buttons">
-              <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-activate') ?>" class="btn btn--primary" data-requires-selection="admin-users-list" data-allowed-states="inactive,pending" disabled>Ativar selecionados</button>
-              <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-users-list" data-allowed-states="active" data-confirm="Inativar os usuários selecionados?" disabled>Inativar selecionados</button>
+              <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-activate') ?>" class="btn btn--primary" data-requires-selection="admin-users-list" aria-describedby="admin-users-list-hint" data-allowed-states="inactive,pending" disabled>Ativar selecionados</button>
+              <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-users-list" aria-describedby="admin-users-list-hint" data-allowed-states="active" data-confirm="Inativar os usuários selecionados?" disabled>Inativar selecionados</button>
             </span>
           </div>
+          <p class="batch-actions__hint" id="admin-users-list-hint">Ativar vale para usuários inativos ou pendentes; inativar, para usuários ativos.</p>
         </div>
       </div>
       <?php \Core\View::partial('partials/pagination', ['pagination' => $pagination]); ?>

@@ -2350,6 +2350,12 @@ if (!extension_loaded('curl')) {
         && preg_match('#<script src="[^"]*app\.js\?v=\d+" defer></script>#', $uiMedia) === 1,
         'UI-06: favicon PNG versionado e app.js com defer');
 
+      // UI-07 — Ações em lote explicam a regra de cada botão (ligada por aria-describedby)
+      $uiBatch = httpAs($jarAdmin, 'GET', "{$base}/admin/users")['body'];
+      check(preg_match('#<p class="batch-actions__hint" id="(admin-users-list-hint)">[^<]*inativos ou pendentes[^<]*</p>#', $uiBatch, $hm) === 1
+        && substr_count($uiBatch, 'aria-describedby="' . $hm[1] . '"') === 2,
+        'UI-07: ações em lote de Usuários explicam quando cada botão vale');
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);

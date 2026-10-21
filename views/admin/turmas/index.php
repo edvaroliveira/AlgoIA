@@ -203,10 +203,11 @@ global $session;
               <span class="selection-summary" data-selection-breakdown="admin-turmas-list"></span>
               <span class="selection-summary" data-selection-compatibility="admin-turmas-list"></span>
               <span class="batch-actions__buttons">
-                <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-turmas-list" data-allowed-states="active" data-confirm="Inativar as turmas selecionadas?" disabled>Inativar selecionadas</button>
-                <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/batch-reactivate') ?>" class="btn btn--primary" data-requires-selection="admin-turmas-list" data-allowed-states="inactive" disabled>Reativar selecionadas</button>
+                <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-turmas-list" aria-describedby="admin-turmas-list-hint" data-allowed-states="active" data-confirm="Inativar as turmas selecionadas?" disabled>Inativar selecionadas</button>
+                <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/batch-reactivate') ?>" class="btn btn--primary" data-requires-selection="admin-turmas-list" aria-describedby="admin-turmas-list-hint" data-allowed-states="inactive" disabled>Reativar selecionadas</button>
               </span>
             </div>
+            <p class="batch-actions__hint" id="admin-turmas-list-hint">Inativar vale para turmas ativas; reativar, para turmas inativas.</p>
           </div>
         </div>
       </form>
