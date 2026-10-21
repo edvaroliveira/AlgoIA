@@ -68,7 +68,8 @@ $isCurrent = static function (array $prefixes) use ($currentPath): bool {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#173f31">
   <title><?= \Core\View::e(\Core\View::documentTitle($pageTitle ?? null)) ?></title>
-  <link rel="icon" type="image/x-icon" href="<?= \Core\app_url('/assets/img/algoIA.ico') ?>">
+  <link rel="icon" type="image/png" sizes="32x32" href="<?= \Core\asset_url('/assets/img/favicon-32.png') ?>">
+  <link rel="apple-touch-icon" href="<?= \Core\asset_url('/assets/img/apple-touch-icon.png') ?>">
   <link rel="stylesheet" href="<?= \Core\asset_url('/assets/css/app.css') ?>">
 </head>
 
@@ -77,7 +78,7 @@ $isCurrent = static function (array $prefixes) use ($currentPath): bool {
   <div class="app-shell">
     <aside class="sidebar" id="menu-lateral" aria-label="Menu principal">
       <div class="sidebar__brand">
-        <img src="<?= \Core\app_url('/assets/img/AlgoIA_logo_branco.png') ?>" alt="AlgoIA" class="brand-logo brand-logo--sidebar">
+        <?= \Core\View::logo('branco', 'brand-logo brand-logo--sidebar', '172px') ?>
         <small class="brand-subtitle">Aprendizagem • Algoritmos • Amazônia</small>
       </div>
 
@@ -100,7 +101,7 @@ $isCurrent = static function (array $prefixes) use ($currentPath): bool {
           <button type="button" class="topbar-menu" aria-controls="menu-lateral" aria-expanded="false" aria-label="Abrir menu">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
           </button>
-          <img src="<?= \Core\app_url('/assets/img/AlgoIA_logo_transp.png') ?>" alt="AlgoIA" class="topbar-logo">
+          <?= \Core\View::logo('transp', 'topbar-logo', '48px') ?>
           <div class="app-context"><?= \Core\View::e($areaLabel) ?></div>
           <?php
           $userName = \Core\Auth::user()['name'] ?? '';
@@ -176,7 +177,7 @@ $isCurrent = static function (array $prefixes) use ($currentPath): bool {
     </div>
   </div>
 
-  <script src="<?= \Core\asset_url('/assets/js/app.js') ?>"></script>
+  <script src="<?= \Core\asset_url('/assets/js/app.js') ?>" defer></script>
 </body>
 
 </html>
