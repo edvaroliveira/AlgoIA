@@ -1398,6 +1398,15 @@ form[aria-busy="true"] { cursor: progress; }
 
 /* Utilitárias — substituem styles inline (CSP sem unsafe-inline em style-src) */
 .form-group--end { justify-content: flex-end; }
+/* Ações em lote: ocupa a linha inteira da grade (.form-row tem 2 colunas), para
+   os selos de contagem e os botões caberem lado a lado */
+.form-row > .batch-actions { grid-column: 1 / -1; }
+/* Botões do lote quebram de linha juntos, nunca um sozinho */
+.batch-actions__buttons {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
 .u-inline { display: inline; }
 .u-mt-2 { margin-top: 0.5rem; }
 .row-between {

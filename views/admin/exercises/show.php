@@ -235,14 +235,16 @@ global $session;
                 <label class="form-label" for="batch-reopen-until">Reabrir até</label>
                 <input id="batch-reopen-until" type="datetime-local" name="reopen_until" class="form-input" value="<?= $defaultReopenUntil ?>" min="<?= $defaultPublicationMin ?>">
               </div>
-              <div class="form-group form-group--end">
+              <div class="form-group form-group--end batch-actions">
                 <label class="form-label">Ações em lote</label>
                 <div class="td-actions">
                   <span class="selection-summary" data-selection-count="exercise-publications">0 selecionadas</span>
                   <span class="selection-summary" data-selection-breakdown="exercise-publications"></span>
                   <span class="selection-summary" data-selection-compatibility="exercise-publications"></span>
-                  <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="exercise-publications" data-allowed-states="open,scheduled" data-confirm="Encerrar todas as publicações selecionadas?" disabled>Encerrar selecionadas</button>
-                  <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="exercise-publications" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
+                  <span class="batch-actions__buttons">
+                    <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="exercise-publications" data-allowed-states="open,scheduled" data-confirm="Encerrar todas as publicações selecionadas?" disabled>Encerrar selecionadas</button>
+                    <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="exercise-publications" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
+                  </span>
                 </div>
               </div>
             </div>
