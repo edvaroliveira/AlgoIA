@@ -30,7 +30,7 @@ $fmt = static fn($n): string => number_format((float) $n, 1, ',', '');
         <textarea id="practice-answer" name="answer" rows="8" maxlength="10000" required><?= \Core\View::e($draft) ?></textarea>
       </div>
       <div class="form-actions">
-        <button type="submit" class="btn btn--primary">Enviar para correção</button>
+        <button type="submit" class="btn btn--primary" data-submitting-text="Corrigindo…">Enviar para correção</button>
         <?php if ($theme !== ''): ?>
           <a class="btn btn--ghost" href="<?= \Core\app_url('/student/pratica/sortear?tema=' . rawurlencode($theme)) ?>">Outra Questão</a>
         <?php endif; ?>

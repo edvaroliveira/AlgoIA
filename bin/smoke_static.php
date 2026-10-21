@@ -12,7 +12,7 @@ $checks = [
   // UI-01: layouts sem Bootstrap (o app.css traz a base própria).
   [
     'file' => 'views/layouts/main.php',
-    'mustContain' => ['id="menu-lateral"', 'href="#conteudo"'],
+    'mustContain' => ['id="menu-lateral"', 'href="#conteudo"', 'data-dismiss-alert'],
     'mustNotContain' => ['bootstrap'],
   ],
   [
@@ -22,7 +22,7 @@ $checks = [
   // UI-04: listas viram cartões no celular com rótulos tirados do <thead>.
   [
     'file' => 'public/assets/js/app.js',
-    'mustContain' => ['table--stack', 'data-label'],
+    'mustContain' => ['table--stack', 'data-label', 'data-submitting-text', 'data-dismiss-alert'],
   ],
   [
     'file' => 'public/assets/css/app.css',

@@ -2,7 +2,7 @@
 <?php global $session; ?>
 
 <?php if (isset($success)): ?>
-  <div class="alert alert--success"><?= \Core\View::e($success) ?></div>
+  <div class="alert alert--success" role="status"><?= \Core\View::e($success) ?></div>
   <p class="form-footer"><a href="<?= \Core\app_url('/login') ?>">Ir para o login</a></p>
 <?php else: ?>
 
@@ -11,7 +11,7 @@
   <p class="auth-copy">Seu cadastro será vinculado à turma pela chave informada e dependerá da aprovação do docente.</p>
 
   <?php if (!empty($errors)): ?>
-    <div class="alert alert--error">
+    <div class="alert alert--error" role="alert">
       <?php foreach ($errors as $e): ?>
         <div><?= \Core\View::e($e) ?></div>
       <?php endforeach; ?>

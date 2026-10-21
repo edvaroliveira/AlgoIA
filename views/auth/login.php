@@ -1,7 +1,7 @@
 <?php $pageTitle = 'Entrar'; ?>
 <?php global $session; ?>
 <?php if (isset($error)): ?>
-  <div class="alert alert--error"><?= \Core\View::e($error) ?></div>
+  <div class="alert alert--error" role="alert"><?= \Core\View::e($error) ?></div>
 <?php endif; ?>
 
 <div class="auth-eyebrow">Acesso do sistema</div>

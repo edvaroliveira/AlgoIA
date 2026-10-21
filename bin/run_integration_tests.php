@@ -2325,6 +2325,20 @@ if (!extension_loaded('curl')) {
       check(substr_count($uiPerf, 'class="table table--wide"') === 1,
         'UI-04: matriz Aluno × Exercício do desempenho é tabela larga (rola, não empilha)');
 
+      // UI-05 — Formulários: erro ligado ao campo, aviso fechável e estado de envio nos formulários lentos
+      $pdoA->exec("INSERT INTO system_settings (setting_key, setting_value) VALUES ('teacher_registration_enabled', '1')
+                   ON DUPLICATE KEY UPDATE setting_value = '1'");
+      $uiGuestJar = tempnam(sys_get_temp_dir(), 'algoia_jar_');
+      $uiReg = httpAs($uiGuestJar, 'GET', "{$base}/register/teacher")['body'];
+      @unlink($uiGuestJar);
+      $pdoA->exec("DELETE FROM system_settings WHERE setting_key = 'teacher_registration_enabled'");
+      check(str_contains($uiReg, 'aria-describedby="err-name"') && str_contains($uiReg, 'aria-describedby="err-institution"'),
+        'UI-05: mensagem de erro do cadastro de docente ligada ao campo (aria-describedby)');
+      postAs($base, $jarAlunoA, '/conta/ranking', ['ranking_anonymous' => '1']);
+      $uiFlashPage = httpAs($jarAlunoA, 'GET', "{$base}/conta")['body'];
+      check(preg_match('#<div class="alert alert--success[^"]*" role="status">.*?<button type="button" class="alert__close"[^>]*aria-label="Fechar aviso"#s', $uiFlashPage) === 1,
+        'UI-05: aviso de sucesso pode ser fechado e é anunciado (role="status")');
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);

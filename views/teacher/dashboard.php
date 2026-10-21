@@ -62,7 +62,7 @@ $gradingJobFailures = $gradingJobFailures ?? [];
 </div>
 
 <?php if ($pendingTotal > 0): ?>
-  <div class="alert alert--warning">
+  <div class="alert alert--warning" role="alert">
     Você tem <strong><?= $pendingTotal ?></strong> aluno(s) aguardando aprovação.
     <a href="<?= \Core\app_url('/teacher/turmas') ?>">Revisar agora →</a>
   </div>
@@ -71,7 +71,7 @@ $gradingJobFailures = $gradingJobFailures ?? [];
 <?php global $session; ?>
 
 <?php if (!empty($gradingJobFailures)): ?>
-  <div class="alert alert--warning">
+  <div class="alert alert--warning" role="alert">
     Há <strong><?= count($gradingJobFailures) ?></strong> falha(s) recente(s) na fila de correção dos seus exercícios.
     <a href="<?= \Core\app_url('/teacher/attempts/pending') ?>">Abrir pendências →</a>
   </div>
