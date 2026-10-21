@@ -27,3 +27,23 @@ RewriteRule ^ index.php [L]
         Deny from all
     </FilesMatch>
 </IfModule>
+
+# Cache de arquivos estáticos. asset_url() acrescenta ?v=<mtime>: a URL muda a
+# cada versão do arquivo, então essas podem ficar 1 ano em cache (immutable).
+# Sem ?v= (ex.: avatares enviados), só 1 hora. Tudo dentro de IfModule: sem
+# mod_headers/mod_version (ou em Apache < 2.4, sem <If>) o bloco é ignorado,
+# em vez de derrubar a pasta com erro 500.
+<IfModule mod_headers.c>
+  <IfModule mod_version.c>
+    <IfVersion >= 2.4>
+      <FilesMatch "\.(css|js|png|webp|jpe?g|gif|svg|ico|woff2?)$">
+        <If "%{QUERY_STRING} =~ /(^|&)v=[0-9]+/">
+          Header set Cache-Control "public, max-age=31536000, immutable"
+        </If>
+        <Else>
+          Header set Cache-Control "public, max-age=3600"
+        </Else>
+      </FilesMatch>
+    </IfVersion>
+  </IfModule>
+</IfModule>

@@ -48,6 +48,26 @@ class View
     return $pageTitle === '' || $pageTitle === 'AlgoIA' ? 'AlgoIA' : $pageTitle . ' — AlgoIA';
   }
 
+  /**
+   * Logo AlgoIA otimizado: WebP com PNG de reserva, em 360 e 720 px de largura
+   * (o navegador escolhe pela largura exibida, $sizes). width/height fixam a
+   * proporção e evitam salto de layout enquanto a imagem carrega.
+   *
+   * @param 'branco'|'transp' $variant
+   */
+  public static function logo(string $variant, string $class, string $sizes, string $alt = 'AlgoIA'): string
+  {
+    $base = '/assets/img/AlgoIA_logo_' . ($variant === 'branco' ? 'branco' : 'transp');
+    $set = static fn(string $ext): string => \Core\asset_url("{$base}-360.{$ext}") . ' 360w, '
+      . \Core\asset_url("{$base}-720.{$ext}") . ' 720w';
+
+    return '<picture>'
+      . '<source type="image/webp" srcset="' . self::e($set('webp')) . '" sizes="' . self::e($sizes) . '">'
+      . '<img src="' . self::e(\Core\asset_url("{$base}-360.png")) . '" srcset="' . self::e($set('png')) . '"'
+      . ' sizes="' . self::e($sizes) . '" width="360" height="314" alt="' . self::e($alt) . '" class="' . self::e($class) . '">'
+      . '</picture>';
+  }
+
   /** Escape for HTML output. */
   public static function e(mixed $value): string
   {

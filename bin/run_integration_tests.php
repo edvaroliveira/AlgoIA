@@ -2339,6 +2339,17 @@ if (!extension_loaded('curl')) {
       check(preg_match('#<div class="alert alert--success[^"]*" role="status">.*?<button type="button" class="alert__close"[^>]*aria-label="Fechar aviso"#s', $uiFlashPage) === 1,
         'UI-05: aviso de sucesso pode ser fechado e é anunciado (role="status")');
 
+      // UI-06 — Mídia: logos em WebP/PNG redimensionados (com proporção fixa), favicon PNG e scripts com defer
+      $uiMedia = httpAs($jarAlunoA, 'GET', "{$base}/student/dashboard")['body'];
+      $uiLogoOk = preg_match('#<picture><source type="image/webp" srcset="[^"]*AlgoIA_logo_branco-360\.webp\?v=\d+ 360w#', $uiMedia) === 1
+        && preg_match('#<img src="[^"]*AlgoIA_logo_branco-360\.png\?v=\d+"[^>]*width="360" height="314"#', $uiMedia) === 1;
+      $uiLogoFiles = glob(ROOT_PATH . '/public/assets/img/AlgoIA_logo_*-{360,720}.{png,webp}', GLOB_BRACE) ?: [];
+      check($uiLogoOk && count($uiLogoFiles) === 8 && !str_contains($uiMedia, 'AlgoIA_logo_branco.png'),
+        'UI-06: logos servidos em WebP/PNG redimensionados, com width/height');
+      check(preg_match('#<link rel="icon" type="image/png" sizes="32x32" href="[^"]*favicon-32\.png\?v=\d+">#', $uiMedia) === 1
+        && preg_match('#<script src="[^"]*app\.js\?v=\d+" defer></script>#', $uiMedia) === 1,
+        'UI-06: favicon PNG versionado e app.js com defer');
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);

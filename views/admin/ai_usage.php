@@ -237,5 +237,5 @@ $table = static function (array $rows, string $title, string $labelHeader) use (
   </section>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt" crossorigin="anonymous"></script>
-<script src="<?= \Core\app_url('/assets/js/admin-ai-usage.js') ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt" crossorigin="anonymous" defer></script>
+<script src="<?= \Core\asset_url('/assets/js/admin-ai-usage.js') ?>" defer></script>

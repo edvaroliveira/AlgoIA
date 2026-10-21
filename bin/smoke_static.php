@@ -28,6 +28,11 @@ $checks = [
     'file' => 'public/assets/css/app.css',
     'mustContain' => ['.table-scroll', 'content: attr(data-label)'],
   ],
+  // UI-06: cache longo só para URL versionada, protegido por IfModule (sem 500 se faltar módulo).
+  [
+    'file' => 'public/.htaccess',
+    'mustContain' => ['<IfModule mod_headers.c>', '<IfModule mod_version.c>', 'immutable', '(^|&)v=[0-9]+'],
+  ],
   // AU-04: php_flag fora de IfModule derruba a pasta (500) com PHP via CGI/FPM.
   [
     'file' => 'public/assets/uploads/.htaccess',
