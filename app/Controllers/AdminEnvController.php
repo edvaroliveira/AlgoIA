@@ -39,6 +39,7 @@ class AdminEnvController extends AdminBaseController
       'values'     => $values,
       'writable'   => $file->isWritable(),
       'overridden' => $overridden,
+      'bankSimilarity' => (new \App\Services\BankSimilarityService())->settings(),
     ]);
   }
 

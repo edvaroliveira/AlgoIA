@@ -53,7 +53,8 @@ global $session;
         <?php endif; ?>
       </div>
       <div class="surface-block__body surface-block__body--stack">
-        <details class="hint-details">
+        <?php \Core\View::partial('partials/bank_similarity_summary', ['report' => $item['similarity'] ?? null]); ?>
+        <details class="hint-details"<?= ($item['similarity']['blocked'] ?? 0) > 0 ? ' open' : '' ?>>
           <summary>Ver questões</summary>
           <?php foreach ($item['questions'] as $i => $q): ?>
             <div class="question-card">
@@ -63,6 +64,9 @@ global $session;
               </div>
               <p class="question-text"><?= nl2br(\Core\View::e($q['text'])) ?></p>
               <p class="hint-text"><strong>Resposta de referência:</strong> <?= nl2br(\Core\View::e($q['expected_answer_hint'])) ?></p>
+              <?php if (isset($item['similarity'])): ?>
+                <?php \Core\View::partial('partials/bank_similarity', ['row' => $item['similarity']['questions'][$i]]); ?>
+              <?php endif; ?>
             </div>
           <?php endforeach; ?>
         </details>

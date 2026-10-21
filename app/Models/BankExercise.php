@@ -23,6 +23,20 @@ class BankExercise extends Model
   protected string $table = 'bank_exercises';
 
   /**
+   * Resultado da última incorporação (aprovação ou inclusão direta): quantas
+   * Questões entraram e quais ficaram de fora por similaridade com o banco.
+   *
+   * @var array{total: int, kept: int, block: float, excluded: list<array<string, mixed>>}
+   */
+  private array $lastIncorporation = ['total' => 0, 'kept' => 0, 'block' => 0.0, 'excluded' => []];
+
+  /** @return array{total: int, kept: int, block: float, excluded: list<array<string, mixed>>} */
+  public function lastIncorporation(): array
+  {
+    return $this->lastIncorporation;
+  }
+
+  /**
    * Cria o item a partir de um Exercício: Sugestão do Docente (suggested) ou
    * inclusão direta do Admin (active). Retorna o id do item.
    *
@@ -54,7 +68,7 @@ class BankExercise extends Model
       }
 
       $questions = $this->db->fetchAll(
-        "SELECT text, expected_answer_hint, max_score FROM questions
+        "SELECT id, text, expected_answer_hint, max_score FROM questions
                WHERE exercise_id = ? AND admin_review_status <> 'blocked'
                ORDER BY order_index, id",
         [$exerciseId]
@@ -64,6 +78,14 @@ class BankExercise extends Model
       }
 
       $isDirect = $status === self::STATUS_ACTIVE;
+      // Inclusão direta já é incorporação: Questões acima do Limite de similaridade ficam de fora.
+      // A Sugestão guarda todas; o Admin decide na aprovação.
+      $total = count($questions);
+      $excluded = [];
+      $block = 0.0;
+      if ($isDirect) {
+        [$questions, $excluded, $block] = $this->withoutSimilar($questions, null);
+      }
       $bankId = $this->db->insert(
         "INSERT INTO bank_exercises (title, description, source_exercise_id, source_teacher_id, status, reviewed_by, reviewed_at)
                VALUES (?, ?, ?, ?, ?, ?, " . ($isDirect ? 'NOW()' : 'NULL') . ")",
@@ -90,6 +112,7 @@ class BankExercise extends Model
       }
 
       $this->db->commit();
+      $this->lastIncorporation = ['total' => $total, 'kept' => count($questions), 'block' => $block, 'excluded' => $excluded];
       return $bankId;
     } catch (\Throwable $e) {
       if ($this->db->inTransaction()) {
@@ -99,20 +122,90 @@ class BankExercise extends Model
     }
   }
 
-  /** Aprova uma Sugestão: vai para o banco com a classificação escolhida (já validada). */
+  /**
+   * Aprova uma Sugestão: vai para o banco com a classificação escolhida (já validada).
+   * Questões acima do Limite de similaridade com o banco são retiradas do item;
+   * as demais entram, renumeradas. Tudo na mesma transação.
+   *
+   * @return bool false se a Sugestão não existe ou já foi revisada.
+   * @throws \RuntimeException se todas as Questões estiverem acima do limite.
+   */
   public function approve(int $id, int $adminId, int $categoryId, array $themeIds): bool
   {
-    $updated = $this->db->execute(
-      "UPDATE bank_exercises SET status = ?, reviewed_by = ?, reviewed_at = NOW(), review_note = NULL
-             WHERE id = ? AND status = ?",
-      [self::STATUS_ACTIVE, $adminId, $id, self::STATUS_SUGGESTED]
-    ) > 0;
+    $this->db->beginTransaction();
 
-    if ($updated) {
+    try {
+      $item = $this->db->fetchOne("SELECT id FROM bank_exercises WHERE id = ? AND status = ? FOR UPDATE", [$id, self::STATUS_SUGGESTED]);
+      if (!$item) {
+        $this->db->rollback();
+        return false;
+      }
+
+      $questions = $this->db->fetchAll(
+        "SELECT id, text FROM bank_questions WHERE bank_exercise_id = ? ORDER BY order_index, id",
+        [$id]
+      );
+      [$kept, $excluded, $block] = $this->withoutSimilar($questions, $id);
+
+      foreach ($excluded as $question) {
+        $this->db->execute("DELETE FROM bank_questions WHERE id = ?", [(int) $question['id']]);
+      }
+      $order = 1;
+      foreach ($kept as $question) {
+        $this->db->execute("UPDATE bank_questions SET order_index = ? WHERE id = ?", [$order++, (int) $question['id']]);
+      }
+
+      $this->db->execute(
+        "UPDATE bank_exercises SET status = ?, reviewed_by = ?, reviewed_at = NOW(), review_note = NULL WHERE id = ?",
+        [self::STATUS_ACTIVE, $adminId, $id]
+      );
       (new Category($this->db))->classify('bank', $id, $categoryId, $themeIds);
+
+      $this->db->commit();
+      $this->lastIncorporation = ['total' => count($questions), 'kept' => count($kept), 'block' => $block, 'excluded' => $excluded];
+      return true;
+    } catch (\Throwable $e) {
+      if ($this->db->inTransaction()) {
+        $this->db->rollback();
+      }
+      throw $e;
+    }
+  }
+
+  /**
+   * Separa as Questões que podem entrar das que estão acima do Limite de similaridade.
+   *
+   * @param list<array<string, mixed>> $questions
+   * @return array{0: list<array<string, mixed>>, 1: list<array<string, mixed>>, 2: float}
+   * @throws \RuntimeException se nenhuma Questão puder entrar.
+   */
+  private function withoutSimilar(array $questions, ?int $excludeBankExerciseId): array
+  {
+    $report = (new \App\Services\BankSimilarityService($this->db))->report($questions, $excludeBankExerciseId);
+    $kept = [];
+    $excluded = [];
+    foreach ($questions as $i => $question) {
+      $row = $report['questions'][$i];
+      if (!$row['blocked']) {
+        $kept[] = $question;
+        continue;
+      }
+      $match = $row['matches'][0];
+      $excluded[] = [
+        'id'                => $question['id'] ?? null,
+        'position'          => $i + 1,
+        'pct'               => $row['pct'],
+        'bank_question_id'  => (int) $match['bank_question_id'],
+        'bank_exercise_id'  => (int) $match['bank_exercise_id'],
+      ];
     }
 
-    return $updated;
+    if ($kept === []) {
+      $limit = rtrim(rtrim(number_format($report['block'], 1, ',', ''), '0'), ',');
+      throw new \RuntimeException("Todas as Questões já existem no banco (similaridade ≥ {$limit}%).");
+    }
+
+    return [$kept, $excluded, $report['block']];
   }
 
   /** Recusa uma Sugestão, registrando o motivo para o Docente. */

@@ -1211,6 +1211,95 @@ if (!extension_loaded('curl')) {
         'BANCO-05: só Sugestões podem ser aprovadas (recusado e arquivado não voltam ao banco por "aprovar")'
       );
 
+      // BANCO-07 — Similaridade: Questão quase igual a outra do banco não entra; as demais entram
+      $simBase = 'Escreva um algoritmo que leia a idade de uma pessoa e informe se ela é maior de idade, considerando a maioridade aos 18 anos.';
+      $simNear = 'Escreva um algoritmo que leia a idade da pessoa e informe se ela é maior de idade, considerando a maioridade aos 18 anos.'; // 97,5%
+      $simForm = ['category_id' => $catBanco['id'], 'theme_ids' => [$catBanco['subs']['Vetores']]];
+      $simOrig = $mkExercise($docenteB['id'], 'Maioridade original', 'ready', [$simBase]);
+      postAs($base, $jarAdmin, "/admin/exercises/{$simOrig['id']}/add-to-bank", $simForm);
+      check(($bankRow($simOrig['id'])['status'] ?? '') === 'active', 'BANCO-07: item de referência entra no banco');
+
+      $simSug = $mkExercise($docenteA['id'], 'Maioridade e médias', 'active', [
+        'ESCREVA UM ALGORITMO QUE LEIA A IDADE DE UMA PESSOA E INFORME SE ELA E MAIOR DE IDADE CONSIDERANDO A MAIORIDADE AOS 18 ANOS',
+        'Calcule a média de três notas e mostre se o aluno foi aprovado com média mínima sete.',
+        'Mostre todos os números pares entre 1 e 100 usando uma estrutura de repetição.',
+      ]);
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$simSug['id']}/suggest-bank");
+      $simSugRow = $bankRow($simSug['id']);
+      $simCard = httpAs($jarAdmin, 'GET', "{$base}/admin/bank?status=suggested")['body'];
+      check(str_contains($simCard, '100% — não entra') && str_contains($simCard, '1 de 3 Questões não entra'),
+        'BANCO-07: card da Sugestão mostra o % e quais Questões não entram');
+      check(!str_contains(httpAs($jarDocenteA, 'GET', "{$base}/teacher/exercises/{$simSug['id']}")['body'], 'não entra'),
+        'BANCO-07: Docente não vê a similaridade');
+      postAs($base, $jarAdmin, "/admin/bank/{$simSugRow['id']}/approve", $simForm);
+      $simAfter = httpAs($jarAdmin, 'GET', "{$base}/admin/bank?status=suggested")['body'];
+      $simKept = $pdoA->query("SELECT text, order_index FROM bank_questions WHERE bank_exercise_id = {$simSugRow['id']} ORDER BY order_index")->fetchAll();
+      check(($bankRow($simSug['id'])['status'] ?? '') === 'active' && count($simKept) === 2
+          && str_starts_with($simKept[0]['text'], 'Calcule a média') && array_map('intval', array_column($simKept, 'order_index')) === [1, 2],
+        'BANCO-07: aprovação incorpora só as Questões abaixo do limite, renumeradas');
+      check(str_contains($simAfter, '2 de 3 Questões incorporadas'), 'BANCO-07: mensagem informa quantas entraram e quantas não');
+      check($countRows("SELECT COUNT(*) FROM audit_logs WHERE action = 'admin.bank.approve' AND entity_id = {$simSugRow['id']}
+                        AND metadata_json LIKE '%similarity_excluded%'") === 1,
+        'BANCO-07: auditoria registra a Questão excluída por similaridade');
+
+      // BANCO-08 — Todas as Questões repetidas: a Sugestão não é aprovada
+      $simAll = $mkExercise($docenteA['id'], 'Só repetida', 'ready', [$simBase]);
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$simAll['id']}/suggest-bank");
+      $simAllRow = $bankRow($simAll['id']);
+      postAs($base, $jarAdmin, "/admin/bank/{$simAllRow['id']}/approve", $simForm);
+      $simAllPage = httpAs($jarAdmin, 'GET', "{$base}/admin/bank?status=suggested")['body'];
+      check(($bankRow($simAll['id'])['status'] ?? '') === 'suggested'
+          && $countRows("SELECT COUNT(*) FROM bank_questions WHERE bank_exercise_id = {$simAllRow['id']}") === 1
+          && str_contains($simAllPage, 'Recuse a Sugestão'),
+        'BANCO-08: com todas as Questões acima do limite a Sugestão continua pendente');
+      postAs($base, $jarAdmin, "/admin/bank/{$simAllRow['id']}/reject", ['review_note' => 'Repetida']);
+
+      // BANCO-09 — Inclusão direta pula a Questão repetida; Sugestão mais antiga tem precedência
+      $simDirect = $mkExercise($docenteB['id'], 'Direto com repetida', 'ready', [$simBase, 'Leia um vetor de dez inteiros e mostre o maior e o menor valor.']);
+      $simDirectPage = httpAs($jarAdmin, 'GET', "{$base}/admin/exercises/{$simDirect['id']}")['body'];
+      check(str_contains($simDirectPage, '100% — não entra'), 'BANCO-09: tela de inclusão direta mostra a similaridade antes de incluir');
+      postAs($base, $jarAdmin, "/admin/exercises/{$simDirect['id']}/add-to-bank", $simForm);
+      $simDirectRow = $bankRow($simDirect['id']);
+      check(($simDirectRow['status'] ?? '') === 'active'
+          && $countRows("SELECT COUNT(*) FROM bank_questions WHERE bank_exercise_id = {$simDirectRow['id']}") === 1,
+        'BANCO-09: inclusão direta pula a Questão repetida e inclui as demais');
+
+      $simOld = $mkExercise($docenteA['id'], 'Pendente antiga', 'ready', ['Leia uma matriz quadrada de ordem quatro e mostre a soma dos elementos da diagonal secundária.', 'Leia uma frase e conte quantas vogais ela possui.']);
+      $simNew = $mkExercise($docenteB['id'], 'Pendente nova', 'ready', ['Leia uma matriz quadrada de ordem quatro e mostre a soma dos elementos da diagonal secundária.', 'Leia dois números e mostre o maior deles.']);
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$simOld['id']}/suggest-bank");
+      postAs($base, $jarDocenteB, "/teacher/exercises/{$simNew['id']}/suggest-bank");
+      $simNewRow = $bankRow($simNew['id']);
+      $simOldRow = $bankRow($simOld['id']);
+      // A mais antiga é aprovada primeiro, com a nova ainda pendente: a nova não pode barrá-la
+      postAs($base, $jarAdmin, "/admin/bank/{$simOldRow['id']}/approve", $simForm);
+      postAs($base, $jarAdmin, "/admin/bank/{$simNewRow['id']}/approve", $simForm);
+      check($countRows("SELECT COUNT(*) FROM bank_questions WHERE bank_exercise_id = {$simNewRow['id']}") === 1
+          && $countRows("SELECT COUNT(*) FROM bank_questions WHERE bank_exercise_id = {$simOldRow['id']}") === 2,
+        'BANCO-09: entre Sugestões pendentes iguais, a mais antiga tem precedência');
+
+      // BANCO-10 — Limite parametrizável nas Configurações (com auditoria e validação)
+      $simBad = postAs($base, $jarAdmin, '/admin/configuracoes/banco', ['bank_similarity_block_pct' => '101', 'bank_similarity_show_pct' => '85']);
+      check($countRows("SELECT COUNT(*) FROM system_settings WHERE setting_key = 'bank_similarity_block_pct'") === 0,
+        'BANCO-10: limite fora da faixa é recusado');
+      check(str_contains(httpAs($jarAdmin, 'GET', "{$base}/admin/configuracoes")['body'], 'name="bank_similarity_block_pct" value="97"'),
+        'BANCO-10: Configurações mostram o limite padrão de 97%');
+      // Borda: Questão com exatamente o % do limite não entra (≥)
+      postAs($base, $jarAdmin, '/admin/configuracoes/banco', ['bank_similarity_block_pct' => '97,5', 'bank_similarity_show_pct' => '85']);
+      $simEdge = $mkExercise($docenteB['id'], 'No limite', 'ready', [$simNear]);
+      postAs($base, $jarAdmin, "/admin/exercises/{$simEdge['id']}/add-to-bank", $simForm);
+      check($bankRow($simEdge['id']) === false, 'BANCO-10: Questão com similaridade igual ao limite (97,5%) não entra');
+      postAs($base, $jarAdmin, '/admin/configuracoes/banco', ['bank_similarity_block_pct' => '99,5', 'bank_similarity_show_pct' => '85']);
+      check($countRows("SELECT COUNT(*) FROM system_settings WHERE setting_key = 'bank_similarity_block_pct' AND setting_value = '99.5'") === 1
+          && $countRows("SELECT COUNT(*) FROM audit_logs WHERE action = 'admin.bank_settings.update'") === 2,
+        'BANCO-10: Admin altera o limite (aceita vírgula), com auditoria');
+      $simNearEx = $mkExercise($docenteB['id'], 'Quase igual', 'ready', [$simNear]);
+      postAs($base, $jarAdmin, "/admin/exercises/{$simNearEx['id']}/add-to-bank", $simForm);
+      $simNearRow = $bankRow($simNearEx['id']);
+      check(($simNearRow['status'] ?? '') === 'active'
+          && $countRows("SELECT COUNT(*) FROM bank_questions WHERE bank_exercise_id = {$simNearRow['id']}") === 1,
+        'BANCO-10: com limite de 99,5%, Questão com 97,5% entra no banco');
+      $pdoA->exec("DELETE FROM system_settings WHERE setting_key LIKE 'bank_similarity_%'");
+
       // BANCO-06 — Telas: pontos de entrada e escopo da aba "Meus"
       $page = fn(string $jar, string $path): array => httpAs($jar, 'GET', "{$base}{$path}");
       $create = $page($jarDocenteA, '/teacher/exercises/create');
