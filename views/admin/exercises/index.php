@@ -228,14 +228,16 @@ global $session;
             <label class="form-label" for="exercises-list-reopen-until">Reabrir até</label>
             <input id="exercises-list-reopen-until" type="datetime-local" name="reopen_until" class="form-input" value="<?= date('Y-m-d\TH:i', strtotime('+7 days')) ?>" min="<?= date('Y-m-d\TH:i', strtotime('+1 hour')) ?>">
           </div>
-          <div class="form-group form-group--end">
+          <div class="form-group form-group--end batch-actions">
             <label class="form-label">Ações em lote</label>
             <div class="td-actions">
               <span class="selection-summary" data-selection-count="admin-exercises-list">0 selecionados</span>
               <span class="selection-summary" data-selection-breakdown="admin-exercises-list"></span>
               <span class="selection-summary" data-selection-compatibility="admin-exercises-list"></span>
-              <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/batch-close') ?>" class="btn btn--danger" data-requires-selection="admin-exercises-list" data-allowed-states="active,closed" data-confirm="Encerrar os exercícios selecionados?" disabled>Encerrar selecionados</button>
-              <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="admin-exercises-list" data-allowed-states="active,closed" disabled>Reabrir selecionados</button>
+              <span class="batch-actions__buttons">
+                <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/batch-close') ?>" class="btn btn--danger" data-requires-selection="admin-exercises-list" data-allowed-states="active,closed" data-confirm="Encerrar os exercícios selecionados?" disabled>Encerrar selecionados</button>
+                <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="admin-exercises-list" data-allowed-states="active,closed" disabled>Reabrir selecionados</button>
+              </span>
             </div>
           </div>
         </div>

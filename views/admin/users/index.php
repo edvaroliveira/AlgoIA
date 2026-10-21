@@ -233,14 +233,16 @@ global $session;
         </table>
       </div>
       <div class="form-row">
-        <div class="form-group form-group--end">
+        <div class="form-group form-group--end batch-actions">
           <label class="form-label">Ações em lote</label>
           <div class="td-actions">
             <span class="selection-summary" data-selection-count="admin-users-list">0 selecionados</span>
             <span class="selection-summary" data-selection-breakdown="admin-users-list"></span>
             <span class="selection-summary" data-selection-compatibility="admin-users-list"></span>
-            <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-activate') ?>" class="btn btn--primary" data-requires-selection="admin-users-list" data-allowed-states="inactive,pending" disabled>Ativar selecionados</button>
-            <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-users-list" data-allowed-states="active" data-confirm="Inativar os usuários selecionados?" disabled>Inativar selecionados</button>
+            <span class="batch-actions__buttons">
+              <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-activate') ?>" class="btn btn--primary" data-requires-selection="admin-users-list" data-allowed-states="inactive,pending" disabled>Ativar selecionados</button>
+              <button type="submit" form="admin-users-batch-form" formaction="<?= \Core\app_url('/admin/users/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-users-list" data-allowed-states="active" data-confirm="Inativar os usuários selecionados?" disabled>Inativar selecionados</button>
+            </span>
           </div>
         </div>
       </div>

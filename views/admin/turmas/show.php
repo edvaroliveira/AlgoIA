@@ -113,14 +113,16 @@ global $session;
               <label class="form-label" for="turma-batch-reopen-until">Reabrir até</label>
               <input id="turma-batch-reopen-until" type="datetime-local" name="reopen_until" class="form-input" value="<?= date('Y-m-d\TH:i', strtotime('+7 days')) ?>" min="<?= $defaultPublicationMin ?>">
             </div>
-            <div class="form-group form-group--end">
+            <div class="form-group form-group--end batch-actions">
               <label class="form-label">Ações em lote</label>
               <div class="td-actions">
                 <span class="selection-summary" data-selection-count="turma-publications">0 selecionados</span>
                 <span class="selection-summary" data-selection-breakdown="turma-publications"></span>
                 <span class="selection-summary" data-selection-compatibility="turma-publications"></span>
-                <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="turma-publications" data-allowed-states="open,scheduled" data-confirm="Encerrar as publicações selecionadas desta turma?" disabled>Encerrar selecionadas</button>
-                <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="turma-publications" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
+                <span class="batch-actions__buttons">
+                  <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="turma-publications" data-allowed-states="open,scheduled" data-confirm="Encerrar as publicações selecionadas desta turma?" disabled>Encerrar selecionadas</button>
+                  <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="turma-publications" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
+                </span>
               </div>
             </div>
           </div>

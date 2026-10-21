@@ -196,14 +196,16 @@ global $session;
           </table>
         </div>
         <div class="form-row">
-          <div class="form-group form-group--end">
+          <div class="form-group form-group--end batch-actions">
             <label class="form-label">Ações em lote</label>
             <div class="td-actions">
               <span class="selection-summary" data-selection-count="admin-turmas-list">0 selecionadas</span>
               <span class="selection-summary" data-selection-breakdown="admin-turmas-list"></span>
               <span class="selection-summary" data-selection-compatibility="admin-turmas-list"></span>
-              <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-turmas-list" data-allowed-states="active" data-confirm="Inativar as turmas selecionadas?" disabled>Inativar selecionadas</button>
-              <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/batch-reactivate') ?>" class="btn btn--primary" data-requires-selection="admin-turmas-list" data-allowed-states="inactive" disabled>Reativar selecionadas</button>
+              <span class="batch-actions__buttons">
+                <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/batch-deactivate') ?>" class="btn btn--danger" data-requires-selection="admin-turmas-list" data-allowed-states="active" data-confirm="Inativar as turmas selecionadas?" disabled>Inativar selecionadas</button>
+                <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/batch-reactivate') ?>" class="btn btn--primary" data-requires-selection="admin-turmas-list" data-allowed-states="inactive" disabled>Reativar selecionadas</button>
+              </span>
             </div>
           </div>
         </div>
