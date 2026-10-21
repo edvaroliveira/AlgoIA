@@ -1401,6 +1401,13 @@ form[aria-busy="true"] { cursor: progress; }
 /* Ações em lote: ocupa a linha inteira da grade (.form-row tem 2 colunas), para
    os selos de contagem e os botões caberem lado a lado */
 .form-row > .batch-actions { grid-column: 1 / -1; }
+/* Regra de cada botão do lote: explica por que um botão pode estar desligado */
+.batch-actions__hint {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
 /* Botões do lote quebram de linha juntos, nunca um sozinho */
 .batch-actions__buttons {
   display: inline-flex;

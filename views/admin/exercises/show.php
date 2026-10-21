@@ -242,10 +242,11 @@ global $session;
                   <span class="selection-summary" data-selection-breakdown="exercise-publications"></span>
                   <span class="selection-summary" data-selection-compatibility="exercise-publications"></span>
                   <span class="batch-actions__buttons">
-                    <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="exercise-publications" data-allowed-states="open,scheduled" data-confirm="Encerrar todas as publicações selecionadas?" disabled>Encerrar selecionadas</button>
-                    <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="exercise-publications" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
+                    <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="exercise-publications" aria-describedby="exercise-publications-hint" data-allowed-states="open,scheduled" data-confirm="Encerrar todas as publicações selecionadas?" disabled>Encerrar selecionadas</button>
+                    <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="exercise-publications" aria-describedby="exercise-publications-hint" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
                   </span>
                 </div>
+                <p class="batch-actions__hint" id="exercise-publications-hint">Encerrar vale para publicações abertas ou agendadas; reabrir, para publicações encerradas.</p>
               </div>
             </div>
           </form>

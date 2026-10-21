@@ -235,10 +235,11 @@ global $session;
               <span class="selection-summary" data-selection-breakdown="admin-exercises-list"></span>
               <span class="selection-summary" data-selection-compatibility="admin-exercises-list"></span>
               <span class="batch-actions__buttons">
-                <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/batch-close') ?>" class="btn btn--danger" data-requires-selection="admin-exercises-list" data-allowed-states="active,closed" data-confirm="Encerrar os exercícios selecionados?" disabled>Encerrar selecionados</button>
-                <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="admin-exercises-list" data-allowed-states="active,closed" disabled>Reabrir selecionados</button>
+                <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/batch-close') ?>" class="btn btn--danger" data-requires-selection="admin-exercises-list" aria-describedby="admin-exercises-list-hint" data-allowed-states="active,closed" data-confirm="Encerrar os exercícios selecionados?" disabled>Encerrar selecionados</button>
+                <button type="submit" formaction="<?= \Core\app_url('/admin/exercises/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="admin-exercises-list" aria-describedby="admin-exercises-list-hint" data-allowed-states="active,closed" disabled>Reabrir selecionados</button>
               </span>
             </div>
+            <p class="batch-actions__hint" id="admin-exercises-list-hint">Encerrar e reabrir valem só para exercícios publicados em alguma Turma.</p>
           </div>
         </div>
       </form>

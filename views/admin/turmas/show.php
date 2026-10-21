@@ -120,10 +120,11 @@ global $session;
                 <span class="selection-summary" data-selection-breakdown="turma-publications"></span>
                 <span class="selection-summary" data-selection-compatibility="turma-publications"></span>
                 <span class="batch-actions__buttons">
-                  <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="turma-publications" data-allowed-states="open,scheduled" data-confirm="Encerrar as publicações selecionadas desta turma?" disabled>Encerrar selecionadas</button>
-                  <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="turma-publications" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
+                  <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-close') ?>" class="btn btn--danger" data-requires-selection="turma-publications" aria-describedby="turma-publications-hint" data-allowed-states="open,scheduled" data-confirm="Encerrar as publicações selecionadas desta turma?" disabled>Encerrar selecionadas</button>
+                  <button type="submit" formaction="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0) . '/publications/batch-reopen') ?>" class="btn btn--primary" data-requires-selection="turma-publications" aria-describedby="turma-publications-hint" data-allowed-states="closed" disabled>Reabrir selecionadas</button>
                 </span>
               </div>
+              <p class="batch-actions__hint" id="turma-publications-hint">Encerrar vale para publicações abertas ou agendadas; reabrir, para publicações encerradas.</p>
             </div>
           </div>
         </form>
