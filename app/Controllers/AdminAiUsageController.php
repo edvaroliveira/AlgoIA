@@ -47,6 +47,7 @@ class AdminAiUsageController extends AdminBaseController
           'day'      => (string) $d['day'],
           'grading'  => (float) $d['grading_usd'],
           'practice' => (float) $d['practice_usd'],
+          'similarity' => (float) $d['similarity_usd'],
           'calls'    => (int) $d['calls'],
           'errors'   => (int) $d['errors'],
         ], $byDay),

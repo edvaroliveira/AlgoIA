@@ -100,6 +100,10 @@ _Evitar_: Plágio, duplicata (para o percentual)
 Percentual a partir do qual uma Questão não entra no Banco de exercícios. As demais Questões do mesmo Exercício entram normalmente. Entre Sugestões pendentes iguais, a mais antiga tem precedência. O Admin ajusta o limite em Configurações.
 _Evitar_: Bloqueio (reservado à Moderação)
 
+**Juiz de similaridade**:
+IA que, quando ligada pelo Admin em Configurações, analisa os casos duvidosos (Similaridade entre o limite de exibição e o Limite de similaridade) de Sugestões pendentes e diz se as duas Questões pedem a mesma coisa. Só informa: não bloqueia nem aprova.
+_Evitar_: Moderação automática, filtro de IA
+
 ## Moderação
 
 **Moderação** (`admin_review_status`):

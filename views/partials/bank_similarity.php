@@ -19,6 +19,15 @@ $fmt = static fn(float $pct): string => rtrim(rtrim(number_format($pct, 1, ',', 
           <strong><?= $fmt((float) $match['pct']) ?>%</strong> com
           “<?= \Core\View::e(mb_strimwidth((string) $match['text'], 0, 140, '…')) ?>”
           <small>(<?= \Core\View::e((string) $match['title']) ?> · <?= $match['status'] === 'active' ? 'No banco' : 'Sugestão' ?>)</small>
+          <?php if (array_key_exists('judgment', $match)): ?>
+            <?php if ($match['judgment'] === null): ?>
+              <span class="similarity__ai">Análise da IA pendente (feita pelo cron).</span>
+            <?php elseif ($match['judgment']['verdict'] === 'same'): ?>
+              <span class="similarity__ai similarity__ai--same"><strong>Análise da IA: mesma Questão.</strong> <?= \Core\View::e((string) $match['judgment']['reason']) ?></span>
+            <?php else: ?>
+              <span class="similarity__ai similarity__ai--different"><strong>Análise da IA: Questões diferentes.</strong> <?= \Core\View::e((string) $match['judgment']['reason']) ?></span>
+            <?php endif; ?>
+          <?php endif; ?>
         </li>
       <?php endforeach; ?>
     </ul>

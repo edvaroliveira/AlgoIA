@@ -5,6 +5,7 @@
  * (php -S com este arquivo como roteador). Nunca é usado em produção.
  * - Grava cada requisição em FAKE_OPENAI_LOG, para o teste conferir o prompt.
  * - Responde 400 quando o prompt contém FALHA_SIMULADA.
+ * - Juiz de similaridade do banco (prompt pede "mesma_questao"): sempre "mesma Questão".
  */
 
 declare(strict_types=1);
@@ -36,6 +37,17 @@ if (preg_match('#/v1/models/([^/]+)$#', $uri, $m) === 1) {
 if (str_contains($body, 'FALHA_SIMULADA')) {
   http_response_code(400);
   echo '{"error":{"message":"falha simulada"}}';
+  return;
+}
+
+if (str_contains($body, 'mesma_questao')) {
+  echo json_encode([
+    'choices' => [['message' => ['content' => json_encode([
+      'mesma_questao' => true,
+      'motivo' => 'Os dois pedem para verificar a maioridade aos 18 anos (resposta simulada).',
+    ])]]],
+    'usage' => ['prompt_tokens' => 300, 'completion_tokens' => 40, 'total_tokens' => 340],
+  ]);
   return;
 }
 

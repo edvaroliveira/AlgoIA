@@ -77,7 +77,7 @@ $overridden = $overridden ?? [];
 <?php endforeach; ?>
 
 <?php
-$bankSimilarity = $bankSimilarity ?? ['block' => 97.0, 'show' => 85.0];
+$bankSimilarity = $bankSimilarity ?? ['block' => 97.0, 'show' => 85.0, 'judge' => false];
 $pctValue = static fn(float $v): string => rtrim(rtrim(number_format($v, 1, '.', ''), '0'), '.');
 ?>
 <div class="section" id="banco">
@@ -103,6 +103,14 @@ $pctValue = static fn(float $v): string => rtrim(rtrim(number_format($v, 1, '.',
             <small id="bank-show-help" class="hint">Abaixo do limite, a Questão entra, mas a semelhança aparece para o Admin. Entre 0 e 100.</small>
           </div>
         </div>
+        <label class="checkbox-label" for="bank-judge">
+          <input type="checkbox" id="bank-judge" name="bank_ai_judge_enabled" value="1"<?= !empty($bankSimilarity['judge']) ? ' checked' : '' ?> aria-describedby="bank-judge-help">
+          Usar IA como juiz dos casos duvidosos
+        </label>
+        <small id="bank-judge-help" class="hint">
+          Questões de Sugestões com semelhança entre “mostrar a partir de” e o limite são enviadas à IA (pelo cron, mesma chave e modelo da correção),
+          que diz se pedem a mesma Questão. Só informa: quem decide continua sendo o Admin. O custo aparece em Uso da IA como “Similaridade”.
+        </small>
         <div class="form-actions">
           <button type="submit" class="btn btn--primary">Salvar</button>
         </div>

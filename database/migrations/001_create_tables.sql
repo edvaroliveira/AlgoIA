@@ -247,6 +247,22 @@ CREATE TABLE IF NOT EXISTS bank_questions (
     CONSTRAINT fk_bank_q_exercise FOREIGN KEY (bank_exercise_id) REFERENCES bank_exercises(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Veredito da IA (juiz) para pares de Questões parecidas — migration 034
+CREATE TABLE IF NOT EXISTS bank_similarity_judgments (
+    id                     INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    bank_question_id       INT UNSIGNED  NOT NULL,
+    match_bank_question_id INT UNSIGNED  NOT NULL,
+    lexical_pct            DECIMAL(4,1)  NOT NULL,
+    verdict                ENUM('same','different') NOT NULL,
+    reason                 VARCHAR(300)  NOT NULL DEFAULT '',
+    model                  VARCHAR(60)   NOT NULL,
+    created_at             DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_bsj_pair (bank_question_id, match_bank_question_id),
+    INDEX idx_bsj_match (match_bank_question_id),
+    CONSTRAINT fk_bsj_question FOREIGN KEY (bank_question_id) REFERENCES bank_questions(id) ON DELETE CASCADE,
+    CONSTRAINT fk_bsj_match FOREIGN KEY (match_bank_question_id) REFERENCES bank_questions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS bank_themes (
     id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     category_id INT UNSIGNED NULL COMMENT 'Subcategoria (antes Tema) pertence a uma categoria',
@@ -370,7 +386,7 @@ CREATE TABLE IF NOT EXISTS student_achievements (
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
     id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    kind              ENUM('grading','practice') NOT NULL,
+    kind              ENUM('grading','practice','similarity') NOT NULL,
     teacher_id        INT UNSIGNED NULL,
     turma_id          INT UNSIGNED NULL,
     exercise_id       INT UNSIGNED NULL,
