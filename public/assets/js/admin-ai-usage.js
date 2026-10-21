@@ -19,6 +19,9 @@
 
   var green = "#1f7a4d";
   var amber = "#c98a12";
+  var blue = "#3d6f8e";
+  var kindLabel = { grading: "Correção", practice: "Prática", similarity: "Similaridade" };
+  var kindColor = { grading: green, practice: amber, similarity: blue };
   var red = "#b42318";
   var usd = function (v) {
     return "US$ " + Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
@@ -54,6 +57,7 @@
       datasets: [
         { label: "Correção", data: (data.days || []).map(function (d) { return d.grading; }), backgroundColor: green },
         { label: "Prática", data: (data.days || []).map(function (d) { return d.practice; }), backgroundColor: amber },
+        { label: "Similaridade", data: (data.days || []).map(function (d) { return d.similarity || 0; }), backgroundColor: blue },
       ],
     },
     options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, plugins: { tooltip: moneyTooltip } },
@@ -87,8 +91,8 @@
   draw("chart-kinds", {
     type: "doughnut",
     data: {
-      labels: (data.kinds || []).map(function (k) { return k.kind === "practice" ? "Prática" : "Correção"; }),
-      datasets: [{ data: (data.kinds || []).map(function (k) { return k.cost; }), backgroundColor: (data.kinds || []).map(function (k) { return k.kind === "practice" ? amber : green; }) }],
+      labels: (data.kinds || []).map(function (k) { return kindLabel[k.kind] || "Correção"; }),
+      datasets: [{ data: (data.kinds || []).map(function (k) { return k.cost; }), backgroundColor: (data.kinds || []).map(function (k) { return kindColor[k.kind] || green; }) }],
     },
     options: { responsive: true, aspectRatio: 2, plugins: { tooltip: moneyTooltip } },
   });

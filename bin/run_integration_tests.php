@@ -159,6 +159,7 @@ try {
 }
 
 $allTables = [
+  'bank_similarity_judgments',
   'exercise_themes',
   'ai_usage_logs',
   'student_achievements',
@@ -1299,6 +1300,63 @@ if (!extension_loaded('curl')) {
           && $countRows("SELECT COUNT(*) FROM bank_questions WHERE bank_exercise_id = {$simNearRow['id']}") === 1,
         'BANCO-10: com limite de 99,5%, Questão com 97,5% entra no banco');
       $pdoA->exec("DELETE FROM system_settings WHERE setting_key LIKE 'bank_similarity_%'");
+
+      // SIMIA — IA como juiz dos casos duvidosos (entre "mostrar a partir de" e o limite), ligada nas Configurações
+      $runWorker = static function (): void {
+        $proc = proc_open(
+          [PHP_BINARY, '-d', 'variables_order=EGPCS', ROOT_PATH . '/bin/process_grading_jobs.php', '50'],
+          [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+          $pipes,
+          ROOT_PATH
+        );
+        stream_get_contents($pipes[1]);
+        stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($proc);
+      };
+      $judgeSettings = ['bank_similarity_block_pct' => '97', 'bank_similarity_show_pct' => '85'];
+      $simDoubt = 'Escreva um algoritmo que leia a idade de uma pessoa e diga se ela é maior de idade, considerando a maioridade aos 18 anos.'; // 93,4%
+      $simJ = $mkExercise($docenteA['id'], 'Caso duvidoso', 'ready', [$simDoubt, 'Leia um número inteiro e informe se ele é primo, sem usar funções prontas.']);
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$simJ['id']}/suggest-bank");
+      $simJRow = $bankRow($simJ['id']);
+      $judgments = fn(): int => $countRows("SELECT COUNT(*) FROM bank_similarity_judgments");
+      $simUsage = fn(): int => $countRows("SELECT COUNT(*) FROM ai_usage_logs WHERE kind = 'similarity'");
+
+      $runWorker();
+      $simJCard = httpAs($jarAdmin, 'GET', "{$base}/admin/bank?status=suggested")['body'];
+      check($judgments() === 0 && $simUsage() === 0 && !str_contains($simJCard, 'Análise da IA'),
+        'SIMIA-01: com o juiz desligado (padrão), o cron não chama a IA e o card não mostra análise');
+      check(str_contains(httpAs($jarAdmin, 'GET', "{$base}/admin/configuracoes")['body'], 'name="bank_ai_judge_enabled"'),
+        'SIMIA-01: Configurações têm a opção de ligar a IA como juiz');
+
+      postAs($base, $jarAdmin, '/admin/configuracoes/banco', $judgeSettings + ['bank_ai_judge_enabled' => '1']);
+      check($countRows("SELECT COUNT(*) FROM system_settings WHERE setting_key = 'bank_ai_judge_enabled' AND setting_value = '1'") === 1,
+        'SIMIA-02: Admin liga a IA como juiz nas Configurações');
+      check(str_contains(httpAs($jarAdmin, 'GET', "{$base}/admin/bank?status=suggested")['body'], 'Análise da IA pendente'),
+        'SIMIA-02: caso duvidoso ainda não julgado aparece como pendente');
+
+      $runWorker();
+      // A Questão duvidosa parece com duas do banco na faixa 85–97%: a original (93,4%) e a variante do BANCO-10 (90,8%).
+      // A Questão do número primo não parece com nada e não vai à IA.
+      $simJudge = $pdoA->query("SELECT j.verdict, j.lexical_pct, j.reason FROM bank_similarity_judgments j
+                                JOIN bank_questions bq ON bq.id = j.bank_question_id
+                                WHERE bq.bank_exercise_id = {$simJRow['id']} ORDER BY j.lexical_pct DESC")->fetchAll();
+      check(array_map(static fn(array $j): string => $j['verdict'] . ':' . $j['lexical_pct'], $simJudge) === ['same:93.4', 'same:90.8'],
+        'SIMIA-03: cron julga só os pares duvidosos e guarda o veredito de cada um');
+      check($simUsage() === 2, 'SIMIA-03: as chamadas do juiz aparecem no Uso da IA (kind similarity)');
+      $simJCard = httpAs($jarAdmin, 'GET', "{$base}/admin/bank?status=suggested")['body'];
+      check(str_contains($simJCard, 'Análise da IA: mesma Questão') && str_contains($simJCard, \Core\View::e($simJudge[0]['reason'])),
+        'SIMIA-03: card mostra o veredito e o motivo da IA');
+
+      $runWorker();
+      check($judgments() === 2 && $simUsage() === 2, 'SIMIA-04: par já julgado não é enviado de novo à IA');
+
+      postAs($base, $jarAdmin, '/admin/configuracoes/banco', $judgeSettings);
+      check(!str_contains(httpAs($jarAdmin, 'GET', "{$base}/admin/bank?status=suggested")['body'], 'Análise da IA'),
+        'SIMIA-04: desligar a IA esconde as análises');
+      postAs($base, $jarAdmin, "/admin/bank/{$simJRow['id']}/reject", ['review_note' => 'Teste do juiz']);
+      $pdoA->exec("DELETE FROM system_settings WHERE setting_key LIKE 'bank_%'");
 
       // BANCO-06 — Telas: pontos de entrada e escopo da aba "Meus"
       $page = fn(string $jar, string $path): array => httpAs($jar, 'GET', "{$base}{$path}");

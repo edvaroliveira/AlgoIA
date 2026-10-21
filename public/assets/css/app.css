@@ -1410,6 +1410,9 @@ form[aria-busy="true"] { cursor: progress; }
 .similarity-summary--blocked { color: var(--error); }
 .similarity-question { padding: 0.6rem 0; border-top: 1px solid var(--border-soft); }
 .similarity-question > p { margin: 0; }
+.similarity__ai { display: block; margin-top: 0.15rem; color: var(--text-muted); font-size: 0.85rem; }
+.similarity__ai--same { color: var(--error); }
+.similarity__ai--different { color: var(--success); }
 
 /* Regra de cada botão do lote: explica por que um botão pode estar desligado */
 .batch-actions__hint {

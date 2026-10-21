@@ -33,6 +33,7 @@ $requiredTables = [
   'ai_usage_logs',
   'categories',
   'exercise_themes',
+  'bank_similarity_judgments',
 ];
 
 $requiredColumns = [
@@ -44,6 +45,7 @@ $requiredColumns = [
   'grading_jobs' => ['attempt_id', 'status', 'attempts', 'last_error', 'available_at', 'locked_at', 'worker_id', 'completed_at'],
   'bank_exercises' => ['id', 'title', 'description', 'category_id', 'source_exercise_id', 'source_teacher_id', 'status', 'review_note', 'reviewed_by', 'reviewed_at'],
   'bank_questions' => ['id', 'bank_exercise_id', 'text', 'expected_answer_hint', 'max_score', 'order_index'],
+  'bank_similarity_judgments' => ['bank_question_id', 'match_bank_question_id', 'lexical_pct', 'verdict', 'reason', 'model'],
   'bank_themes' => ['id', 'name', 'category_id', 'active'],
   'bank_exercise_themes' => ['bank_exercise_id', 'theme_id'],
   'notifications' => ['user_id', 'type', 'title', 'link', 'dedupe_key', 'read_at', 'emailed_at', 'email_attempts'],

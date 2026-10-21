@@ -50,7 +50,7 @@ class AdminBankController extends AdminBaseController
     if ($status === BankExercise::STATUS_SUGGESTED) {
       $similarity = new BankSimilarityService();
       foreach ($items as &$item) {
-        $item['similarity'] = $similarity->report($item['questions'], (int) $item['id']);
+        $item['similarity'] = $similarity->report($item['questions'], (int) $item['id'], true);
       }
       unset($item);
     }
@@ -184,6 +184,10 @@ class AdminBankController extends AdminBaseController
     foreach ($values as $key => $value) {
       $settings->set($key, rtrim(rtrim(number_format($value, 1, '.', ''), '0'), '.'), (int) Auth::id());
     }
+    // Caixa desmarcada não é enviada: ausente = juiz desligado
+    $judge = (string) Request::post(BankSimilarityService::SETTING_JUDGE, '') === '1';
+    $settings->set(BankSimilarityService::SETTING_JUDGE, $judge ? '1' : '0', (int) Auth::id());
+    $values[BankSimilarityService::SETTING_JUDGE] = $judge;
     AuditService::record('admin.bank_settings.update', 'system_settings', null, $values);
     $session->flash('success', 'Limites de similaridade do banco atualizados.');
     View::redirect($back);

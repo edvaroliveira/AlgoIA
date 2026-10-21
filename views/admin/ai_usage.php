@@ -52,7 +52,7 @@ $table = static function (array $rows, string $title, string $labelHeader) use (
 <div class="page-header">
   <div>
     <h1>Uso da IA</h1>
-    <p class="subtitle">Chamadas à OpenAI das correções de Tentativas e da Prática: tokens, custo estimado, falhas e latência.</p>
+    <p class="subtitle">Chamadas à OpenAI das correções de Tentativas, da Prática e do juiz de similaridade do banco: tokens, custo estimado, falhas e latência.</p>
   </div>
   <a href="<?= \Core\app_url('/admin/ia/export' . ($exportQuery !== '' ? '?' . $exportQuery : '')) ?>" class="btn btn--ghost">Exportar CSV</a>
 </div>
@@ -100,6 +100,7 @@ $table = static function (array $rows, string $title, string $labelHeader) use (
           <option value="">Todos</option>
           <option value="grading"<?= $filters['kind'] === 'grading' ? ' selected' : '' ?>>Correção de Tentativas</option>
           <option value="practice"<?= $filters['kind'] === 'practice' ? ' selected' : '' ?>>Prática</option>
+          <option value="similarity"<?= $filters['kind'] === 'similarity' ? ' selected' : '' ?>>Similaridade (juiz do banco)</option>
         </select>
       </div>
       <div class="form-actions">
@@ -169,7 +170,7 @@ $table = static function (array $rows, string $title, string $labelHeader) use (
   <section class="surface-block"><div class="surface-block__body"><p><strong>Chamadas e falhas por dia</strong></p><canvas id="chart-calls-day" height="220"></canvas></div></section>
   <section class="surface-block"><div class="surface-block__body"><p><strong>Top 10 Docentes por custo (US$)</strong></p><canvas id="chart-teachers" height="260"></canvas></div></section>
   <section class="surface-block"><div class="surface-block__body"><p><strong>Top 10 Turmas por custo (US$)</strong></p><canvas id="chart-turmas" height="260"></canvas></div></section>
-  <section class="surface-block"><div class="surface-block__body"><p><strong>Correção x Prática (custo)</strong></p><canvas id="chart-kinds" height="220"></canvas></div></section>
+  <section class="surface-block"><div class="surface-block__body"><p><strong>Custo por tipo</strong></p><canvas id="chart-kinds" height="220"></canvas></div></section>
 </div>
 <script type="application/json" id="ai-usage-data"><?= json_encode($chartData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?></script>
 
@@ -193,7 +194,7 @@ $table = static function (array $rows, string $title, string $labelHeader) use (
               <?php foreach ($recentFailures as $failure): ?>
                 <tr>
                   <td><?= date('d/m/Y H:i', strtotime((string) $failure['created_at'])) ?></td>
-                  <td><?= $failure['kind'] === AiUsageLog::KIND_PRACTICE ? 'Prática' : 'Correção' ?></td>
+                  <td><?= ['practice' => 'Prática', 'similarity' => 'Similaridade'][$failure['kind']] ?? 'Correção' ?></td>
                   <td><?= \Core\View::e($failure['error_category'] ?? '') ?></td>
                   <td><?= \Core\View::e($failure['teacher_name'] ?? '—') ?></td>
                   <td><?= \Core\View::e($failure['student_name'] ?? '—') ?></td>

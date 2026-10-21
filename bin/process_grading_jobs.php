@@ -69,6 +69,17 @@ $failed    = $processor->failedCount();
 
 echo "Processed {$processed} grading job(s), {$failed} failed." . PHP_EOL;
 
+// Juiz de similaridade do banco (só com a opção ligada em Configurações). Falha
+// aqui não muda o código de saída: ele sinaliza a saúde da fila de correção.
+try {
+  $judge = (new App\Services\BankSimilarityJudge())->run();
+  if ($judge['enabled']) {
+    echo "Similarity judge: {$judge['judged']} pair(s) judged" . ($judge['failed'] > 0 ? ', stopped on failure' : '') . '.' . PHP_EOL;
+  }
+} catch (\Throwable $e) {
+  fwrite(STDERR, 'Similarity judge error: ' . $e->getMessage() . PHP_EOL);
+}
+
 // Exit != 0 quando houve falha: sem isso o cron nunca sinaliza degradação
 // da fila de correção, porque o lote "roda com sucesso" mesmo falhando tudo.
 exit($failed > 0 ? 1 : 0);
