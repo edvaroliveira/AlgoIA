@@ -42,46 +42,48 @@ $gradedExercises = count(array_filter($exercises, fn($exercise) => $exercise['be
       </div>
     </div>
     <div class="surface-block__body">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Exercício</th>
-            <th>Turma</th>
-            <th>Abre</th>
-            <th>Fecha</th>
-            <th>Status</th>
-            <th>Melhor nota</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($exercises as $ex): ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td><?= \Core\View::e($ex['title']) ?></td>
-              <td><?= \Core\View::e($ex['turma_label'] ?? $ex['turma_name']) ?></td>
-              <td><?= !empty($ex['opens_at']) ? date('d/m/Y H:i', strtotime($ex['opens_at'])) : '—' ?></td>
-              <td><?= !empty($ex['closes_at']) ? date('d/m/Y H:i', strtotime($ex['closes_at'])) : '—' ?></td>
-              <td>
-                <?php if ($ex['is_closed']): ?>
-                  <span class="badge badge--neutral">Encerrado</span>
-                <?php elseif ($ex['is_open']): ?>
-                  <span class="badge badge--success">Aberto</span>
-                <?php else: ?>
-                  <span class="badge badge--info">Em breve</span>
-                <?php endif; ?>
-              </td>
-              <td>
-                <?= $ex['best_score'] !== null
-                  ? number_format((float) $ex['best_score'], 1) . ' pts'
-                  : '—' ?>
-              </td>
-              <td>
-                <a href="<?= \Core\app_url('/student/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a>
-              </td>
+              <th>Exercício</th>
+              <th>Turma</th>
+              <th>Abre</th>
+              <th>Fecha</th>
+              <th>Status</th>
+              <th>Melhor nota</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($exercises as $ex): ?>
+              <tr>
+                <td><?= \Core\View::e($ex['title']) ?></td>
+                <td><?= \Core\View::e($ex['turma_label'] ?? $ex['turma_name']) ?></td>
+                <td><?= !empty($ex['opens_at']) ? date('d/m/Y H:i', strtotime($ex['opens_at'])) : '—' ?></td>
+                <td><?= !empty($ex['closes_at']) ? date('d/m/Y H:i', strtotime($ex['closes_at'])) : '—' ?></td>
+                <td>
+                  <?php if ($ex['is_closed']): ?>
+                    <span class="badge badge--neutral">Encerrado</span>
+                  <?php elseif ($ex['is_open']): ?>
+                    <span class="badge badge--success">Aberto</span>
+                  <?php else: ?>
+                    <span class="badge badge--info">Em breve</span>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <?= $ex['best_score'] !== null
+                    ? number_format((float) $ex['best_score'], 1) . ' pts'
+                    : '—' ?>
+                </td>
+                <td>
+                  <a href="<?= \Core\app_url('/student/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 <?php endif; ?>

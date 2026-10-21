@@ -116,6 +116,39 @@
     });
   }
 
+  // ── Tabelas: rótulo de cada célula a partir do cabeçalho ───────────────────
+  // No celular (< 768px) as listas viram cartões e o rótulo aparece antes de
+  // cada valor (CSS: td::before { content: attr(data-label) }). Tabelas largas
+  // (.table--wide) só rolam na horizontal e ficam de fora.
+  document.querySelectorAll("table.table:not(.table--wide)").forEach(function (table) {
+    const headRow = table.tHead && table.tHead.rows[0];
+    if (!headRow) {
+      return;
+    }
+    const labels = [];
+    Array.prototype.forEach.call(headRow.cells, function (th) {
+      const text = th.querySelector("input[type='checkbox']")
+        ? "Selecionar"
+        : th.textContent.replace(/\s+/g, " ").trim();
+      for (let i = 0; i < (th.colSpan || 1); i++) {
+        labels.push(text);
+      }
+    });
+    Array.prototype.forEach.call(table.tBodies, function (tbody) {
+      Array.prototype.forEach.call(tbody.rows, function (row) {
+        let col = 0;
+        Array.prototype.forEach.call(row.cells, function (cell) {
+          const span = cell.colSpan || 1;
+          if (span === 1 && cell.tagName === "TD" && labels[col] && !cell.hasAttribute("data-label")) {
+            cell.setAttribute("data-label", labels[col]);
+          }
+          col += span;
+        });
+      });
+    });
+    table.classList.add("table--stack");
+  });
+
   // ── Avatar: refletir nome do arquivo escolhido ───────────────────────────────
   // Primeiro de tudo, para nao depender de blocos anteriores nesta pagina.
   const avatarInput = document.getElementById("avatar");

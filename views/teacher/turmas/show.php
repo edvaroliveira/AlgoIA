@@ -66,37 +66,39 @@ global $session;
         </div>
       </div>
       <div class="surface-block__body">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>E-mail</th>
-              <th>Solicitado em</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($pending as $s): ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td><?= \Core\View::e($s['name']) ?></td>
-                <td><?= \Core\View::e($s['email']) ?></td>
-                <td><?= date('d/m/Y H:i', strtotime($s['joined_at'])) ?></td>
-                <td class="td-actions">
-                  <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/approve/' . $s['id']) ?>" class="inline-form">
-                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                    <button class="btn btn--success btn--sm">Aprovar</button>
-                  </form>
-                  <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/reject/' . $s['id']) ?>"
-                    class="inline-form"
-                    data-confirm="Rejeitar este aluno?">
-                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                    <button class="btn btn--danger btn--sm">Rejeitar</button>
-                  </form>
-                </td>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Solicitado em</th>
+                <th>Ações</th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($pending as $s): ?>
+                <tr>
+                  <td><?= \Core\View::e($s['name']) ?></td>
+                  <td><?= \Core\View::e($s['email']) ?></td>
+                  <td><?= date('d/m/Y H:i', strtotime($s['joined_at'])) ?></td>
+                  <td class="td-actions">
+                    <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/approve/' . $s['id']) ?>" class="inline-form">
+                      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                      <button class="btn btn--success btn--sm">Aprovar</button>
+                    </form>
+                    <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/reject/' . $s['id']) ?>"
+                      class="inline-form"
+                      data-confirm="Rejeitar este aluno?">
+                      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                      <button class="btn btn--danger btn--sm">Rejeitar</button>
+                    </form>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   </div>
@@ -216,32 +218,34 @@ global $session;
       <?php if (empty($students)): ?>
         <p class="empty-state">Nenhum aluno ativo ainda.</p>
       <?php else: ?>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>E-mail</th>
-              <th>Ingressou em</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($students as $s): ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td><?= \Core\View::e($s['name']) ?></td>
-                <td><?= \Core\View::e($s['email']) ?></td>
-                <td><?= date('d/m/Y', strtotime($s['joined_at'])) ?></td>
-                <td>
-                  <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/detach/' . $s['id']) ?>"
-                    data-confirm="Desvincular este aluno da turma? O cadastro e o histórico serão preservados.">
-                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                    <button class="btn btn--danger btn--sm">Desvincular</button>
-                  </form>
-                </td>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Ingressou em</th>
+                <th>Ações</th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($students as $s): ?>
+                <tr>
+                  <td><?= \Core\View::e($s['name']) ?></td>
+                  <td><?= \Core\View::e($s['email']) ?></td>
+                  <td><?= date('d/m/Y', strtotime($s['joined_at'])) ?></td>
+                  <td>
+                    <form method="POST" action="<?= \Core\app_url('/teacher/turmas/' . $turma['id'] . '/detach/' . $s['id']) ?>"
+                      data-confirm="Desvincular este aluno da turma? O cadastro e o histórico serão preservados.">
+                      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                      <button class="btn btn--danger btn--sm">Desvincular</button>
+                    </form>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php endif; ?>
     </div>
   </section>

@@ -19,6 +19,15 @@ $checks = [
     'file' => 'views/layouts/guest.php',
     'mustNotContain' => ['bootstrap'],
   ],
+  // UI-04: listas viram cartões no celular com rótulos tirados do <thead>.
+  [
+    'file' => 'public/assets/js/app.js',
+    'mustContain' => ['table--stack', 'data-label'],
+  ],
+  [
+    'file' => 'public/assets/css/app.css',
+    'mustContain' => ['.table-scroll', 'content: attr(data-label)'],
+  ],
   // AU-04: php_flag fora de IfModule derruba a pasta (500) com PHP via CGI/FPM.
   [
     'file' => 'public/assets/uploads/.htaccess',

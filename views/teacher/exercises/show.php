@@ -400,40 +400,42 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
       <?php if (empty($results)): ?>
         <p class="empty-state"><?= ($isDraft || $isReady) ? 'Exercício ainda não publicado para turmas.' : 'Nenhuma submissão ainda.' ?></p>
       <?php else: ?>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Aluno</th>
-              <th>E-mail</th>
-              <th>Melhor nota</th>
-              <th>Tentativas</th>
-              <th>Alertas</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($results as $r): ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td><?= \Core\View::e($r['name']) ?></td>
-                <td><?= \Core\View::e($r['email']) ?></td>
-                <td><?= number_format((float) $r['best_score'], 1) ?> / <?= number_format((float) $maxScore, 1) ?></td>
-                <td><?= $r['attempt_count'] ?></td>
-                <td>
-                  <?php if ((int) ($r['injection_flag_count'] ?? 0) > 0): ?>
-                    <span class="badge badge--warning">Prompt suspeito</span>
-                  <?php else: ?>
-                    <span class="text-muted">—</span>
-                  <?php endif; ?>
-                </td>
-                <td>
-                  <?php if (!empty($r['best_attempt_id'])): ?>
-                    <a href="<?= \Core\app_url('/teacher/attempts/' . (int) $r['best_attempt_id'] . '/result') ?>" class="btn btn--sm">Detalhar</a>
-                  <?php endif; ?>
-                </td>
+                <th>Aluno</th>
+                <th>E-mail</th>
+                <th>Melhor nota</th>
+                <th>Tentativas</th>
+                <th>Alertas</th>
+                <th></th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($results as $r): ?>
+                <tr>
+                  <td><?= \Core\View::e($r['name']) ?></td>
+                  <td><?= \Core\View::e($r['email']) ?></td>
+                  <td><?= number_format((float) $r['best_score'], 1) ?> / <?= number_format((float) $maxScore, 1) ?></td>
+                  <td><?= $r['attempt_count'] ?></td>
+                  <td>
+                    <?php if ((int) ($r['injection_flag_count'] ?? 0) > 0): ?>
+                      <span class="badge badge--warning">Prompt suspeito</span>
+                    <?php else: ?>
+                      <span class="text-muted">—</span>
+                    <?php endif; ?>
+                  </td>
+                  <td>
+                    <?php if (!empty($r['best_attempt_id'])): ?>
+                      <a href="<?= \Core\app_url('/teacher/attempts/' . (int) $r['best_attempt_id'] . '/result') ?>" class="btn btn--sm">Detalhar</a>
+                    <?php endif; ?>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php endif; ?>
     </div>
   </section>

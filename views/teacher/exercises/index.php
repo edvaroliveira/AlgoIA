@@ -73,79 +73,81 @@ $openExercises = count(array_filter($exercises, static function ($exercise) use 
       </div>
     </div>
     <div class="surface-block__body">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Título</th>
-            <th>Turmas</th>
-            <th>Abre</th>
-            <th>Fecha</th>
-            <th>Tentativas</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($exercises as $ex):
-            $isDraft = ($ex['status'] ?? 'active') === 'draft';
-            $isReady = ($ex['status'] ?? 'active') === 'ready';
-            $reviewStatus = (string) ($ex['admin_review_status'] ?? 'approved');
-            $open = !empty($ex['opens_at']) && !empty($ex['closes_at'])
-              && strtotime($ex['opens_at']) <= $now && strtotime($ex['closes_at']) >= $now;
-            $closed = !empty($ex['closes_at']) && strtotime($ex['closes_at']) < $now;
-          ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td>
-                <?= \Core\View::e($ex['title']) ?>
-                <br><small><?= ($ex['classification'] ?? '') !== '' ? \Core\View::e($ex['classification']) : 'Sem classificação' ?></small>
-              </td>
-              <td>
-                <?php if ((int) ($ex['turma_count'] ?? 0) > 0): ?>
-                  <?= \Core\View::e($ex['turma_label']) ?>
-                <?php elseif ($isReady): ?>
-                  Aguardando publicação
-                <?php else: ?>
-                  Pendente de finalização
-                <?php endif; ?>
-              </td>
-              <td><?= !empty($ex['opens_at']) ? date('d/m/Y H:i', strtotime($ex['opens_at'])) : '—' ?></td>
-              <td><?= !empty($ex['closes_at']) ? date('d/m/Y H:i', strtotime($ex['closes_at'])) : '—' ?></td>
-              <td><?= ($ex['max_attempts'] ?? null) === null ? '—' : ((string) $ex['max_attempts'] === '0' ? '∞' : $ex['max_attempts']) ?></td>
-              <td>
-                <?php if ($isDraft): ?>
-                  <span class="badge badge--warning">Rascunho</span>
-                <?php elseif ($isReady): ?>
-                  <span class="badge badge--info">Pronto para publicar</span>
-                <?php elseif ($closed): ?>
-                  <span class="badge badge--neutral">Encerrado</span>
-                <?php elseif ($open): ?>
-                  <span class="badge badge--success">Aberto</span>
-                <?php else: ?>
-                  <span class="badge badge--info">Agendado</span>
-                <?php endif; ?>
-                <?php if ($reviewStatus === 'blocked'): ?>
-                  <span class="badge badge--error">Bloqueado pela administração</span>
-                <?php elseif ($reviewStatus === 'flagged'): ?>
-                  <span class="badge badge--warning">Em revisão</span>
-                <?php endif; ?>
-              </td>
-              <td class="td-actions">
-                <a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a>
-                <?php if ($isDraft): ?>
-                  <a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id'] . '/edit') ?>" class="btn btn--sm btn--ghost">Editar</a>
-                <?php endif; ?>
-                <?php if (!empty($ex['can_delete'])): ?>
-                  <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $ex['id'] . '/delete') ?>" class="inline-form"
-                    data-confirm="Excluir o exercício &quot;<?= \Core\View::e($ex['title']) ?>&quot; e as suas questões?">
-                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                    <button type="submit" class="btn btn--sm btn--danger">Excluir</button>
-                  </form>
-                <?php endif; ?>
-              </td>
+              <th>Título</th>
+              <th>Turmas</th>
+              <th>Abre</th>
+              <th>Fecha</th>
+              <th>Tentativas</th>
+              <th>Status</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($exercises as $ex):
+              $isDraft = ($ex['status'] ?? 'active') === 'draft';
+              $isReady = ($ex['status'] ?? 'active') === 'ready';
+              $reviewStatus = (string) ($ex['admin_review_status'] ?? 'approved');
+              $open = !empty($ex['opens_at']) && !empty($ex['closes_at'])
+                && strtotime($ex['opens_at']) <= $now && strtotime($ex['closes_at']) >= $now;
+              $closed = !empty($ex['closes_at']) && strtotime($ex['closes_at']) < $now;
+            ?>
+              <tr>
+                <td>
+                  <?= \Core\View::e($ex['title']) ?>
+                  <br><small><?= ($ex['classification'] ?? '') !== '' ? \Core\View::e($ex['classification']) : 'Sem classificação' ?></small>
+                </td>
+                <td>
+                  <?php if ((int) ($ex['turma_count'] ?? 0) > 0): ?>
+                    <?= \Core\View::e($ex['turma_label']) ?>
+                  <?php elseif ($isReady): ?>
+                    Aguardando publicação
+                  <?php else: ?>
+                    Pendente de finalização
+                  <?php endif; ?>
+                </td>
+                <td><?= !empty($ex['opens_at']) ? date('d/m/Y H:i', strtotime($ex['opens_at'])) : '—' ?></td>
+                <td><?= !empty($ex['closes_at']) ? date('d/m/Y H:i', strtotime($ex['closes_at'])) : '—' ?></td>
+                <td><?= ($ex['max_attempts'] ?? null) === null ? '—' : ((string) $ex['max_attempts'] === '0' ? '∞' : $ex['max_attempts']) ?></td>
+                <td>
+                  <?php if ($isDraft): ?>
+                    <span class="badge badge--warning">Rascunho</span>
+                  <?php elseif ($isReady): ?>
+                    <span class="badge badge--info">Pronto para publicar</span>
+                  <?php elseif ($closed): ?>
+                    <span class="badge badge--neutral">Encerrado</span>
+                  <?php elseif ($open): ?>
+                    <span class="badge badge--success">Aberto</span>
+                  <?php else: ?>
+                    <span class="badge badge--info">Agendado</span>
+                  <?php endif; ?>
+                  <?php if ($reviewStatus === 'blocked'): ?>
+                    <span class="badge badge--error">Bloqueado pela administração</span>
+                  <?php elseif ($reviewStatus === 'flagged'): ?>
+                    <span class="badge badge--warning">Em revisão</span>
+                  <?php endif; ?>
+                </td>
+                <td class="td-actions">
+                  <a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a>
+                  <?php if ($isDraft): ?>
+                    <a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id'] . '/edit') ?>" class="btn btn--sm btn--ghost">Editar</a>
+                  <?php endif; ?>
+                  <?php if (!empty($ex['can_delete'])): ?>
+                    <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $ex['id'] . '/delete') ?>" class="inline-form"
+                      data-confirm="Excluir o exercício &quot;<?= \Core\View::e($ex['title']) ?>&quot; e as suas questões?">
+                      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                      <button type="submit" class="btn btn--sm btn--danger">Excluir</button>
+                    </form>
+                  <?php endif; ?>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 <?php endif; ?>

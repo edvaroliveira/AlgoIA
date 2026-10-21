@@ -81,28 +81,30 @@ $status = $user['status'] ?? 'inactive';
         <?php if (empty($teacherTurmas)): ?>
           <p class="empty-state">Nenhuma turma vinculada.</p>
         <?php else: ?>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Turma</th>
-                <th>Chave</th>
-                <th>Ativos</th>
-                <th>Pendentes</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($teacherTurmas as $turma): ?>
+          <div class="table-scroll">
+            <table class="table">
+              <thead>
                 <tr>
-                  <td><?= \Core\View::e($turma['name']) ?></td>
-                  <td><span class="overview-card__value overview-card__value--mono"><?= \Core\View::e($turma['access_key']) ?></span></td>
-                  <td><?= (int) ($turma['active_count'] ?? 0) ?></td>
-                  <td><?= (int) ($turma['pending_count'] ?? 0) ?></td>
-                  <td class="td-actions"><a href="<?= \Core\app_url('/admin/turmas/' . $turma['id']) ?>" class="btn btn--sm">Ver turma</a></td>
+                  <th>Turma</th>
+                  <th>Chave</th>
+                  <th>Ativos</th>
+                  <th>Pendentes</th>
+                  <th></th>
                 </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                <?php foreach ($teacherTurmas as $turma): ?>
+                  <tr>
+                    <td><?= \Core\View::e($turma['name']) ?></td>
+                    <td><span class="overview-card__value overview-card__value--mono"><?= \Core\View::e($turma['access_key']) ?></span></td>
+                    <td><?= (int) ($turma['active_count'] ?? 0) ?></td>
+                    <td><?= (int) ($turma['pending_count'] ?? 0) ?></td>
+                    <td class="td-actions"><a href="<?= \Core\app_url('/admin/turmas/' . $turma['id']) ?>" class="btn btn--sm">Ver turma</a></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
         <?php endif; ?>
       </div>
     </section>
@@ -118,28 +120,30 @@ $status = $user['status'] ?? 'inactive';
         <?php if (empty($teacherExercises)): ?>
           <p class="empty-state">Nenhum exercício vinculado.</p>
         <?php else: ?>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Título</th>
-                <th>Turmas</th>
-                <th>Submissões</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($teacherExercises as $exercise): ?>
+          <div class="table-scroll">
+            <table class="table">
+              <thead>
                 <tr>
-                  <td><?= \Core\View::e($exercise['title']) ?></td>
-                  <td><?= \Core\View::e($exercise['turma_label'] ?? 'Pendente de finalização') ?></td>
-                  <td><?= (int) ($exercise['attempt_count'] ?? 0) ?></td>
-                  <td><?= \Core\View::e($exercise['status'] ?? 'draft') ?></td>
-                  <td class="td-actions"><a href="<?= \Core\app_url('/admin/exercises/' . $exercise['id']) ?>" class="btn btn--sm">Ver exercício</a></td>
+                  <th>Título</th>
+                  <th>Turmas</th>
+                  <th>Submissões</th>
+                  <th>Status</th>
+                  <th></th>
                 </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                <?php foreach ($teacherExercises as $exercise): ?>
+                  <tr>
+                    <td><?= \Core\View::e($exercise['title']) ?></td>
+                    <td><?= \Core\View::e($exercise['turma_label'] ?? 'Pendente de finalização') ?></td>
+                    <td><?= (int) ($exercise['attempt_count'] ?? 0) ?></td>
+                    <td><?= \Core\View::e($exercise['status'] ?? 'draft') ?></td>
+                    <td class="td-actions"><a href="<?= \Core\app_url('/admin/exercises/' . $exercise['id']) ?>" class="btn btn--sm">Ver exercício</a></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
         <?php endif; ?>
       </div>
     </section>
@@ -157,28 +161,30 @@ $status = $user['status'] ?? 'inactive';
         <?php if (empty($studentTurmas)): ?>
           <p class="empty-state">Nenhuma turma vinculada.</p>
         <?php else: ?>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Turma</th>
-                <th>Docente</th>
-                <th>Status</th>
-                <th>Entrada</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($studentTurmas as $turma): ?>
+          <div class="table-scroll">
+            <table class="table">
+              <thead>
                 <tr>
-                  <td><?= \Core\View::e($turma['name']) ?></td>
-                  <td><?= \Core\View::e($turma['teacher_name'] ?? '—') ?></td>
-                  <td><?= \Core\View::e($turma['enrollment_status'] ?? '—') ?></td>
-                  <td><?= !empty($turma['joined_at']) ? date('d/m/Y', strtotime((string) $turma['joined_at'])) : '—' ?></td>
-                  <td class="td-actions"><a href="<?= \Core\app_url('/admin/turmas/' . $turma['id']) ?>" class="btn btn--sm">Ver turma</a></td>
+                  <th>Turma</th>
+                  <th>Docente</th>
+                  <th>Status</th>
+                  <th>Entrada</th>
+                  <th></th>
                 </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                <?php foreach ($studentTurmas as $turma): ?>
+                  <tr>
+                    <td><?= \Core\View::e($turma['name']) ?></td>
+                    <td><?= \Core\View::e($turma['teacher_name'] ?? '—') ?></td>
+                    <td><?= \Core\View::e($turma['enrollment_status'] ?? '—') ?></td>
+                    <td><?= !empty($turma['joined_at']) ? date('d/m/Y', strtotime((string) $turma['joined_at'])) : '—' ?></td>
+                    <td class="td-actions"><a href="<?= \Core\app_url('/admin/turmas/' . $turma['id']) ?>" class="btn btn--sm">Ver turma</a></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
         <?php endif; ?>
       </div>
     </section>
@@ -194,28 +200,30 @@ $status = $user['status'] ?? 'inactive';
         <?php if (empty($studentAttempts)): ?>
           <p class="empty-state">Nenhuma tentativa registrada.</p>
         <?php else: ?>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Exercício</th>
-                <th>Docente</th>
-                <th>Status</th>
-                <th>Nota</th>
-                <th>Último evento</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($studentAttempts as $attempt): ?>
+          <div class="table-scroll">
+            <table class="table">
+              <thead>
                 <tr>
-                  <td><?= \Core\View::e($attempt['exercise_title'] ?? '—') ?></td>
-                  <td><?= \Core\View::e($attempt['teacher_name'] ?? '—') ?></td>
-                  <td><?= \Core\View::e($attempt['status'] ?? '—') ?></td>
-                  <td><?= $attempt['total_score'] !== null ? number_format((float) $attempt['total_score'], 1) : '—' ?></td>
-                  <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : (!empty($attempt['started_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['started_at'])) : '—') ?></td>
+                  <th>Exercício</th>
+                  <th>Docente</th>
+                  <th>Status</th>
+                  <th>Nota</th>
+                  <th>Último evento</th>
                 </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                <?php foreach ($studentAttempts as $attempt): ?>
+                  <tr>
+                    <td><?= \Core\View::e($attempt['exercise_title'] ?? '—') ?></td>
+                    <td><?= \Core\View::e($attempt['teacher_name'] ?? '—') ?></td>
+                    <td><?= \Core\View::e($attempt['status'] ?? '—') ?></td>
+                    <td><?= $attempt['total_score'] !== null ? number_format((float) $attempt['total_score'], 1) : '—' ?></td>
+                    <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : (!empty($attempt['started_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['started_at'])) : '—') ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
         <?php endif; ?>
       </div>
     </section>
@@ -233,26 +241,28 @@ $status = $user['status'] ?? 'inactive';
     <?php if (empty($auditLogs)): ?>
       <p class="empty-state">Nenhum evento recente encontrado para este usuário.</p>
     <?php else: ?>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Quando</th>
-            <th>Ação</th>
-            <th>Ator</th>
-            <th>Entidade</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($auditLogs as $log): ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td><?= date('d/m/Y H:i', strtotime((string) $log['created_at'])) ?></td>
-              <td><?= \Core\View::e($log['action']) ?></td>
-              <td><?= \Core\View::e($log['actor_name'] ?? ($log['actor_role'] ?? 'Sistema')) ?></td>
-              <td><?= \Core\View::e(($log['entity_type'] ?? '—') . (($log['entity_id'] ?? null) ? ' #' . $log['entity_id'] : '')) ?></td>
+              <th>Quando</th>
+              <th>Ação</th>
+              <th>Ator</th>
+              <th>Entidade</th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($auditLogs as $log): ?>
+              <tr>
+                <td><?= date('d/m/Y H:i', strtotime((string) $log['created_at'])) ?></td>
+                <td><?= \Core\View::e($log['action']) ?></td>
+                <td><?= \Core\View::e($log['actor_name'] ?? ($log['actor_role'] ?? 'Sistema')) ?></td>
+                <td><?= \Core\View::e(($log['entity_type'] ?? '—') . (($log['entity_id'] ?? null) ? ' #' . $log['entity_id'] : '')) ?></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     <?php endif; ?>
   </div>
 </section>

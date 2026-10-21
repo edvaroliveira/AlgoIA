@@ -47,38 +47,40 @@ global $session;
     <?php if (empty($requests)): ?>
       <p class="empty-state">Nenhuma solicitação pendente no momento.</p>
     <?php else: ?>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Docente</th>
-            <th>Instituição / Justificativa</th>
-            <th>Solicitado em</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($requests as $req): ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td>
-                <strong><?= \Core\View::e($req['name'] ?? '—') ?></strong><br>
-                <span class="text-muted"><?= \Core\View::e($req['email'] ?? '') ?></span>
-              </td>
-              <td><?= \Core\View::e(mb_strimwidth((string) ($req['registration_note'] ?? '—'), 0, 120, '…')) ?></td>
-              <td><?= !empty($req['created_at']) ? date('d/m/Y H:i', strtotime((string) $req['created_at'])) : '—' ?></td>
-              <td class="td-actions">
-                <form method="POST" action="<?= \Core\app_url('/admin/teacher-requests/' . (int) ($req['id'] ?? 0) . '/approve') ?>" class="u-inline">
-                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                  <button type="submit" class="btn btn--sm btn--primary">Aprovar</button>
-                </form>
-                <form method="POST" action="<?= \Core\app_url('/admin/teacher-requests/' . (int) ($req['id'] ?? 0) . '/reject') ?>" class="u-inline">
-                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                  <button type="submit" class="btn btn--sm btn--ghost">Rejeitar</button>
-                </form>
-              </td>
+              <th>Docente</th>
+              <th>Instituição / Justificativa</th>
+              <th>Solicitado em</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($requests as $req): ?>
+              <tr>
+                <td>
+                  <strong><?= \Core\View::e($req['name'] ?? '—') ?></strong><br>
+                  <span class="text-muted"><?= \Core\View::e($req['email'] ?? '') ?></span>
+                </td>
+                <td><?= \Core\View::e(mb_strimwidth((string) ($req['registration_note'] ?? '—'), 0, 120, '…')) ?></td>
+                <td><?= !empty($req['created_at']) ? date('d/m/Y H:i', strtotime((string) $req['created_at'])) : '—' ?></td>
+                <td class="td-actions">
+                  <form method="POST" action="<?= \Core\app_url('/admin/teacher-requests/' . (int) ($req['id'] ?? 0) . '/approve') ?>" class="u-inline">
+                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                    <button type="submit" class="btn btn--sm btn--primary">Aprovar</button>
+                  </form>
+                  <form method="POST" action="<?= \Core\app_url('/admin/teacher-requests/' . (int) ($req['id'] ?? 0) . '/reject') ?>" class="u-inline">
+                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                    <button type="submit" class="btn btn--sm btn--ghost">Rejeitar</button>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
       <?php \Core\View::partial('partials/pagination', ['pagination' => $pagination]); ?>
     <?php endif; ?>
   </div>

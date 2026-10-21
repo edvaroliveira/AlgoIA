@@ -63,38 +63,40 @@ $weak = array_column(array_filter($themes, static fn(array $t): bool => $t['leve
   <div class="section">
   <section class="surface-block">
     <div class="surface-block__body">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Tema</th>
-            <th>Média</th>
-            <th>Situação</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php $lastCategory = null; foreach ($themes as $theme):
-            [$label, $badge] = $levels[$theme['level']];
-          ?>
-            <?php if ($theme['category'] !== $lastCategory): $lastCategory = $theme['category']; ?>
-              <tr class="table-group"><th colspan="4"><?= \Core\View::e($lastCategory) ?></th></tr>
-            <?php endif; ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td>
-                <?= \Core\View::e($theme['name']) ?><br>
-                <small><?= $theme['answered'] ?> <?= $theme['answered'] === 1 ? 'resposta corrigida' : 'respostas corrigidas' ?></small>
-              </td>
-              <td><?= $theme['average'] !== null ? (int) round($theme['average'] * 100) . '%' : '—' ?></td>
-              <td><span class="badge <?= $badge ?>"><?= $label ?></span></td>
-              <td class="td-actions">
-                <?php if ($theme['practicable']): ?>
-                  <a class="btn btn--sm btn--ghost" href="<?= \Core\app_url('/student/pratica/sortear?tema=' . rawurlencode($theme['name'])) ?>">Praticar</a>
-                <?php endif; ?>
-              </td>
+              <th>Tema</th>
+              <th>Média</th>
+              <th>Situação</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php $lastCategory = null; foreach ($themes as $theme):
+              [$label, $badge] = $levels[$theme['level']];
+            ?>
+              <?php if ($theme['category'] !== $lastCategory): $lastCategory = $theme['category']; ?>
+                <tr class="table-group"><th colspan="4"><?= \Core\View::e($lastCategory) ?></th></tr>
+              <?php endif; ?>
+              <tr>
+                <td>
+                  <?= \Core\View::e($theme['name']) ?><br>
+                  <small><?= $theme['answered'] ?> <?= $theme['answered'] === 1 ? 'resposta corrigida' : 'respostas corrigidas' ?></small>
+                </td>
+                <td><?= $theme['average'] !== null ? (int) round($theme['average'] * 100) . '%' : '—' ?></td>
+                <td><span class="badge <?= $badge ?>"><?= $label ?></span></td>
+                <td class="td-actions">
+                  <?php if ($theme['practicable']): ?>
+                    <a class="btn btn--sm btn--ghost" href="<?= \Core\app_url('/student/pratica/sortear?tema=' . rawurlencode($theme['name'])) ?>">Praticar</a>
+                  <?php endif; ?>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
   </div>
@@ -107,34 +109,36 @@ $weak = array_column(array_filter($themes, static fn(array $t): bool => $t['leve
       <?php if ($evolution === []): ?>
         <p class="empty-state">Quando você refizer um exercício, a comparação entre a primeira e a última nota aparece aqui.</p>
       <?php else: ?>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Exercício</th>
-              <th>Primeira</th>
-              <th>Última</th>
-              <th>Diferença</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($evolution as $item):
-              [$trendLabel, $trendBadge] = \App\Models\AttemptEvolution::trendBadge($item['trend']);
-            ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td>
-                  <?= \Core\View::e($item['title']) ?><br>
-                  <small><?= $item['turma_name'] !== null ? \Core\View::e($item['turma_name']) . ' · ' : '' ?><?= $item['attempts'] ?> Tentativas</small>
-                </td>
-                <td><?= number_format($item['first'], 1, ',', '') ?> de <?= number_format($item['max_total'], 1, ',', '') ?></td>
-                <td><?= number_format($item['last'], 1, ',', '') ?></td>
-                <td>
-                  <?= \App\Models\AttemptEvolution::deltaText($item['delta']) ?>
-                  <br><span class="badge <?= $trendBadge ?>"><?= $trendLabel ?></span>
-                </td>
+                <th>Exercício</th>
+                <th>Primeira</th>
+                <th>Última</th>
+                <th>Diferença</th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($evolution as $item):
+                [$trendLabel, $trendBadge] = \App\Models\AttemptEvolution::trendBadge($item['trend']);
+              ?>
+                <tr>
+                  <td>
+                    <?= \Core\View::e($item['title']) ?><br>
+                    <small><?= $item['turma_name'] !== null ? \Core\View::e($item['turma_name']) . ' · ' : '' ?><?= $item['attempts'] ?> Tentativas</small>
+                  </td>
+                  <td><?= number_format($item['first'], 1, ',', '') ?> de <?= number_format($item['max_total'], 1, ',', '') ?></td>
+                  <td><?= number_format($item['last'], 1, ',', '') ?></td>
+                  <td>
+                    <?= \App\Models\AttemptEvolution::deltaText($item['delta']) ?>
+                    <br><span class="badge <?= $trendBadge ?>"><?= $trendLabel ?></span>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php endif; ?>
     </div>
   </section>

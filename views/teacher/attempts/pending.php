@@ -59,56 +59,58 @@ global $session;
     <?php if (empty($attempts)): ?>
       <p class="empty-state">Nenhuma tentativa pendente encontrada.</p>
     <?php else: ?>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Aluno</th>
-            <th>Exercício</th>
-            <th>Turma</th>
-            <th>Enviada em</th>
-            <th>Status</th>
-            <th>Tempo</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($attempts as $attempt): ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td>
-                <strong><?= \Core\View::e($attempt['student_name'] ?? '—') ?></strong><br>
-                <span class="text-muted"><?= \Core\View::e($attempt['student_email'] ?? '') ?></span>
-              </td>
-              <td><?= \Core\View::e($attempt['exercise_title'] ?? '—') ?></td>
-              <td><?= \Core\View::e($attempt['turma_name'] ?? '—') ?></td>
-              <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : '—' ?></td>
-              <td>
-                <?php
-                $jobStatus = (string) ($attempt['grading_job_status'] ?? 'manual');
-                $jobLabel = [
-                  'queued' => 'Na fila',
-                  'processing' => 'Processando',
-                  'failed' => 'Falha técnica',
-                  'completed' => 'Concluída',
-                  'manual' => 'Sem job',
-                ][$jobStatus] ?? $jobStatus;
-                ?>
-                <span class="badge badge--info"><?= \Core\View::e($jobLabel) ?></span>
-                <?php if (!empty($attempt['grading_job_attempts'])): ?>
-                  <span class="text-muted"><?= (int) $attempt['grading_job_attempts'] ?> tentativa(s)</span>
-                <?php endif; ?>
-              </td>
-              <td><span class="badge badge--warning"><?= (int) ($attempt['pending_hours'] ?? 0) ?>h</span></td>
-              <td class="td-actions">
-                <form method="POST" action="<?= \Core\app_url('/teacher/attempts/' . (int) ($attempt['id'] ?? 0) . '/regrade') ?>">
-                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                  <input type="hidden" name="return_to" value="<?= \Core\View::e(\Core\app_request_path() . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : '')) ?>">
-                  <button type="submit" class="btn btn--sm btn--primary">Reprocessar</button>
-                </form>
-              </td>
+              <th>Aluno</th>
+              <th>Exercício</th>
+              <th>Turma</th>
+              <th>Enviada em</th>
+              <th>Status</th>
+              <th>Tempo</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($attempts as $attempt): ?>
+              <tr>
+                <td>
+                  <strong><?= \Core\View::e($attempt['student_name'] ?? '—') ?></strong><br>
+                  <span class="text-muted"><?= \Core\View::e($attempt['student_email'] ?? '') ?></span>
+                </td>
+                <td><?= \Core\View::e($attempt['exercise_title'] ?? '—') ?></td>
+                <td><?= \Core\View::e($attempt['turma_name'] ?? '—') ?></td>
+                <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : '—' ?></td>
+                <td>
+                  <?php
+                  $jobStatus = (string) ($attempt['grading_job_status'] ?? 'manual');
+                  $jobLabel = [
+                    'queued' => 'Na fila',
+                    'processing' => 'Processando',
+                    'failed' => 'Falha técnica',
+                    'completed' => 'Concluída',
+                    'manual' => 'Sem job',
+                  ][$jobStatus] ?? $jobStatus;
+                  ?>
+                  <span class="badge badge--info"><?= \Core\View::e($jobLabel) ?></span>
+                  <?php if (!empty($attempt['grading_job_attempts'])): ?>
+                    <span class="text-muted"><?= (int) $attempt['grading_job_attempts'] ?> tentativa(s)</span>
+                  <?php endif; ?>
+                </td>
+                <td><span class="badge badge--warning"><?= (int) ($attempt['pending_hours'] ?? 0) ?>h</span></td>
+                <td class="td-actions">
+                  <form method="POST" action="<?= \Core\app_url('/teacher/attempts/' . (int) ($attempt['id'] ?? 0) . '/regrade') ?>">
+                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                    <input type="hidden" name="return_to" value="<?= \Core\View::e(\Core\app_request_path() . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : '')) ?>">
+                    <button type="submit" class="btn btn--sm btn--primary">Reprocessar</button>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
       <?php \Core\View::partial('partials/pagination', ['pagination' => $pagination]); ?>
     <?php endif; ?>
   </div>

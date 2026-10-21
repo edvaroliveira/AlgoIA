@@ -1016,6 +1016,45 @@ img.topbar-user__avatar--img {
   background: rgba(34, 132, 79, 0.04);
 }
 
+/* Contêiner de tabela: borda e sombra ficam nele, e ele rola na horizontal
+   quando a tabela não cabe (antes o .table cortava as colunas da direita).
+   As sombras nas laterais indicam que há mais conteúdo para rolar. */
+.table-scroll {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-md);
+  background:
+    linear-gradient(to right, #fcfbf6 30%, rgba(252, 251, 246, 0)) left / 2rem 100% no-repeat local,
+    linear-gradient(to left, #fcfbf6 30%, rgba(252, 251, 246, 0)) right / 2rem 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(23, 63, 49, 0.16), transparent) left / 0.8rem 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(23, 63, 49, 0.16), transparent) right / 0.8rem 100% no-repeat scroll,
+    #fcfbf6;
+}
+
+.table-scroll > .table {
+  margin-bottom: 0;
+  border-width: 0; /* só a largura: as células herdam a cor da borda da tabela */
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  background: transparent;
+}
+
+/* Tabela larga (matriz analítica): rola e mantém a primeira coluna fixa */
+.table--wide th { min-width: 9rem; }
+.table--wide th:first-child,
+.table--wide td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 12rem;
+  box-shadow: 1px 0 0 var(--border);
+}
+.table--wide td:first-child { background: #fcfbf6; }
+.table--wide tr:hover td:first-child { background: #f7f8f1; }
+
 /* Célula de ações: continua sendo célula de tabela. Com display:flex no próprio
    <td> ela saía do fluxo da linha (altura, borda e fundo desalinhados). */
 .table td.td-actions {
@@ -2496,7 +2535,80 @@ img.topbar-user__avatar--img {
   .meta-grid,
   .form-row,
   .mini-stats { grid-template-columns: 1fr; }
-  .table { display: block; overflow-x: auto; white-space: nowrap; }
+
+  /* Listas viram cartões: uma linha por cartão, rótulo (data-label, preenchido
+     pelo app.js a partir do <thead>) antes de cada valor. */
+  .table-scroll:has(> .table--stack) {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: none;
+  }
+  .table--stack,
+  .table--stack tbody,
+  .table--stack tr,
+  .table--stack td,
+  .table--stack tbody th { display: block; width: 100%; }
+  .table--stack thead th { display: none; }
+  /* "Todos" (seleção em massa) continua acessível acima dos cartões */
+  .table--stack thead tr { display: flex; }
+  .table--stack thead th:has(input) {
+    display: block;
+    width: auto;
+    margin-bottom: 0.6rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .table--stack tbody tr {
+    margin-bottom: 0.75rem;
+    padding: 0.3rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 1.1rem;
+    background: var(--surface-1);
+    box-shadow: var(--shadow-sm);
+  }
+  .table--stack tbody tr:has(> th) {
+    margin-bottom: 0.25rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .table--stack tbody th { padding: 0.75rem 0.25rem 0.25rem; background: none; }
+  /* Rótulo flutua numa coluna fixa à esquerda; o valor flui normalmente ao lado */
+  .table--stack td {
+    display: flow-root;
+    padding: 0.6rem 0 0.6rem 8.25rem;
+    border-top: 1px solid var(--border-soft);
+    border-bottom-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .table--stack td:first-child { border-top: 0; }
+  .table--stack td::before {
+    content: attr(data-label);
+    float: left;
+    width: 7.5rem;
+    margin-left: -8.25rem;
+    padding-top: 0.15rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .table--stack td:not([data-label]) { padding-left: 0; }
+  .table--stack td:not([data-label])::before { content: none; }
+  .table--stack tr:hover td { background: transparent; }
+  .table--stack td.td-actions:not([data-label]) {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .table--stack td.td-actions > * { margin: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -70,42 +70,44 @@ global $session;
         <p>Marque os exercícios publicados que devem ser encerrados ou reabertos de uma vez.</p>
         <form method="POST" class="form">
           <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>
-                  <label>
-                    <input type="checkbox" data-select-all="turma-publications" aria-label="Selecionar todos os exercícios publicados da turma">
-                    Todos
-                  </label>
-                </th>
-                <th>Exercício</th>
-                <th>Docente</th>
-                <th>Fecha em</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($publications as $publication): ?>
-                <?php
-                $publicationClosesTimestamp = !empty($publication['closes_at']) ? strtotime((string) $publication['closes_at']) : false;
-                $publicationOpensTimestamp = !empty($publication['opens_at']) ? strtotime((string) $publication['opens_at']) : false;
-                $publicationState = 'scheduled';
-                if ($publicationClosesTimestamp !== false && $publicationClosesTimestamp < time()) {
-                  $publicationState = 'closed';
-                } elseif ($publicationOpensTimestamp !== false && $publicationClosesTimestamp !== false && $publicationOpensTimestamp <= time() && $publicationClosesTimestamp >= time()) {
-                  $publicationState = 'open';
-                }
-                $publicationStateLabel = $publicationState === 'open' ? 'abertas' : ($publicationState === 'closed' ? 'encerradas' : 'agendadas');
-                ?>
+          <div class="table-scroll">
+            <table class="table">
+              <thead>
                 <tr>
-                  <td><input type="checkbox" name="exercise_ids[]" value="<?= (int) ($publication['id'] ?? 0) ?>" data-select-item="turma-publications" data-item-state="<?= $publicationState ?>" data-item-state-label="<?= $publicationStateLabel ?>"></td>
-                  <td><?= \Core\View::e($publication['title'] ?? '—') ?></td>
-                  <td><?= \Core\View::e($publication['teacher_name'] ?? '—') ?></td>
-                  <td><?= !empty($publication['closes_at']) ? date('d/m/Y H:i', strtotime((string) $publication['closes_at'])) : '—' ?></td>
+                  <th>
+                    <label>
+                      <input type="checkbox" data-select-all="turma-publications" aria-label="Selecionar todos os exercícios publicados da turma">
+                      Todos
+                    </label>
+                  </th>
+                  <th>Exercício</th>
+                  <th>Docente</th>
+                  <th>Fecha em</th>
                 </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                <?php foreach ($publications as $publication): ?>
+                  <?php
+                  $publicationClosesTimestamp = !empty($publication['closes_at']) ? strtotime((string) $publication['closes_at']) : false;
+                  $publicationOpensTimestamp = !empty($publication['opens_at']) ? strtotime((string) $publication['opens_at']) : false;
+                  $publicationState = 'scheduled';
+                  if ($publicationClosesTimestamp !== false && $publicationClosesTimestamp < time()) {
+                    $publicationState = 'closed';
+                  } elseif ($publicationOpensTimestamp !== false && $publicationClosesTimestamp !== false && $publicationOpensTimestamp <= time() && $publicationClosesTimestamp >= time()) {
+                    $publicationState = 'open';
+                  }
+                  $publicationStateLabel = $publicationState === 'open' ? 'abertas' : ($publicationState === 'closed' ? 'encerradas' : 'agendadas');
+                  ?>
+                  <tr>
+                    <td><input type="checkbox" name="exercise_ids[]" value="<?= (int) ($publication['id'] ?? 0) ?>" data-select-item="turma-publications" data-item-state="<?= $publicationState ?>" data-item-state-label="<?= $publicationStateLabel ?>"></td>
+                    <td><?= \Core\View::e($publication['title'] ?? '—') ?></td>
+                    <td><?= \Core\View::e($publication['teacher_name'] ?? '—') ?></td>
+                    <td><?= !empty($publication['closes_at']) ? date('d/m/Y H:i', strtotime((string) $publication['closes_at'])) : '—' ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="turma-batch-reopen-until">Reabrir até</label>
@@ -124,60 +126,62 @@ global $session;
           </div>
         </form>
       </div>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Exercício</th>
-            <th>Docente</th>
-            <th>Abre</th>
-            <th>Fecha</th>
-            <th>Tentativas</th>
-            <th>Submissões</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($publications as $publication): ?>
-            <?php
-            $publicationTurmaId = (int) ($turma['id'] ?? 0);
-            $publicationOpensAt = !empty($publication['opens_at']) ? date('Y-m-d\TH:i', strtotime((string) $publication['opens_at'])) : '';
-            $publicationClosesAt = !empty($publication['closes_at']) ? date('Y-m-d\TH:i', strtotime((string) $publication['closes_at'])) : '';
-            ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td><strong><?= \Core\View::e($publication['title']) ?></strong></td>
-              <td><?= \Core\View::e($publication['teacher_name'] ?? '—') ?></td>
-              <td><?= !empty($publication['opens_at']) ? date('d/m/Y H:i', strtotime((string) $publication['opens_at'])) : '—' ?></td>
-              <td><?= !empty($publication['closes_at']) ? date('d/m/Y H:i', strtotime((string) $publication['closes_at'])) : '—' ?></td>
-              <td><?= ((string) ($publication['max_attempts'] ?? '')) === '0' ? 'Ilimitadas' : (int) ($publication['max_attempts'] ?? 0) ?></td>
-              <td><?= (int) ($publication['attempt_count'] ?? 0) ?></td>
-              <td class="td-actions">
-                <a href="<?= \Core\app_url('/admin/exercises/' . $publication['id'] . '?return_to=' . urlencode($currentPath)) ?>" class="btn btn--sm">Ver exercício</a>
-                <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . $publication['id'] . '/publications/' . $publicationTurmaId) ?>" class="form">
-                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label class="form-label" for="turma-publication-opens-<?= (int) ($publication['id'] ?? 0) ?>">Abre em</label>
-                      <input id="turma-publication-opens-<?= (int) ($publication['id'] ?? 0) ?>" type="datetime-local" name="opens_at" class="form-input" value="<?= $publicationOpensAt ?>">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="turma-publication-closes-<?= (int) ($publication['id'] ?? 0) ?>">Fecha em</label>
-                      <input id="turma-publication-closes-<?= (int) ($publication['id'] ?? 0) ?>" type="datetime-local" name="closes_at" class="form-input" value="<?= $publicationClosesAt ?>" min="<?= $defaultPublicationMin ?>">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="turma-publication-attempts-<?= (int) ($publication['id'] ?? 0) ?>">Tentativas</label>
-                      <input id="turma-publication-attempts-<?= (int) ($publication['id'] ?? 0) ?>" type="number" min="0" name="max_attempts" class="form-input" value="<?= (int) ($publication['max_attempts'] ?? 1) ?>">
-                    </div>
-                    <div class="form-group form-group--end">
-                      <label class="form-label">Publicação</label>
-                      <button type="submit" class="btn btn--sm">Salvar</button>
-                    </div>
-                  </div>
-                </form>
-              </td>
+              <th>Exercício</th>
+              <th>Docente</th>
+              <th>Abre</th>
+              <th>Fecha</th>
+              <th>Tentativas</th>
+              <th>Submissões</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($publications as $publication): ?>
+              <?php
+              $publicationTurmaId = (int) ($turma['id'] ?? 0);
+              $publicationOpensAt = !empty($publication['opens_at']) ? date('Y-m-d\TH:i', strtotime((string) $publication['opens_at'])) : '';
+              $publicationClosesAt = !empty($publication['closes_at']) ? date('Y-m-d\TH:i', strtotime((string) $publication['closes_at'])) : '';
+              ?>
+              <tr>
+                <td><strong><?= \Core\View::e($publication['title']) ?></strong></td>
+                <td><?= \Core\View::e($publication['teacher_name'] ?? '—') ?></td>
+                <td><?= !empty($publication['opens_at']) ? date('d/m/Y H:i', strtotime((string) $publication['opens_at'])) : '—' ?></td>
+                <td><?= !empty($publication['closes_at']) ? date('d/m/Y H:i', strtotime((string) $publication['closes_at'])) : '—' ?></td>
+                <td><?= ((string) ($publication['max_attempts'] ?? '')) === '0' ? 'Ilimitadas' : (int) ($publication['max_attempts'] ?? 0) ?></td>
+                <td><?= (int) ($publication['attempt_count'] ?? 0) ?></td>
+                <td class="td-actions">
+                  <a href="<?= \Core\app_url('/admin/exercises/' . $publication['id'] . '?return_to=' . urlencode($currentPath)) ?>" class="btn btn--sm">Ver exercício</a>
+                  <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . $publication['id'] . '/publications/' . $publicationTurmaId) ?>" class="form">
+                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="turma-publication-opens-<?= (int) ($publication['id'] ?? 0) ?>">Abre em</label>
+                        <input id="turma-publication-opens-<?= (int) ($publication['id'] ?? 0) ?>" type="datetime-local" name="opens_at" class="form-input" value="<?= $publicationOpensAt ?>">
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="turma-publication-closes-<?= (int) ($publication['id'] ?? 0) ?>">Fecha em</label>
+                        <input id="turma-publication-closes-<?= (int) ($publication['id'] ?? 0) ?>" type="datetime-local" name="closes_at" class="form-input" value="<?= $publicationClosesAt ?>" min="<?= $defaultPublicationMin ?>">
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="turma-publication-attempts-<?= (int) ($publication['id'] ?? 0) ?>">Tentativas</label>
+                        <input id="turma-publication-attempts-<?= (int) ($publication['id'] ?? 0) ?>" type="number" min="0" name="max_attempts" class="form-input" value="<?= (int) ($publication['max_attempts'] ?? 1) ?>">
+                      </div>
+                      <div class="form-group form-group--end">
+                        <label class="form-label">Publicação</label>
+                        <button type="submit" class="btn btn--sm">Salvar</button>
+                      </div>
+                    </div>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     <?php endif; ?>
   </div>
 </section>
@@ -194,24 +198,26 @@ global $session;
       <?php if (empty($pending)): ?>
         <p class="empty-state">Nenhuma solicitação pendente.</p>
       <?php else: ?>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>E-mail</th>
-              <th>Solicitado em</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($pending as $student): ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td><?= \Core\View::e($student['name']) ?></td>
-                <td><?= \Core\View::e($student['email']) ?></td>
-                <td><?= date('d/m/Y H:i', strtotime((string) $student['joined_at'])) ?></td>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Solicitado em</th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($pending as $student): ?>
+                <tr>
+                  <td><?= \Core\View::e($student['name']) ?></td>
+                  <td><?= \Core\View::e($student['email']) ?></td>
+                  <td><?= date('d/m/Y H:i', strtotime((string) $student['joined_at'])) ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php endif; ?>
     </div>
   </section>
@@ -227,24 +233,26 @@ global $session;
       <?php if (empty($students)): ?>
         <p class="empty-state">Nenhum aluno ativo nesta turma.</p>
       <?php else: ?>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>E-mail</th>
-              <th>Ingressou em</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($students as $student): ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td><?= \Core\View::e($student['name']) ?></td>
-                <td><?= \Core\View::e($student['email']) ?></td>
-                <td><?= date('d/m/Y', strtotime((string) $student['joined_at'])) ?></td>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Ingressou em</th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($students as $student): ?>
+                <tr>
+                  <td><?= \Core\View::e($student['name']) ?></td>
+                  <td><?= \Core\View::e($student['email']) ?></td>
+                  <td><?= date('d/m/Y', strtotime((string) $student['joined_at'])) ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php endif; ?>
     </div>
   </section>

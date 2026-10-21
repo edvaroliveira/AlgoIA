@@ -24,52 +24,54 @@ global $session;
     <?php if (empty($history)): ?>
       <p class="empty-state">Nenhuma solicitação processada ainda.</p>
     <?php else: ?>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Docente</th>
-            <th>Instituição / Justificativa</th>
-            <th>Solicitado em</th>
-            <th>Decisão</th>
-            <th>Decidido por</th>
-            <th>Data decisão</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($history as $req): ?>
-            <?php
-            $isApproved = ($req['status'] ?? '') === 'active';
-            $decisionDate = $isApproved
-              ? ($req['approved_at'] ?? null)
-              : ($req['rejected_at'] ?? null);
-            ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td>
-                <strong><?= \Core\View::e($req['name'] ?? '—') ?></strong><br>
-                <span class="text-muted"><?= \Core\View::e($req['email'] ?? '') ?></span>
-              </td>
-              <td><?= \Core\View::e(mb_strimwidth((string) ($req['registration_note'] ?? '—'), 0, 100, '…')) ?></td>
-              <td><?= !empty($req['created_at']) ? date('d/m/Y H:i', strtotime((string) $req['created_at'])) : '—' ?></td>
-              <td>
-                <span class="badge badge--<?= $isApproved ? 'success' : 'neutral' ?>">
-                  <?= $isApproved ? 'aprovado' : 'rejeitado' ?>
-                </span>
-              </td>
-              <td><?= \Core\View::e($req['approver_name'] ?? '—') ?></td>
-              <td><?= !empty($decisionDate) ? date('d/m/Y H:i', strtotime((string) $decisionDate)) : '—' ?></td>
-              <td class="td-actions">
-                <?php if (!$isApproved): ?>
-                  <form method="POST" action="<?= \Core\app_url('/admin/teacher-requests/' . (int) ($req['id'] ?? 0) . '/approve') ?>">
-                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                    <button type="submit" class="btn btn--sm btn--ghost">Aprovar</button>
-                  </form>
-                <?php endif; ?>
-              </td>
+              <th>Docente</th>
+              <th>Instituição / Justificativa</th>
+              <th>Solicitado em</th>
+              <th>Decisão</th>
+              <th>Decidido por</th>
+              <th>Data decisão</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($history as $req): ?>
+              <?php
+              $isApproved = ($req['status'] ?? '') === 'active';
+              $decisionDate = $isApproved
+                ? ($req['approved_at'] ?? null)
+                : ($req['rejected_at'] ?? null);
+              ?>
+              <tr>
+                <td>
+                  <strong><?= \Core\View::e($req['name'] ?? '—') ?></strong><br>
+                  <span class="text-muted"><?= \Core\View::e($req['email'] ?? '') ?></span>
+                </td>
+                <td><?= \Core\View::e(mb_strimwidth((string) ($req['registration_note'] ?? '—'), 0, 100, '…')) ?></td>
+                <td><?= !empty($req['created_at']) ? date('d/m/Y H:i', strtotime((string) $req['created_at'])) : '—' ?></td>
+                <td>
+                  <span class="badge badge--<?= $isApproved ? 'success' : 'neutral' ?>">
+                    <?= $isApproved ? 'aprovado' : 'rejeitado' ?>
+                  </span>
+                </td>
+                <td><?= \Core\View::e($req['approver_name'] ?? '—') ?></td>
+                <td><?= !empty($decisionDate) ? date('d/m/Y H:i', strtotime((string) $decisionDate)) : '—' ?></td>
+                <td class="td-actions">
+                  <?php if (!$isApproved): ?>
+                    <form method="POST" action="<?= \Core\app_url('/admin/teacher-requests/' . (int) ($req['id'] ?? 0) . '/approve') ?>">
+                      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                      <button type="submit" class="btn btn--sm btn--ghost">Aprovar</button>
+                    </form>
+                  <?php endif; ?>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
       <?php \Core\View::partial('partials/pagination', ['pagination' => $pagination]); ?>
     <?php endif; ?>
   </div>
