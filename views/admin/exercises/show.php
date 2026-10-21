@@ -122,6 +122,17 @@ global $session;
         <p><span class="badge badge--warning">Sugerido</span> O Docente já sugeriu este exercício. Aprove em <a href="<?= \Core\app_url('/admin/bank') ?>">Banco de exercícios</a>.</p>
       <?php else: ?>
         <p>Inclui uma cópia deste exercício e das questões no banco institucional, já disponível para todos os Docentes.</p>
+        <?php if (!empty($bankSimilarity)): ?>
+          <?php \Core\View::partial('partials/bank_similarity_summary', ['report' => $bankSimilarity]); ?>
+          <?php foreach ($bankSimilarity['questions'] as $i => $row): ?>
+            <?php if ($row['matches'] !== []): ?>
+              <div class="similarity-question">
+                <p><strong>Q<?= $i + 1 ?>.</strong> <?= \Core\View::e(mb_strimwidth((string) $bankSimilarity['texts'][$i], 0, 160, '…')) ?></p>
+                <?php \Core\View::partial('partials/bank_similarity', ['row' => $row]); ?>
+              </div>
+            <?php endif; ?>
+          <?php endforeach; ?>
+        <?php endif; ?>
         <form method="POST" action="<?= \Core\app_url('/admin/exercises/' . ($exercise['id'] ?? 0) . '/add-to-bank') ?>" class="form">
           <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
           <?php \Core\View::partial('partials/classification_fields', [

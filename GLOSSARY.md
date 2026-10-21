@@ -92,6 +92,14 @@ _Evitar_: Compartilhamento, publicação no banco
 Copiar Questões escolhidas, do Banco de exercícios ou de um Exercício próprio, para um Rascunho do Docente. A origem nunca muda, e Questões Bloqueadas não são copiadas.
 _Evitar_: Clonar, vincular, reutilizar (para a operação)
 
+**Similaridade**:
+Percentual (0–100%) de semelhança entre o enunciado de uma Questão e o de outra já no Banco de exercícios ou em Sugestão pendente. Compara a escrita, não o sentido: a mesma ideia com outras palavras dá um valor baixo.
+_Evitar_: Plágio, duplicata (para o percentual)
+
+**Limite de similaridade**:
+Percentual a partir do qual uma Questão não entra no Banco de exercícios. As demais Questões do mesmo Exercício entram normalmente. Entre Sugestões pendentes iguais, a mais antiga tem precedência. O Admin ajusta o limite em Configurações.
+_Evitar_: Bloqueio (reservado à Moderação)
+
 ## Moderação
 
 **Moderação** (`admin_review_status`):

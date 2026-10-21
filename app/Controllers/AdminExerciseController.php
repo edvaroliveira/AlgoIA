@@ -89,13 +89,26 @@ class AdminExerciseController extends AdminBaseController
       View::redirect('/admin/exercises');
     }
 
+    $questions = $this->questions->findByExercise((int) $id);
+    $bankStatus = (new \App\Models\BankExercise())->latestForExercise((int) $id);
+    $bankState = $bankStatus ? (string) $bankStatus['status'] : '';
+
+    // Inclusão direta possível: mostra antes quais Questões não entrariam por similaridade
+    $bankSimilarity = null;
+    $bankCandidates = array_values(array_filter($questions, static fn(array $q): bool => ($q['admin_review_status'] ?? 'approved') !== 'blocked'));
+    if (!in_array($bankState, ['active', 'suggested'], true) && $bankCandidates !== []) {
+      $bankSimilarity = (new \App\Services\BankSimilarityService())->report($bankCandidates);
+      $bankSimilarity['texts'] = array_column($bankCandidates, 'text');
+    }
+
     View::render('admin/exercises/show', [
       'exercise'   => $exercise,
-      'questions'  => $this->questions->findByExercise((int) $id),
+      'questions'  => $questions,
+      'bankSimilarity' => $bankSimilarity,
       'results'    => $this->exercises->getResultsForTeacher((int) $id),
       'maxScore'   => $this->questions->getTotalMaxScore((int) $id),
       'returnPath' => $this->buildReturnPathFromRequest('/admin/exercises'),
-      'bankStatus' => (new \App\Models\BankExercise())->latestForExercise((int) $id),
+      'bankStatus' => $bankStatus,
       'categoryTree' => (new \App\Models\Category())->tree(true),
       'classification' => (new \App\Models\Category())->classificationOf('exercise', (int) $id),
     ]);

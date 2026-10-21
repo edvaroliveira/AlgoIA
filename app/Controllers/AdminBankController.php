@@ -6,6 +6,8 @@ namespace App\Controllers;
 
 use App\Models\BankExercise;
 use App\Models\Category;
+use App\Models\SystemSetting;
+use App\Services\BankSimilarityService;
 use App\Services\AuditService;
 use Core\Auth;
 use Core\Request;
@@ -42,12 +44,22 @@ class AdminBankController extends AdminBaseController
     }
 
     $pagination = $this->buildPagination('/admin/bank', ['status' => $status], $counts[$status]);
+    $items = $this->bank->listByStatus($status, $pagination['perPage'], $pagination['offset']);
+
+    // Sugestões: similaridade de cada Questão com o banco, para decidir a aprovação
+    if ($status === BankExercise::STATUS_SUGGESTED) {
+      $similarity = new BankSimilarityService();
+      foreach ($items as &$item) {
+        $item['similarity'] = $similarity->report($item['questions'], (int) $item['id']);
+      }
+      unset($item);
+    }
 
     View::render('admin/bank/index', [
       'status'     => $status,
       'tabs'       => self::TABS,
       'counts'     => $counts,
-      'items'      => $this->bank->listByStatus($status, $pagination['perPage'], $pagination['offset']),
+      'items'      => $items,
       'categoryTree' => (new Category())->tree(true),
       'pagination' => $pagination,
     ]);
@@ -58,9 +70,18 @@ class AdminBankController extends AdminBaseController
     Request::validateCsrf();
     [$categoryId, $themeIds] = $this->selection(BankExercise::STATUS_SUGGESTED);
 
-    if ($this->bank->approve((int) $id, (int) Auth::id(), $categoryId, $themeIds)) {
-      AuditService::record('admin.bank.approve', 'bank_exercise', (int) $id, ['category_id' => $categoryId, 'theme_ids' => $themeIds]);
-      $this->done('success', 'Sugestão aprovada e incluída no banco.', BankExercise::STATUS_SUGGESTED);
+    try {
+      $approved = $this->bank->approve((int) $id, (int) Auth::id(), $categoryId, $themeIds);
+    } catch (\RuntimeException $e) {
+      $this->done('error', $e->getMessage() . ' Recuse a Sugestão.', BankExercise::STATUS_SUGGESTED);
+    }
+
+    if ($approved) {
+      $result = $this->bank->lastIncorporation();
+      AuditService::record('admin.bank.approve', 'bank_exercise', (int) $id, [
+        'category_id' => $categoryId, 'theme_ids' => $themeIds,
+      ] + self::similarityAudit($result));
+      $this->done('success', 'Sugestão aprovada e incluída no banco.' . self::similarityMessage($result), BankExercise::STATUS_SUGGESTED);
     }
     $this->done('error', 'Sugestão não encontrada ou já revisada.', BankExercise::STATUS_SUGGESTED);
   }
@@ -134,9 +155,67 @@ class AdminBankController extends AdminBaseController
     }
 
     (new Category())->classify('bank', $bankId, $categoryId, $themeIds);
-    AuditService::record('admin.bank.add', 'bank_exercise', $bankId, ['exercise_id' => (int) $id, 'category_id' => $categoryId, 'theme_ids' => $themeIds]);
-    $session->flash('success', 'Exercício incluído no banco.');
+    $result = $this->bank->lastIncorporation();
+    AuditService::record('admin.bank.add', 'bank_exercise', $bankId, [
+      'exercise_id' => (int) $id, 'category_id' => $categoryId, 'theme_ids' => $themeIds,
+    ] + self::similarityAudit($result));
+    $session->flash('success', 'Exercício incluído no banco.' . self::similarityMessage($result));
     View::redirect("/admin/exercises/{$id}");
+  }
+
+  /** POST /admin/configuracoes/banco — limites de similaridade (system_settings, não .env). */
+  public function updateSettings(): void
+  {
+    Request::validateCsrf();
+    global $session;
+    $back = '/admin/configuracoes#banco';
+
+    $values = [];
+    foreach (BankSimilarityService::RANGES as $key => [$min, $max]) {
+      $raw = str_replace(',', '.', trim((string) Request::post($key, '')));
+      if (!is_numeric($raw) || (float) $raw < $min || (float) $raw > $max) {
+        $session->flash('error', 'Informe percentuais válidos: limite de bloqueio entre 50 e 100; exibição entre 0 e 100.');
+        View::redirect($back);
+      }
+      $values[$key] = (float) $raw;
+    }
+
+    $settings = new SystemSetting();
+    foreach ($values as $key => $value) {
+      $settings->set($key, rtrim(rtrim(number_format($value, 1, '.', ''), '0'), '.'), (int) Auth::id());
+    }
+    AuditService::record('admin.bank_settings.update', 'system_settings', null, $values);
+    $session->flash('success', 'Limites de similaridade do banco atualizados.');
+    View::redirect($back);
+  }
+
+  /** @param array{total: int, kept: int, block: float, excluded: list<array<string, mixed>>} $result */
+  private static function similarityAudit(array $result): array
+  {
+    if ($result['excluded'] === []) {
+      return [];
+    }
+
+    return ['similarity_block_pct' => $result['block'], 'similarity_excluded' => array_map(
+      static fn(array $q): array => [
+        'position' => $q['position'], 'pct' => $q['pct'],
+        'bank_question_id' => $q['bank_question_id'], 'bank_exercise_id' => $q['bank_exercise_id'],
+      ],
+      $result['excluded']
+    )];
+  }
+
+  /** @param array{total: int, kept: int, block: float, excluded: list<array<string, mixed>>} $result */
+  private static function similarityMessage(array $result): string
+  {
+    $skipped = count($result['excluded']);
+    if ($skipped === 0) {
+      return '';
+    }
+    $limit = rtrim(rtrim(number_format($result['block'], 1, ',', ''), '0'), ',');
+
+    return " {$result['kept']} de {$result['total']} Questões incorporadas; {$skipped} não "
+      . ($skipped === 1 ? 'entrou' : 'entraram') . " por similaridade ≥ {$limit}% com o banco.";
   }
 
   private function done(string $type, string $message, string $status): never

@@ -75,3 +75,38 @@ $overridden = $overridden ?? [];
     </section>
   </div>
 <?php endforeach; ?>
+
+<?php
+$bankSimilarity = $bankSimilarity ?? ['block' => 97.0, 'show' => 85.0];
+$pctValue = static fn(float $v): string => rtrim(rtrim(number_format($v, 1, '.', ''), '0'), '.');
+?>
+<div class="section" id="banco">
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Banco de exercícios</h2>
+        <p class="surface-copy">Similaridade entre enunciados de Questões, calculada pelo próprio sistema. Fica no banco de dados (não no .env) e vale para a aprovação de Sugestões e a inclusão direta.</p>
+      </div>
+    </div>
+    <div class="surface-block__body">
+      <form method="POST" action="<?= \Core\app_url('/admin/configuracoes/banco') ?>" class="settings-form">
+        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+        <div class="settings-grid">
+          <div class="form-group">
+            <label class="form-label" for="bank-block">Limite de similaridade (%)</label>
+            <input class="form-input" type="text" inputmode="decimal" id="bank-block" name="bank_similarity_block_pct" value="<?= $pctValue((float) $bankSimilarity['block']) ?>" aria-describedby="bank-block-help" required>
+            <small id="bank-block-help" class="hint">A partir deste valor a Questão não entra no banco (as demais do Exercício entram). Entre 50 e 100.</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="bank-show">Mostrar semelhança a partir de (%)</label>
+            <input class="form-input" type="text" inputmode="decimal" id="bank-show" name="bank_similarity_show_pct" value="<?= $pctValue((float) $bankSimilarity['show']) ?>" aria-describedby="bank-show-help" required>
+            <small id="bank-show-help" class="hint">Abaixo do limite, a Questão entra, mas a semelhança aparece para o Admin. Entre 0 e 100.</small>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>

@@ -48,6 +48,8 @@ $router->post('/admin/categorias/{id}/status', 'AdminCategoryController@statusCa
 $router->post('/admin/subcategorias/{id}/renomear', 'AdminCategoryController@renameSub', ['admin']);
 $router->post('/admin/subcategorias/{id}/status', 'AdminCategoryController@statusSub', ['admin']);
 $router->get('/admin/configuracoes', 'AdminEnvController@index', ['admin']);
+// Antes de {group}: o roteador usa a primeira rota que casa.
+$router->post('/admin/configuracoes/banco', 'AdminBankController@updateSettings', ['admin']);
 $router->post('/admin/configuracoes/{group}', 'AdminEnvController@update', ['admin']);
 $router->get('/admin/users',     'AdminUserController@users', ['admin']);
 $router->get('/admin/users/export', 'AdminUserController@exportUsers', ['admin']);
