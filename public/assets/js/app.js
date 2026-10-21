@@ -568,11 +568,18 @@
       });
 
       toggle.indeterminate = false;
+      // Marcar por código não dispara "change" nos itens: atualiza contador e botões aqui.
+      syncToggle();
     });
 
     items.forEach(function (item) {
       item.addEventListener("change", syncToggle);
     });
+
+    // Ao voltar pelo histórico o navegador restaura as caixas marcadas sem
+    // disparar "change": sincroniza no carregamento e na restauração (bfcache).
+    syncToggle();
+    window.addEventListener("pageshow", syncToggle);
 
     if (form) {
       form.addEventListener("submit", function (event) {
