@@ -581,6 +581,36 @@ check(count(glob($envDir . '/.env.backup-*')) <= App\Services\EnvFile::KEEP_BACK
 array_map('unlink', glob($envDir . '/{,.}*', GLOB_BRACE) ?: []);
 @rmdir($envDir);
 
+// SIM — Similaridade de Questões (bloqueio de cópias no Banco de exercícios)
+use App\Services\QuestionSimilarity as Sim;
+
+same('acao coracao pao 3x3', Sim::normalize("  Ação,\tCoração!  Pão — 3x3? "), 'SIM: normaliza caixa, acento, pontuação e espaços');
+same(100.0, Sim::score('Leia um número inteiro e mostre o dobro.', 'Leia um número inteiro e mostre o dobro.'), 'SIM: textos idênticos valem 100');
+same(100.0, Sim::score('Leia um número inteiro e mostre o dobro.', 'LEIA UM NUMERO INTEIRO, E MOSTRE O DOBRO!'), 'SIM: só acento, caixa e pontuação diferentes valem 100');
+same(0.0, Sim::score('', 'Leia um número'), 'SIM: texto vazio vale 0');
+same(0.0, Sim::score('?!', '...'), 'SIM: texto só com pontuação vale 0');
+$simLongA = 'Faça um algoritmo que leia dois números inteiros e mostre a soma, a diferença, o produto e o quociente entre eles.';
+$simLongB = 'Faça um algoritmo que leia dois números reais e mostre a soma, a diferença, o produto e o quociente entre eles.';
+$simOne = Sim::score($simLongA, $simLongB);
+check($simOne >= 85.0 && $simOne < 97.0, "SIM: uma palavra trocada em enunciado longo fica entre 85 e 97 (obteve {$simOne})");
+same($simOne, Sim::score($simLongB, $simLongA), 'SIM: medida é simétrica');
+$simDiff = Sim::score('Leia uma matriz 3x3 e mostre a soma da diagonal principal.', 'Escreva uma função recursiva que calcule o fatorial de n.');
+check($simDiff < 40.0, "SIM: assuntos diferentes ficam abaixo de 40 (obteve {$simDiff})");
+
+$simCands = [
+  ['id' => 1, 'text' => 'Escreva uma função recursiva que calcule o fatorial de n.'],
+  ['id' => 2, 'text' => $simLongB],
+  ['id' => 3, 'text' => $simLongA],
+  ['id' => 4, 'text' => 'Faça um algoritmo que leia dois números.'],
+  // Mesmo tamanho, outro assunto: só o filtro do mínimo o tira (o corte por comprimento não)
+  ['id' => 5, 'text' => 'Escreva um programa que receba uma lista de nomes completos e imprima cada sobrenome em ordem alfabética crescente.'],
+];
+$simBest = Sim::bestMatches($simLongA, $simCands, 80.0);
+same([3, 2], array_column($simBest, 'id'), 'SIM: bestMatches devolve só os ≥ mínimo, do maior para o menor');
+same(100.0, $simBest[0]['pct'], 'SIM: bestMatches informa o % de cada candidato');
+same([3], array_column(Sim::bestMatches($simLongA, $simCands, 80.0, 1), 'id'), 'SIM: bestMatches respeita o limite de resultados');
+same([], Sim::bestMatches('', $simCands, 0.0), 'SIM: texto vazio não casa com nada');
+
 // ── Resumo ───────────────────────────────────────────────────────────────────
 $total = $GLOBALS['__tests'];
 $fails = $GLOBALS['__fails'];
