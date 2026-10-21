@@ -14,7 +14,7 @@ global $session;
 </div>
 
 <?php if (!empty($errors)): ?>
-  <div class="alert alert--error">
+  <div class="alert alert--error" role="alert">
     <?= \Core\View::e(implode(' ', $errors)) ?>
   </div>
 <?php endif; ?>

@@ -158,10 +158,16 @@ $isCurrent = static function (array $prefixes) use ($currentPath): bool {
           $flash_error   = $session->getFlash('error');
           ?>
           <?php if ($flash_success): ?>
-            <div class="alert alert--success" role="status"><?= \Core\View::e($flash_success) ?></div>
+            <div class="alert alert--success alert--dismissible" role="status">
+              <span><?= \Core\View::e($flash_success) ?></span>
+              <button type="button" class="alert__close" data-dismiss-alert aria-label="Fechar aviso">×</button>
+            </div>
           <?php endif; ?>
           <?php if ($flash_error): ?>
-            <div class="alert alert--error" role="alert"><?= \Core\View::e($flash_error) ?></div>
+            <div class="alert alert--error alert--dismissible" role="alert">
+              <span><?= \Core\View::e($flash_error) ?></span>
+              <button type="button" class="alert__close" data-dismiss-alert aria-label="Fechar aviso">×</button>
+            </div>
           <?php endif; ?>
 
           <?= $content ?>

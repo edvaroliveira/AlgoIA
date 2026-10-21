@@ -29,15 +29,15 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
 ?>
 
 <?php if ($flashError): ?>
-  <div class="alert alert--error"><?= \Core\View::e($flashError) ?></div>
+  <div class="alert alert--error" role="alert"><?= \Core\View::e($flashError) ?></div>
 <?php endif; ?>
 
 <?php if ($flashSuccess): ?>
-  <div class="alert alert--success"><?= \Core\View::e($flashSuccess) ?></div>
+  <div class="alert alert--success" role="status"><?= \Core\View::e($flashSuccess) ?></div>
 <?php endif; ?>
 
 <?php if ($reviewStatus === 'blocked'): ?>
-  <div class="alert alert--error">
+  <div class="alert alert--error" role="alert">
     Este exercício está bloqueado pela administração.
     <?php if (!empty($exercise['admin_review_note'])): ?>
       Motivo: <?= \Core\View::e((string) $exercise['admin_review_note']) ?>
@@ -268,7 +268,7 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
               <?php foreach ($activationErrors as $error): ?><div><?= \Core\View::e($error) ?></div><?php endforeach; ?>
             </div>
           <?php else: ?>
-            <div class="alert alert--error activation-feedback" data-activation-feedback hidden></div>
+            <div class="alert alert--error activation-feedback" role="alert" data-activation-feedback hidden></div>
           <?php endif; ?>
 
           <form method="POST"
@@ -312,7 +312,7 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
               <?php endforeach; ?>
             </div>
 
-            <button type="submit" class="btn btn--primary btn--full">
+            <button type="submit" class="btn btn--primary btn--full" data-submitting-text="Publicando…">
               Publicar exercício
             </button>
           </form>

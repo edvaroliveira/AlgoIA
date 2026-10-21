@@ -17,7 +17,7 @@ $overridden = $overridden ?? [];
 </div>
 
 <?php if (!($writable ?? false)): ?>
-  <div class="alert alert--error">O servidor não consegue gravar o arquivo .env (permissões). As configurações só podem ser vistas.</div>
+  <div class="alert alert--error" role="alert">O servidor não consegue gravar o arquivo .env (permissões). As configurações só podem ser vistas.</div>
 <?php endif; ?>
 
 <?php foreach ($groups as $groupKey => $group): ?>

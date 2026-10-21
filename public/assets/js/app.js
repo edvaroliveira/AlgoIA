@@ -116,6 +116,64 @@
     });
   }
 
+  // ── Estado de envio dos formulários POST ───────────────────────────────────
+  // Evita clique duplo (ex.: Prática, que espera a correção por IA): os botões
+  // do formulário ficam desabilitados e o botão usado mostra data-submitting-text
+  // (padrão "Enviando…"). Escuta no documento, depois dos handlers do próprio
+  // formulário, e ignora envio cancelado (confirmação negada, validação).
+  // Desabilita só no próximo ciclo: botão desabilitado durante o evento submit
+  // sairia dos dados enviados (formaction/name do botão usado).
+  document.addEventListener("submit", function (event) {
+    const form = event.target;
+    if (event.defaultPrevented || !(form instanceof HTMLFormElement) || form.method.toLowerCase() !== "post") {
+      return;
+    }
+    const submitter = event.submitter;
+    window.setTimeout(function () {
+      form.setAttribute("aria-busy", "true");
+      Array.prototype.forEach.call(form.elements, function (el) {
+        if (el.type !== "submit" || el.disabled) {
+          return;
+        }
+        el.disabled = true;
+        el.setAttribute("data-submit-locked", "");
+        if (el === submitter && el.tagName === "BUTTON") {
+          el.setAttribute("data-original-text", el.textContent);
+          el.textContent = el.getAttribute("data-submitting-text") || "Enviando…";
+        }
+      });
+    }, 0);
+  });
+
+  // Voltar pelo histórico (bfcache) restaura a página com os botões travados.
+  window.addEventListener("pageshow", function (event) {
+    if (!event.persisted) {
+      return;
+    }
+    document.querySelectorAll("[data-submit-locked]").forEach(function (el) {
+      el.disabled = false;
+      el.removeAttribute("data-submit-locked");
+      if (el.hasAttribute("data-original-text")) {
+        el.textContent = el.getAttribute("data-original-text");
+        el.removeAttribute("data-original-text");
+      }
+      if (el.form) {
+        el.form.removeAttribute("aria-busy");
+      }
+    });
+  });
+
+  // ── Avisos (flash) fecháveis ──────────────────────────────────────────────
+  document.addEventListener("click", function (event) {
+    const close = event.target.closest("[data-dismiss-alert]");
+    if (close) {
+      const alertBox = close.closest(".alert");
+      if (alertBox) {
+        alertBox.remove();
+      }
+    }
+  });
+
   // ── Tabelas: rótulo de cada célula a partir do cabeçalho ───────────────────
   // No celular (< 768px) as listas viram cartões e o rótulo aparece antes de
   // cada valor (CSS: td::before { content: attr(data-label) }). Tabelas largas

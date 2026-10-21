@@ -8,7 +8,7 @@
   <p class="form-footer"><a href="<?= \Core\app_url('/login') ?>">Ir para o login</a></p>
 
 <?php elseif (isset($success)): ?>
-  <div class="alert alert--success"><?= \Core\View::e($success) ?></div>
+  <div class="alert alert--success" role="status"><?= \Core\View::e($success) ?></div>
   <p class="form-footer"><a href="<?= \Core\app_url('/login') ?>">Ir para o login</a></p>
 
 <?php else: ?>
@@ -18,11 +18,11 @@
   <p class="auth-copy">Preencha os dados abaixo para solicitar acesso ao sistema como docente. Sua solicitação será analisada pela administração.</p>
 
   <?php if (!empty($error)): ?>
-    <div class="alert alert--error"><?= \Core\View::e($error) ?></div>
+    <div class="alert alert--error" role="alert"><?= \Core\View::e($error) ?></div>
   <?php endif; ?>
 
   <?php if (!empty($errors)): ?>
-    <div class="alert alert--error">
+    <div class="alert alert--error" role="alert">
       <?php foreach ($errors as $e): ?>
         <div><?= \Core\View::e($e) ?></div>
       <?php endforeach; ?>
@@ -34,7 +34,7 @@
 
     <div class="form-group">
       <label class="form-label" for="name">Nome completo</label>
-      <input class="form-input" type="text" id="name" name="name"
+      <input class="form-input" type="text" id="name" aria-describedby="err-name" name="name"
         value="<?= \Core\View::e($old['name'] ?? '') ?>"
         maxlength="200" required autofocus>
       <div class="invalid-feedback" id="err-name"></div>
@@ -42,7 +42,7 @@
 
     <div class="form-group">
       <label class="form-label" for="email">E-mail institucional</label>
-      <input class="form-input" type="email" id="email" name="email"
+      <input class="form-input" type="email" id="email" aria-describedby="err-email" name="email"
         value="<?= \Core\View::e($old['email'] ?? '') ?>"
         required autocomplete="email">
       <div class="invalid-feedback" id="err-email"></div>
@@ -50,21 +50,21 @@
 
     <div class="form-group">
       <label class="form-label" for="password">Senha <span class="hint">(mínimo 10 caracteres, com maiúscula, minúscula e número)</span></label>
-      <input class="form-input" type="password" id="password" name="password"
+      <input class="form-input" type="password" id="password" aria-describedby="err-password" name="password"
         required autocomplete="new-password">
       <div class="invalid-feedback" id="err-password"></div>
     </div>
 
     <div class="form-group">
       <label class="form-label" for="password_confirm">Confirmar senha</label>
-      <input class="form-input" type="password" id="password_confirm" name="password_confirm"
+      <input class="form-input" type="password" id="password_confirm" aria-describedby="err-password-confirm" name="password_confirm"
         required autocomplete="new-password">
       <div class="invalid-feedback" id="err-password-confirm"></div>
     </div>
 
     <div class="form-group">
       <label class="form-label" for="institution">Instituição / Justificativa <span class="hint">(máx. 500 caracteres)</span></label>
-      <textarea class="form-input" id="institution" name="institution"
+      <textarea class="form-input" id="institution" aria-describedby="err-institution" name="institution"
         rows="3" maxlength="500"
         required><?= \Core\View::e($old['institution'] ?? '') ?></textarea>
       <div class="invalid-feedback" id="err-institution"></div>
@@ -84,10 +84,12 @@
       if (!input || !err) return;
       if (msg) {
         input.classList.add('is-invalid');
+        input.setAttribute('aria-invalid', 'true');
         err.textContent = msg;
         err.style.display = 'block';
       } else {
         input.classList.remove('is-invalid');
+        input.removeAttribute('aria-invalid');
         err.textContent = '';
         err.style.display = '';
       }
@@ -155,6 +157,8 @@
     form.addEventListener('submit', function (e) {
       if (!validate()) {
         e.preventDefault();
+        var firstInvalid = form.querySelector('[aria-invalid="true"]');
+        if (firstInvalid) firstInvalid.focus();
       }
     });
 

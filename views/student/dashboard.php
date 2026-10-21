@@ -23,7 +23,7 @@ $all = $all ?? [];
 $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pending');
 ?>
 <?php if (!empty($pendingTurmas)): ?>
-  <div class="alert alert--warning">
+  <div class="alert alert--warning" role="alert">
     Você está aguardando aprovação em <?= count($pendingTurmas) ?> turma(s).
     O docente será notificado.
   </div>

@@ -827,6 +827,43 @@ img.topbar-user__avatar--img {
 
 .alert a { font-weight: 700; }
 
+/* Aviso fechável (flash): texto + botão × à direita */
+.alert--dismissible {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.alert--dismissible > span { flex: 1 1 auto; }
+.alert__close {
+  flex: 0 0 auto;
+  width: 1.9rem;
+  height: 1.9rem;
+  margin: -0.3rem -0.4rem -0.3rem 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 1.3rem;
+  line-height: 1;
+  opacity: 0.75;
+}
+.alert__close:hover { opacity: 1; background: rgba(0, 0, 0, 0.06); }
+.alert__close:focus-visible { outline: none; opacity: 1; box-shadow: 0 0 0 0.18rem var(--focus-ring); }
+
+/* Estado vazio: bloco tracejado, para não parecer texto solto ou erro */
+p.empty-state {
+  margin: 0.25rem 0;
+  padding: 1.1rem 1.25rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  text-align: center;
+}
+
+/* Formulário enviando: botões travados até a resposta do servidor */
+form[aria-busy="true"] { cursor: progress; }
+.btn[data-submit-locked] { cursor: progress; }
+
 .alert--success { background: #eaf8f0; border-color: #cae8d8; color: #16613e; }
 .alert--error   { background: #fcf0ed; border-color: #efc8c0; color: #8b2f21; }
 .alert--warning { background: #f4efe1; border-color: #e1d4ad; color: #755d24; }

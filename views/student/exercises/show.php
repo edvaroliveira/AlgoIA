@@ -41,14 +41,14 @@ global $session;
 $flash = $session->getFlash('error');
 if ($flash):
 ?>
-  <div class="alert alert--error"><?= \Core\View::e($flash) ?></div>
+  <div class="alert alert--error" role="alert"><?= \Core\View::e($flash) ?></div>
 <?php endif; ?>
 
 <?php
 $successFlash = $session->getFlash('success');
 if ($successFlash):
 ?>
-  <div class="alert alert--success"><?= \Core\View::e($successFlash) ?></div>
+  <div class="alert alert--success" role="status"><?= \Core\View::e($successFlash) ?></div>
 <?php endif; ?>
 
 <?php if (empty($exercise['turma_id'])): ?>
@@ -170,7 +170,7 @@ if ($successFlash):
       <?php endforeach; ?>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn--primary btn--lg"
+        <button type="submit" class="btn btn--primary btn--lg" data-submitting-text="Enviando respostas…"
           data-confirm="Submeter o exercício? Esta ação não pode ser desfeita.">
           Submeter exercício
         </button>

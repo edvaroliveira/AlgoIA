@@ -7,7 +7,7 @@
 <p class="auth-copy">Use o link de redefinição recebido da administração para definir uma nova senha de acesso.</p>
 
 <?php if (!empty($errors)): ?>
-  <div class="alert alert--error">
+  <div class="alert alert--error" role="alert">
     <?php foreach ($errors as $e): ?>
       <div><?= \Core\View::e($e) ?></div>
     <?php endforeach; ?>
@@ -15,7 +15,7 @@
 <?php endif; ?>
 
 <?php if (!$validToken): ?>
-  <div class="alert alert--error">Link de redefinição inválido ou expirado. Solicite um novo reset de senha.</div>
+  <div class="alert alert--error" role="alert">Link de redefinição inválido ou expirado. Solicite um novo reset de senha.</div>
   <p class="form-footer"><a href="<?= \Core\app_url('/login') ?>">Voltar para o login</a></p>
 <?php else: ?>
   <form method="POST" action="<?= \Core\app_url('/password/reset') ?>" class="form">

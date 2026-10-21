@@ -6,7 +6,7 @@
 <p class="auth-copy">A administração solicitou a troca da sua senha. Informe a senha que você usa hoje e escolha uma nova para continuar.</p>
 
 <?php if (!empty($errors)): ?>
-  <div class="alert alert--error">
+  <div class="alert alert--error" role="alert">
     <?php foreach ($errors as $e): ?>
       <div><?= \Core\View::e($e) ?></div>
     <?php endforeach; ?>

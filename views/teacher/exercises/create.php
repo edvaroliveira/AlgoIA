@@ -12,7 +12,7 @@ global $session;
 </div>
 
 <?php if (!empty($errors)): ?>
-  <div class="alert alert--error">
+  <div class="alert alert--error" role="alert">
     <?php foreach ($errors as $e): ?><div><?= \Core\View::e($e) ?></div><?php endforeach; ?>
   </div>
 <?php endif; ?>

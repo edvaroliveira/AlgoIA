@@ -17,7 +17,7 @@ global $session;
 <p class="subtitle">Exercício: <strong><?= \Core\View::e($exercise['title']) ?></strong></p>
 
 <?php if (($exercise['status'] ?? 'active') === 'draft'): ?>
-  <div class="alert alert--warning">
+  <div class="alert alert--warning" role="alert">
     Este exercício ainda está em rascunho. Depois de concluir as questões, volte ao detalhe do exercício para concluir a etapa pedagógica e publicar para as turmas.
   </div>
 <?php endif; ?>
@@ -68,7 +68,7 @@ global $session;
 
     <div class="surface-block__body">
       <?php if (!empty($errors)): ?>
-        <div class="alert alert--error">
+        <div class="alert alert--error" role="alert">
           <?php foreach ($errors as $e): ?><div><?= \Core\View::e($e) ?></div><?php endforeach; ?>
         </div>
       <?php endif; ?>
@@ -76,7 +76,7 @@ global $session;
       <?php
       $flash = $session->getFlash('success');
       if ($flash): ?>
-        <div class="alert alert--success"><?= \Core\View::e($flash) ?></div>
+        <div class="alert alert--success" role="status"><?= \Core\View::e($flash) ?></div>
       <?php endif; ?>
 
       <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/questions') ?>" class="form">
