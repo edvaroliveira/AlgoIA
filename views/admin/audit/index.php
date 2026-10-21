@@ -180,78 +180,80 @@ global $session;
       </div>
     </div>
     <div class="surface-block__body">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Quando</th>
-            <th>Ator</th>
-            <th>Ação</th>
-            <th>Entidade</th>
-            <th>Contexto</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($logs as $log): ?>
-            <?php
-            $metadata = json_decode((string) ($log['metadata_json'] ?? ''), true);
-            $action = (string) ($log['action'] ?? '—');
-            $entityType = (string) ($log['entity_type'] ?? '—');
-            $entityLabel = $entityType . (($log['entity_id'] ?? null) ? ' #' . $log['entity_id'] : '');
-            $actionVariant = str_starts_with($action, 'admin.') ? 'neutral' : 'info';
-            $entityVariant = $entityBadgeMap[$entityType] ?? 'neutral';
-            $contextParts = [];
-            if (is_array($metadata)) {
-              foreach ($metadata as $key => $value) {
-                if (is_array($value)) {
-                  $items = array_slice($value, 0, 2);
-                  $renderedItems = array_map(static function ($item): string {
-                    if (is_array($item)) {
-                      $summary = [];
-                      foreach ($item as $itemKey => $itemValue) {
-                        if ($itemValue === null || $itemValue === '') {
-                          continue;
-                        }
-
-                        if (is_array($itemValue)) {
-                          $summary[] = $itemKey . ': [' . count($itemValue) . ' item(ns)]';
-                          continue;
-                        }
-
-                        $summary[] = $itemKey . ': ' . (string) $itemValue;
-                      }
-
-                      return '{' . implode(', ', $summary) . '}';
-                    }
-
-                    return (string) $item;
-                  }, $items);
-
-                  $value = implode('; ', $renderedItems);
-                  if (count($value === '' ? [] : $items) < count($metadata[$key])) {
-                    $value .= ' … +' . (count($metadata[$key]) - count($items)) . ' item(ns)';
-                  }
-                }
-                if ($value === null || $value === '') {
-                  continue;
-                }
-                $contextParts[] = $key . ': ' . (string) $value;
-              }
-            }
-            $contextText = $contextParts ? implode(' | ', $contextParts) : 'Sem metadados adicionais';
-            ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td><?= date('d/m/Y H:i', strtotime($log['created_at'])) ?></td>
-              <td>
-                <strong><?= \Core\View::e($log['actor_name'] ?? 'Sistema') ?></strong><br>
-                <span class="text-muted"><?= \Core\View::e($log['actor_email'] ?? ($log['actor_role'] ?? 'guest')) ?></span>
-              </td>
-              <td><span class="badge badge--<?= \Core\View::e($actionVariant) ?> badge--code"><?= \Core\View::e($action) ?></span></td>
-              <td><span class="badge badge--<?= \Core\View::e($entityVariant) ?> badge--code"><?= \Core\View::e($entityLabel) ?></span></td>
-              <td><?= \Core\View::e($contextText) ?></td>
+              <th>Quando</th>
+              <th>Ator</th>
+              <th>Ação</th>
+              <th>Entidade</th>
+              <th>Contexto</th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($logs as $log): ?>
+              <?php
+              $metadata = json_decode((string) ($log['metadata_json'] ?? ''), true);
+              $action = (string) ($log['action'] ?? '—');
+              $entityType = (string) ($log['entity_type'] ?? '—');
+              $entityLabel = $entityType . (($log['entity_id'] ?? null) ? ' #' . $log['entity_id'] : '');
+              $actionVariant = str_starts_with($action, 'admin.') ? 'neutral' : 'info';
+              $entityVariant = $entityBadgeMap[$entityType] ?? 'neutral';
+              $contextParts = [];
+              if (is_array($metadata)) {
+                foreach ($metadata as $key => $value) {
+                  if (is_array($value)) {
+                    $items = array_slice($value, 0, 2);
+                    $renderedItems = array_map(static function ($item): string {
+                      if (is_array($item)) {
+                        $summary = [];
+                        foreach ($item as $itemKey => $itemValue) {
+                          if ($itemValue === null || $itemValue === '') {
+                            continue;
+                          }
+  
+                          if (is_array($itemValue)) {
+                            $summary[] = $itemKey . ': [' . count($itemValue) . ' item(ns)]';
+                            continue;
+                          }
+  
+                          $summary[] = $itemKey . ': ' . (string) $itemValue;
+                        }
+  
+                        return '{' . implode(', ', $summary) . '}';
+                      }
+  
+                      return (string) $item;
+                    }, $items);
+  
+                    $value = implode('; ', $renderedItems);
+                    if (count($value === '' ? [] : $items) < count($metadata[$key])) {
+                      $value .= ' … +' . (count($metadata[$key]) - count($items)) . ' item(ns)';
+                    }
+                  }
+                  if ($value === null || $value === '') {
+                    continue;
+                  }
+                  $contextParts[] = $key . ': ' . (string) $value;
+                }
+              }
+              $contextText = $contextParts ? implode(' | ', $contextParts) : 'Sem metadados adicionais';
+              ?>
+              <tr>
+                <td><?= date('d/m/Y H:i', strtotime($log['created_at'])) ?></td>
+                <td>
+                  <strong><?= \Core\View::e($log['actor_name'] ?? 'Sistema') ?></strong><br>
+                  <span class="text-muted"><?= \Core\View::e($log['actor_email'] ?? ($log['actor_role'] ?? 'guest')) ?></span>
+                </td>
+                <td><span class="badge badge--<?= \Core\View::e($actionVariant) ?> badge--code"><?= \Core\View::e($action) ?></span></td>
+                <td><span class="badge badge--<?= \Core\View::e($entityVariant) ?> badge--code"><?= \Core\View::e($entityLabel) ?></span></td>
+                <td><?= \Core\View::e($contextText) ?></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
       <?php \Core\View::partial('partials/pagination', ['pagination' => $pagination]); ?>
     </div>
   </section>

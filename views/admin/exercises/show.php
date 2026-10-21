@@ -192,42 +192,44 @@ global $session;
           <p>Marque as turmas desejadas e aplique a ação em lote sem usar seleção múltipla do navegador.</p>
           <form method="POST" class="form">
             <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>
-                    <label>
-                      <input type="checkbox" data-select-all="exercise-publications" aria-label="Selecionar todas as turmas desta publicação">
-                      Todas
-                    </label>
-                  </th>
-                  <th>Turma</th>
-                  <th>Chave</th>
-                  <th>Fecha em</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php foreach ($exercise['publication_settings'] as $publication): ?>
-                  <?php
-                  $publicationClosesTimestamp = !empty($publication['closes_at']) ? strtotime((string) $publication['closes_at']) : false;
-                  $publicationOpensTimestamp = !empty($publication['opens_at']) ? strtotime((string) $publication['opens_at']) : false;
-                  $publicationBatchState = 'scheduled';
-                  if ($publicationClosesTimestamp !== false && $publicationClosesTimestamp < time()) {
-                    $publicationBatchState = 'closed';
-                  } elseif ($publicationOpensTimestamp !== false && $publicationClosesTimestamp !== false && $publicationOpensTimestamp <= time() && $publicationClosesTimestamp >= time()) {
-                    $publicationBatchState = 'open';
-                  }
-                  $publicationBatchLabel = $publicationBatchState === 'open' ? 'abertas' : ($publicationBatchState === 'closed' ? 'encerradas' : 'agendadas');
-                  ?>
+            <div class="table-scroll">
+              <table class="table">
+                <thead>
                   <tr>
-                    <td><input type="checkbox" name="turma_ids[]" value="<?= (int) ($publication['turma_id'] ?? 0) ?>" data-select-item="exercise-publications" data-item-state="<?= $publicationBatchState ?>" data-item-state-label="<?= $publicationBatchLabel ?>"></td>
-                    <td><?= \Core\View::e($publication['turma_name'] ?? 'Turma') ?></td>
-                    <td><?= \Core\View::e($publication['access_key'] ?? '—') ?></td>
-                    <td><?= !empty($publication['closes_at']) ? date('d/m/Y H:i', strtotime((string) $publication['closes_at'])) : '—' ?></td>
+                    <th>
+                      <label>
+                        <input type="checkbox" data-select-all="exercise-publications" aria-label="Selecionar todas as turmas desta publicação">
+                        Todas
+                      </label>
+                    </th>
+                    <th>Turma</th>
+                    <th>Chave</th>
+                    <th>Fecha em</th>
                   </tr>
-                <?php endforeach; ?>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  <?php foreach ($exercise['publication_settings'] as $publication): ?>
+                    <?php
+                    $publicationClosesTimestamp = !empty($publication['closes_at']) ? strtotime((string) $publication['closes_at']) : false;
+                    $publicationOpensTimestamp = !empty($publication['opens_at']) ? strtotime((string) $publication['opens_at']) : false;
+                    $publicationBatchState = 'scheduled';
+                    if ($publicationClosesTimestamp !== false && $publicationClosesTimestamp < time()) {
+                      $publicationBatchState = 'closed';
+                    } elseif ($publicationOpensTimestamp !== false && $publicationClosesTimestamp !== false && $publicationOpensTimestamp <= time() && $publicationClosesTimestamp >= time()) {
+                      $publicationBatchState = 'open';
+                    }
+                    $publicationBatchLabel = $publicationBatchState === 'open' ? 'abertas' : ($publicationBatchState === 'closed' ? 'encerradas' : 'agendadas');
+                    ?>
+                    <tr>
+                      <td><input type="checkbox" name="turma_ids[]" value="<?= (int) ($publication['turma_id'] ?? 0) ?>" data-select-item="exercise-publications" data-item-state="<?= $publicationBatchState ?>" data-item-state-label="<?= $publicationBatchLabel ?>"></td>
+                      <td><?= \Core\View::e($publication['turma_name'] ?? 'Turma') ?></td>
+                      <td><?= \Core\View::e($publication['access_key'] ?? '—') ?></td>
+                      <td><?= !empty($publication['closes_at']) ? date('d/m/Y H:i', strtotime((string) $publication['closes_at'])) : '—' ?></td>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label" for="batch-reopen-until">Reabrir até</label>
@@ -401,40 +403,42 @@ global $session;
     <?php if (empty($results)): ?>
       <p class="empty-state">Nenhuma submissão corrigida até o momento.</p>
     <?php else: ?>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Aluno</th>
-            <th>E-mail</th>
-            <th>Melhor nota</th>
-            <th>Tentativas</th>
-            <th>Alertas</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($results as $result): ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td><?= \Core\View::e($result['name']) ?></td>
-              <td><?= \Core\View::e($result['email']) ?></td>
-              <td><?= number_format((float) $result['best_score'], 1) ?> / <?= number_format((float) $maxScore, 1) ?></td>
-              <td><?= (int) $result['attempt_count'] ?></td>
-              <td>
-                <?php if ((int) ($result['injection_flag_count'] ?? 0) > 0): ?>
-                  <span class="badge badge--warning">Prompt suspeito</span>
-                <?php else: ?>
-                  <span class="text-muted">—</span>
-                <?php endif; ?>
-              </td>
-              <td>
-                <?php if (!empty($result['best_attempt_id'])): ?>
-                  <a href="<?= \Core\app_url('/admin/attempts/' . (int) $result['best_attempt_id'] . '/result') ?>" class="btn btn--sm">Detalhar</a>
-                <?php endif; ?>
-              </td>
+              <th>Aluno</th>
+              <th>E-mail</th>
+              <th>Melhor nota</th>
+              <th>Tentativas</th>
+              <th>Alertas</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($results as $result): ?>
+              <tr>
+                <td><?= \Core\View::e($result['name']) ?></td>
+                <td><?= \Core\View::e($result['email']) ?></td>
+                <td><?= number_format((float) $result['best_score'], 1) ?> / <?= number_format((float) $maxScore, 1) ?></td>
+                <td><?= (int) $result['attempt_count'] ?></td>
+                <td>
+                  <?php if ((int) ($result['injection_flag_count'] ?? 0) > 0): ?>
+                    <span class="badge badge--warning">Prompt suspeito</span>
+                  <?php else: ?>
+                    <span class="text-muted">—</span>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <?php if (!empty($result['best_attempt_id'])): ?>
+                    <a href="<?= \Core\app_url('/admin/attempts/' . (int) $result['best_attempt_id'] . '/result') ?>" class="btn btn--sm">Detalhar</a>
+                  <?php endif; ?>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     <?php endif; ?>
   </div>
 </section>

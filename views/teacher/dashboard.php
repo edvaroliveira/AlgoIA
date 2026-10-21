@@ -87,30 +87,32 @@ $gradingJobFailures = $gradingJobFailures ?? [];
         </div>
       </div>
       <div class="surface-block__body">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Aluno</th>
-              <th>Exercício</th>
-              <th>Questão</th>
-              <th>Pedido</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($openScoreReviews as $request): ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td><?= \Core\View::e($request['student_name']) ?></td>
-                <td><?= \Core\View::e($request['exercise_title']) ?></td>
-                <td>Q<?= (int) $request['order_index'] ?></td>
-                <td><?= \Core\View::e(mb_strimwidth((string) $request['request_message'], 0, 120, '…')) ?></td>
-                <td class="td-actions">
-                  <a href="<?= \Core\app_url('/teacher/attempts/' . (int) $request['attempt_id'] . '/result') ?>" class="btn btn--sm">Revisar</a>
-                </td>
+                <th>Aluno</th>
+                <th>Exercício</th>
+                <th>Questão</th>
+                <th>Pedido</th>
+                <th></th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($openScoreReviews as $request): ?>
+                <tr>
+                  <td><?= \Core\View::e($request['student_name']) ?></td>
+                  <td><?= \Core\View::e($request['exercise_title']) ?></td>
+                  <td>Q<?= (int) $request['order_index'] ?></td>
+                  <td><?= \Core\View::e(mb_strimwidth((string) $request['request_message'], 0, 120, '…')) ?></td>
+                  <td class="td-actions">
+                    <a href="<?= \Core\app_url('/teacher/attempts/' . (int) $request['attempt_id'] . '/result') ?>" class="btn btn--sm">Revisar</a>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   </div>
@@ -127,48 +129,50 @@ $gradingJobFailures = $gradingJobFailures ?? [];
         <a href="<?= \Core\app_url('/teacher/attempts/pending') ?>" class="btn btn--ghost btn--sm">Abrir painel completo</a>
       </div>
       <div class="surface-block__body">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Aluno</th>
-              <th>Exercício</th>
-              <th>Turma</th>
-              <th>Enviada em</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($pendingGradingAttempts as $attempt): ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td><?= \Core\View::e($attempt['student_name'] ?? '—') ?></td>
-                <td><?= \Core\View::e($attempt['exercise_title'] ?? '—') ?></td>
-                <td><?= \Core\View::e($attempt['turma_name'] ?? '—') ?></td>
-                <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : '—' ?></td>
-                <td>
-                  <?php
-                  $jobStatus = (string) ($attempt['grading_job_status'] ?? 'manual');
-                  $jobLabel = [
-                    'queued' => 'Na fila',
-                    'processing' => 'Processando',
-                    'failed' => 'Falha técnica',
-                    'completed' => 'Concluída',
-                    'manual' => 'Sem job',
-                  ][$jobStatus] ?? $jobStatus;
-                  ?>
-                  <span class="badge badge--info"><?= \Core\View::e($jobLabel) ?></span>
-                </td>
-                <td class="td-actions">
-                  <form method="POST" action="<?= \Core\app_url('/teacher/attempts/' . (int) ($attempt['id'] ?? 0) . '/regrade') ?>">
-                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                    <input type="hidden" name="return_to" value="<?= \Core\View::e(\Core\app_request_path()) ?>">
-                    <button type="submit" class="btn btn--sm btn--primary">Reprocessar</button>
-                  </form>
-                </td>
+                <th>Aluno</th>
+                <th>Exercício</th>
+                <th>Turma</th>
+                <th>Enviada em</th>
+                <th>Status</th>
+                <th></th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($pendingGradingAttempts as $attempt): ?>
+                <tr>
+                  <td><?= \Core\View::e($attempt['student_name'] ?? '—') ?></td>
+                  <td><?= \Core\View::e($attempt['exercise_title'] ?? '—') ?></td>
+                  <td><?= \Core\View::e($attempt['turma_name'] ?? '—') ?></td>
+                  <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : '—' ?></td>
+                  <td>
+                    <?php
+                    $jobStatus = (string) ($attempt['grading_job_status'] ?? 'manual');
+                    $jobLabel = [
+                      'queued' => 'Na fila',
+                      'processing' => 'Processando',
+                      'failed' => 'Falha técnica',
+                      'completed' => 'Concluída',
+                      'manual' => 'Sem job',
+                    ][$jobStatus] ?? $jobStatus;
+                    ?>
+                    <span class="badge badge--info"><?= \Core\View::e($jobLabel) ?></span>
+                  </td>
+                  <td class="td-actions">
+                    <form method="POST" action="<?= \Core\app_url('/teacher/attempts/' . (int) ($attempt['id'] ?? 0) . '/regrade') ?>">
+                      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                      <input type="hidden" name="return_to" value="<?= \Core\View::e(\Core\app_request_path()) ?>">
+                      <button type="submit" class="btn btn--sm btn--primary">Reprocessar</button>
+                    </form>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   </div>
@@ -188,49 +192,51 @@ $gradingJobFailures = $gradingJobFailures ?? [];
       <?php if (empty($exercises)): ?>
         <p class="empty-state">Nenhum exercício criado ainda. <a href="<?= \Core\app_url('/teacher/exercises/create') ?>">Criar o primeiro</a>.</p>
       <?php else: ?>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Título</th>
-              <th>Turma</th>
-              <th>Abre</th>
-              <th>Fecha</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($exercises as $ex):
-              $now    = time();
-              $isDraft = ($ex['status'] ?? 'active') === 'draft';
-              $isReady = ($ex['status'] ?? 'active') === 'ready';
-              $open = !empty($ex['opens_at']) && !empty($ex['closes_at'])
-                && strtotime($ex['opens_at']) <= $now && strtotime($ex['closes_at']) >= $now;
-              $closed = !empty($ex['closes_at']) && strtotime($ex['closes_at']) < $now;
-            ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td><?= \Core\View::e($ex['title']) ?></td>
-                <td><?= \Core\View::e($ex['turma_label'] ?? 'Pendente de finalização') ?></td>
-                <td><?= !empty($ex['opens_at']) ? date('d/m/Y H:i', strtotime($ex['opens_at'])) : '—' ?></td>
-                <td><?= !empty($ex['closes_at']) ? date('d/m/Y H:i', strtotime($ex['closes_at'])) : '—' ?></td>
-                <td>
-                  <?php if ($isDraft): ?>
-                    <span class="badge badge--warning">Rascunho</span>
-                  <?php elseif ($isReady): ?>
-                    <span class="badge badge--info">Pronto para publicar</span>
-                  <?php elseif ($closed): ?>
-                    <span class="badge badge--neutral">Encerrado</span>
-                  <?php elseif ($open): ?>
-                    <span class="badge badge--success">Aberto</span>
-                  <?php else: ?>
-                    <span class="badge badge--info">Agendado</span>
-                  <?php endif; ?>
-                </td>
-                <td class="td-actions"><a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a></td>
+                <th>Título</th>
+                <th>Turma</th>
+                <th>Abre</th>
+                <th>Fecha</th>
+                <th>Status</th>
+                <th></th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($exercises as $ex):
+                $now    = time();
+                $isDraft = ($ex['status'] ?? 'active') === 'draft';
+                $isReady = ($ex['status'] ?? 'active') === 'ready';
+                $open = !empty($ex['opens_at']) && !empty($ex['closes_at'])
+                  && strtotime($ex['opens_at']) <= $now && strtotime($ex['closes_at']) >= $now;
+                $closed = !empty($ex['closes_at']) && strtotime($ex['closes_at']) < $now;
+              ?>
+                <tr>
+                  <td><?= \Core\View::e($ex['title']) ?></td>
+                  <td><?= \Core\View::e($ex['turma_label'] ?? 'Pendente de finalização') ?></td>
+                  <td><?= !empty($ex['opens_at']) ? date('d/m/Y H:i', strtotime($ex['opens_at'])) : '—' ?></td>
+                  <td><?= !empty($ex['closes_at']) ? date('d/m/Y H:i', strtotime($ex['closes_at'])) : '—' ?></td>
+                  <td>
+                    <?php if ($isDraft): ?>
+                      <span class="badge badge--warning">Rascunho</span>
+                    <?php elseif ($isReady): ?>
+                      <span class="badge badge--info">Pronto para publicar</span>
+                    <?php elseif ($closed): ?>
+                      <span class="badge badge--neutral">Encerrado</span>
+                    <?php elseif ($open): ?>
+                      <span class="badge badge--success">Aberto</span>
+                    <?php else: ?>
+                      <span class="badge badge--info">Agendado</span>
+                    <?php endif; ?>
+                  </td>
+                  <td class="td-actions"><a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id']) ?>" class="btn btn--sm">Ver</a></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php endif; ?>
     </div>
 
@@ -256,40 +262,42 @@ $gradingJobFailures = $gradingJobFailures ?? [];
       <?php if (empty($recentStudents)): ?>
         <p class="empty-state">Nenhum aluno vinculado às suas turmas ainda.</p>
       <?php else: ?>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>E-mail</th>
-              <th>Turmas</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($recentStudents as $student): ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td><?= \Core\View::e($student['name']) ?></td>
-                <td><?= \Core\View::e($student['email']) ?></td>
-                <td><?= \Core\View::e($student['turma_names'] ?? '—') ?></td>
-                <td>
-                  <?php match ($student['status']) {
-                    'active'   => print '<span class="badge badge--success">Ativo</span>',
-                    'pending'  => print '<span class="badge badge--warning">Pendente</span>',
-                    'inactive' => print '<span class="badge badge--neutral">Inativo</span>',
-                    default    => print '',
-                  }; ?>
-                </td>
-                <td class="td-actions">
-                  <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $student['id'] . '/detach') ?>" data-confirm="Desvincular este aluno das suas turmas? O cadastro e o histórico serão preservados.">
-                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                    <button type="submit" class="btn btn--danger btn--sm">Desvincular</button>
-                  </form>
-                </td>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Turmas</th>
+                <th>Status</th>
+                <th></th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($recentStudents as $student): ?>
+                <tr>
+                  <td><?= \Core\View::e($student['name']) ?></td>
+                  <td><?= \Core\View::e($student['email']) ?></td>
+                  <td><?= \Core\View::e($student['turma_names'] ?? '—') ?></td>
+                  <td>
+                    <?php match ($student['status']) {
+                      'active'   => print '<span class="badge badge--success">Ativo</span>',
+                      'pending'  => print '<span class="badge badge--warning">Pendente</span>',
+                      'inactive' => print '<span class="badge badge--neutral">Inativo</span>',
+                      default    => print '',
+                    }; ?>
+                  </td>
+                  <td class="td-actions">
+                    <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $student['id'] . '/detach') ?>" data-confirm="Desvincular este aluno das suas turmas? O cadastro e o histórico serão preservados.">
+                      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                      <button type="submit" class="btn btn--danger btn--sm">Desvincular</button>
+                    </form>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php endif; ?>
     </div>
   </section>

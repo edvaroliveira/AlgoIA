@@ -25,22 +25,24 @@ $table = static function (array $rows, string $title, string $labelHeader) use (
       <?php if ($rows === []): ?>
         <p class="empty-state">Sem uso no período.</p>
       <?php else: ?>
-        <table class="table">
-          <thead><tr><th><?= \Core\View::e($labelHeader) ?></th><th>Chamadas</th><th>Tokens</th><th>Custo</th><th>Por resposta</th></tr></thead>
-          <tbody>
-            <?php foreach ($rows as $row):
-              $ok = max(1, (int) $row['ok_calls']);
-            ?>
-              <tr>
-                <td><?= \Core\View::e($row['label']) ?></td>
-                <td><?= $int($row['calls']) ?></td>
-                <td><?= $int($row['tokens']) ?></td>
-                <td><?= $usd((float) $row['cost_usd']) ?><br><small><?= $brl((float) $row['cost_usd'] * $rate) ?></small></td>
-                <td><?= $usd((float) $row['cost_usd'] / $ok) ?></td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+        <div class="table-scroll">
+          <table class="table">
+            <thead><tr><th><?= \Core\View::e($labelHeader) ?></th><th>Chamadas</th><th>Tokens</th><th>Custo</th><th>Por resposta</th></tr></thead>
+            <tbody>
+              <?php foreach ($rows as $row):
+                $ok = max(1, (int) $row['ok_calls']);
+              ?>
+                <tr>
+                  <td><?= \Core\View::e($row['label']) ?></td>
+                  <td><?= $int($row['calls']) ?></td>
+                  <td><?= $int($row['tokens']) ?></td>
+                  <td><?= $usd((float) $row['cost_usd']) ?><br><small><?= $brl((float) $row['cost_usd'] * $rate) ?></small></td>
+                  <td><?= $usd((float) $row['cost_usd'] / $ok) ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php endif; ?>
     </div>
   </section>
@@ -184,20 +186,22 @@ $table = static function (array $rows, string $title, string $labelHeader) use (
       <?php if ($recentFailures === []): ?>
         <p class="empty-state">Nenhuma falha no período.</p>
       <?php else: ?>
-        <table class="table">
-          <thead><tr><th>Quando</th><th>Tipo</th><th>Categoria</th><th>Docente</th><th>Aluno</th></tr></thead>
-          <tbody>
-            <?php foreach ($recentFailures as $failure): ?>
-              <tr>
-                <td><?= date('d/m/Y H:i', strtotime((string) $failure['created_at'])) ?></td>
-                <td><?= $failure['kind'] === AiUsageLog::KIND_PRACTICE ? 'Prática' : 'Correção' ?></td>
-                <td><?= \Core\View::e($failure['error_category'] ?? '') ?></td>
-                <td><?= \Core\View::e($failure['teacher_name'] ?? '—') ?></td>
-                <td><?= \Core\View::e($failure['student_name'] ?? '—') ?></td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+        <div class="table-scroll">
+          <table class="table">
+            <thead><tr><th>Quando</th><th>Tipo</th><th>Categoria</th><th>Docente</th><th>Aluno</th></tr></thead>
+            <tbody>
+              <?php foreach ($recentFailures as $failure): ?>
+                <tr>
+                  <td><?= date('d/m/Y H:i', strtotime((string) $failure['created_at'])) ?></td>
+                  <td><?= $failure['kind'] === AiUsageLog::KIND_PRACTICE ? 'Prática' : 'Correção' ?></td>
+                  <td><?= \Core\View::e($failure['error_category'] ?? '') ?></td>
+                  <td><?= \Core\View::e($failure['teacher_name'] ?? '—') ?></td>
+                  <td><?= \Core\View::e($failure['student_name'] ?? '—') ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php endif; ?>
     </div>
   </section>

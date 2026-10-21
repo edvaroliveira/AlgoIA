@@ -151,85 +151,87 @@ global $session;
         <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
         <input type="hidden" name="return_query" value="<?= \Core\View::e($exportQuery) ?>">
       </form>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>
-              <label>
-                <input type="checkbox" form="admin-users-batch-form" data-select-all="admin-users-list" aria-label="Selecionar todos os usuários da listagem">
-                Todos
-              </label>
-            </th>
-            <th>Nome</th>
-            <th>E-mail</th>
-            <th>Perfil</th>
-            <th>Status</th>
-            <th>Contexto</th>
-            <th>Criado em</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($users as $user): ?>
-            <?php
-            $role = $user['role'] ?? 'student';
-            $status = $user['status'] ?? 'inactive';
-            $context = '—';
-            $statusStateLabel = $status === 'active' ? 'ativos' : ($status === 'pending' ? 'pendentes' : 'inativos');
-
-            if ($role === 'teacher') {
-              $context = (int) ($user['owned_turma_count'] ?? 0) . ' turma(s) · ' . (int) ($user['exercise_count'] ?? 0) . ' exercício(s)';
-            } elseif ($role === 'student') {
-              $context = !empty($user['turma_names'])
-                ? \Core\View::e((string) $user['turma_names'])
-                : 'Sem turma';
-            } elseif ($role === 'admin') {
-              $context = 'Acesso global';
-            }
-            ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td><input type="checkbox" form="admin-users-batch-form" name="user_ids[]" value="<?= (int) ($user['id'] ?? 0) ?>" data-select-item="admin-users-list" data-item-state="<?= \Core\View::e($status) ?>" data-item-state-label="<?= \Core\View::e($statusStateLabel) ?>"></td>
-              <td><strong><?= \Core\View::e($user['name']) ?></strong></td>
-              <td><?= \Core\View::e($user['email']) ?></td>
-              <td>
-                <?php if ($role === 'admin'): ?>
-                  <span class="badge badge--info">Administrador</span>
-                <?php elseif ($role === 'teacher'): ?>
-                  <span class="badge badge--success">Docente</span>
-                <?php else: ?>
-                  <span class="badge badge--neutral">Aluno</span>
-                <?php endif; ?>
-              </td>
-              <td>
-                <?php if ($status === 'active'): ?>
-                  <span class="badge badge--success">Ativo</span>
-                <?php elseif ($status === 'pending'): ?>
-                  <span class="badge badge--warning">Pendente</span>
-                <?php else: ?>
-                  <span class="badge badge--neutral">Inativo</span>
-                <?php endif; ?>
-              </td>
-              <td><?= $context ?></td>
-              <td><?= date('d/m/Y', strtotime($user['created_at'])) ?></td>
-              <td class="td-actions">
-                <a href="<?= \Core\app_url('/admin/users/' . $user['id']) ?>" class="btn btn--sm btn--ghost">Detalhes</a>
-                <a href="<?= \Core\app_url('/admin/users/' . $user['id'] . '/edit') ?>" class="btn btn--sm">Editar</a>
-                <form method="POST" action="<?= \Core\app_url('/admin/users/' . $user['id'] . '/status') ?>">
-                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                  <input type="hidden" name="status" value="<?= $status === 'active' ? 'inactive' : 'active' ?>">
-                  <button type="submit" class="btn btn--sm <?= $status === 'active' ? 'btn--ghost' : '' ?>">
-                    <?= $status === 'active' ? 'Inativar' : 'Ativar' ?>
-                  </button>
-                </form>
-                <form method="POST" action="<?= \Core\app_url('/admin/users/' . $user['id'] . '/reset-password') ?>">
-                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                  <button type="submit" class="btn btn--sm btn--ghost" data-confirm="Gerar link de redefinição válido por 60 minutos?">Resetar senha</button>
-                </form>
-              </td>
+              <th>
+                <label>
+                  <input type="checkbox" form="admin-users-batch-form" data-select-all="admin-users-list" aria-label="Selecionar todos os usuários da listagem">
+                  Todos
+                </label>
+              </th>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Perfil</th>
+              <th>Status</th>
+              <th>Contexto</th>
+              <th>Criado em</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($users as $user): ?>
+              <?php
+              $role = $user['role'] ?? 'student';
+              $status = $user['status'] ?? 'inactive';
+              $context = '—';
+              $statusStateLabel = $status === 'active' ? 'ativos' : ($status === 'pending' ? 'pendentes' : 'inativos');
+  
+              if ($role === 'teacher') {
+                $context = (int) ($user['owned_turma_count'] ?? 0) . ' turma(s) · ' . (int) ($user['exercise_count'] ?? 0) . ' exercício(s)';
+              } elseif ($role === 'student') {
+                $context = !empty($user['turma_names'])
+                  ? \Core\View::e((string) $user['turma_names'])
+                  : 'Sem turma';
+              } elseif ($role === 'admin') {
+                $context = 'Acesso global';
+              }
+              ?>
+              <tr>
+                <td><input type="checkbox" form="admin-users-batch-form" name="user_ids[]" value="<?= (int) ($user['id'] ?? 0) ?>" data-select-item="admin-users-list" data-item-state="<?= \Core\View::e($status) ?>" data-item-state-label="<?= \Core\View::e($statusStateLabel) ?>"></td>
+                <td><strong><?= \Core\View::e($user['name']) ?></strong></td>
+                <td><?= \Core\View::e($user['email']) ?></td>
+                <td>
+                  <?php if ($role === 'admin'): ?>
+                    <span class="badge badge--info">Administrador</span>
+                  <?php elseif ($role === 'teacher'): ?>
+                    <span class="badge badge--success">Docente</span>
+                  <?php else: ?>
+                    <span class="badge badge--neutral">Aluno</span>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <?php if ($status === 'active'): ?>
+                    <span class="badge badge--success">Ativo</span>
+                  <?php elseif ($status === 'pending'): ?>
+                    <span class="badge badge--warning">Pendente</span>
+                  <?php else: ?>
+                    <span class="badge badge--neutral">Inativo</span>
+                  <?php endif; ?>
+                </td>
+                <td><?= $context ?></td>
+                <td><?= date('d/m/Y', strtotime($user['created_at'])) ?></td>
+                <td class="td-actions">
+                  <a href="<?= \Core\app_url('/admin/users/' . $user['id']) ?>" class="btn btn--sm btn--ghost">Detalhes</a>
+                  <a href="<?= \Core\app_url('/admin/users/' . $user['id'] . '/edit') ?>" class="btn btn--sm">Editar</a>
+                  <form method="POST" action="<?= \Core\app_url('/admin/users/' . $user['id'] . '/status') ?>">
+                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                    <input type="hidden" name="status" value="<?= $status === 'active' ? 'inactive' : 'active' ?>">
+                    <button type="submit" class="btn btn--sm <?= $status === 'active' ? 'btn--ghost' : '' ?>">
+                      <?= $status === 'active' ? 'Inativar' : 'Ativar' ?>
+                    </button>
+                  </form>
+                  <form method="POST" action="<?= \Core\app_url('/admin/users/' . $user['id'] . '/reset-password') ?>">
+                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                    <button type="submit" class="btn btn--sm btn--ghost" data-confirm="Gerar link de redefinição válido por 60 minutos?">Resetar senha</button>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
       <div class="form-row">
         <div class="form-group form-group--end">
           <label class="form-label">Ações em lote</label>

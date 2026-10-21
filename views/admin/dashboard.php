@@ -169,35 +169,37 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
       <a href="<?= \Core\app_url('/admin/attempts/pending') ?>" class="btn btn--ghost btn--sm">Ver pendências</a>
     </div>
     <div class="surface-block__body">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Aluno</th>
-            <th>Exercício</th>
-            <th>Docente</th>
-            <th>Tentativas</th>
-            <th>Erro</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($gradingJobFailures as $job): ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td><?= \Core\View::e($job['student_name'] ?? '—') ?></td>
-              <td><?= \Core\View::e($job['exercise_title'] ?? '—') ?></td>
-              <td><?= \Core\View::e($job['teacher_name'] ?? '—') ?></td>
-              <td><span class="badge badge--warning"><?= (int) ($job['attempts'] ?? 0) ?></span></td>
-              <td><?= \Core\View::e(mb_substr((string) ($job['last_error'] ?? 'Sem detalhe'), 0, 160)) ?></td>
-              <td>
-                <form method="POST" action="<?= \Core\app_url('/admin/grading-jobs/' . (int) ($job['id'] ?? 0) . '/retry') ?>">
-                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                  <button type="submit" class="btn btn--ghost btn--sm">Retentar</button>
-                </form>
-              </td>
+              <th>Aluno</th>
+              <th>Exercício</th>
+              <th>Docente</th>
+              <th>Tentativas</th>
+              <th>Erro</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($gradingJobFailures as $job): ?>
+              <tr>
+                <td><?= \Core\View::e($job['student_name'] ?? '—') ?></td>
+                <td><?= \Core\View::e($job['exercise_title'] ?? '—') ?></td>
+                <td><?= \Core\View::e($job['teacher_name'] ?? '—') ?></td>
+                <td><span class="badge badge--warning"><?= (int) ($job['attempts'] ?? 0) ?></span></td>
+                <td><?= \Core\View::e(mb_substr((string) ($job['last_error'] ?? 'Sem detalhe'), 0, 160)) ?></td>
+                <td>
+                  <form method="POST" action="<?= \Core\app_url('/admin/grading-jobs/' . (int) ($job['id'] ?? 0) . '/retry') ?>">
+                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                    <button type="submit" class="btn btn--ghost btn--sm">Retentar</button>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 <?php endif; ?>
@@ -212,50 +214,52 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
       <a href="<?= \Core\app_url('/admin/attempts/pending') ?>" class="btn btn--ghost btn--sm">Abrir painel completo</a>
     </div>
     <div class="surface-block__body">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Aluno</th>
-            <th>Exercício</th>
-            <th>Docente</th>
-            <th>Turma</th>
-            <th>Enviada em</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($pendingGradingAttempts as $attempt): ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td><?= \Core\View::e($attempt['student_name'] ?? '—') ?></td>
-              <td><?= \Core\View::e($attempt['exercise_title'] ?? '—') ?></td>
-              <td><?= \Core\View::e($attempt['teacher_name'] ?? '—') ?></td>
-              <td><?= \Core\View::e($attempt['turma_name'] ?? '—') ?></td>
-              <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : '—' ?></td>
-              <td>
-                <?php
-                $jobStatus = (string) ($attempt['grading_job_status'] ?? 'manual');
-                $jobLabel = [
-                  'queued' => 'Na fila',
-                  'processing' => 'Processando',
-                  'failed' => 'Falha técnica',
-                  'completed' => 'Concluída',
-                  'manual' => 'Sem job',
-                ][$jobStatus] ?? $jobStatus;
-                ?>
-                <span class="badge badge--info"><?= \Core\View::e($jobLabel) ?></span>
-              </td>
-              <td class="td-actions">
-                <form method="POST" action="<?= \Core\app_url('/admin/attempts/' . (int) ($attempt['id'] ?? 0) . '/regrade') ?>">
-                  <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
-                  <input type="hidden" name="return_to" value="<?= \Core\View::e(\Core\app_request_path()) ?>">
-                  <button type="submit" class="btn btn--sm btn--primary">Reprocessar</button>
-                </form>
-              </td>
+              <th>Aluno</th>
+              <th>Exercício</th>
+              <th>Docente</th>
+              <th>Turma</th>
+              <th>Enviada em</th>
+              <th>Status</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($pendingGradingAttempts as $attempt): ?>
+              <tr>
+                <td><?= \Core\View::e($attempt['student_name'] ?? '—') ?></td>
+                <td><?= \Core\View::e($attempt['exercise_title'] ?? '—') ?></td>
+                <td><?= \Core\View::e($attempt['teacher_name'] ?? '—') ?></td>
+                <td><?= \Core\View::e($attempt['turma_name'] ?? '—') ?></td>
+                <td><?= !empty($attempt['submitted_at']) ? date('d/m/Y H:i', strtotime((string) $attempt['submitted_at'])) : '—' ?></td>
+                <td>
+                  <?php
+                  $jobStatus = (string) ($attempt['grading_job_status'] ?? 'manual');
+                  $jobLabel = [
+                    'queued' => 'Na fila',
+                    'processing' => 'Processando',
+                    'failed' => 'Falha técnica',
+                    'completed' => 'Concluída',
+                    'manual' => 'Sem job',
+                  ][$jobStatus] ?? $jobStatus;
+                  ?>
+                  <span class="badge badge--info"><?= \Core\View::e($jobLabel) ?></span>
+                </td>
+                <td class="td-actions">
+                  <form method="POST" action="<?= \Core\app_url('/admin/attempts/' . (int) ($attempt['id'] ?? 0) . '/regrade') ?>">
+                    <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                    <input type="hidden" name="return_to" value="<?= \Core\View::e(\Core\app_request_path()) ?>">
+                    <button type="submit" class="btn btn--sm btn--primary">Reprocessar</button>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 <?php endif; ?>
@@ -269,26 +273,28 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
       </div>
     </div>
     <div class="surface-block__body">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Sinal</th>
-            <th>Item</th>
-            <th>Contexto</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($pendingActions as $pendingAction): ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td><span class="badge badge--<?= \Core\View::e($pendingAction['variant'] ?? 'neutral') ?>"><?= \Core\View::e($pendingAction['label'] ?? 'ação') ?></span></td>
-              <td><strong><?= \Core\View::e($pendingAction['title'] ?? 'Item') ?></strong></td>
-              <td><?= \Core\View::e($pendingAction['description'] ?? 'Sem contexto adicional') ?></td>
-              <td class="td-actions"><a href="<?= \Core\app_url((string) ($pendingAction['path'] ?? '/admin/dashboard')) ?>" class="btn btn--sm"><?= \Core\View::e($pendingAction['action_label'] ?? 'Abrir') ?></a></td>
+              <th>Sinal</th>
+              <th>Item</th>
+              <th>Contexto</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($pendingActions as $pendingAction): ?>
+              <tr>
+                <td><span class="badge badge--<?= \Core\View::e($pendingAction['variant'] ?? 'neutral') ?>"><?= \Core\View::e($pendingAction['label'] ?? 'ação') ?></span></td>
+                <td><strong><?= \Core\View::e($pendingAction['title'] ?? 'Item') ?></strong></td>
+                <td><?= \Core\View::e($pendingAction['description'] ?? 'Sem contexto adicional') ?></td>
+                <td class="td-actions"><a href="<?= \Core\app_url((string) ($pendingAction['path'] ?? '/admin/dashboard')) ?>" class="btn btn--sm"><?= \Core\View::e($pendingAction['action_label'] ?? 'Abrir') ?></a></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 <?php endif; ?>
@@ -306,32 +312,34 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
       <?php if (empty($pendingTurmas)): ?>
         <p class="empty-state">Nenhuma turma com pendência no momento.</p>
       <?php else: ?>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Turma</th>
-              <th>Docente</th>
-              <th>Pendências</th>
-              <th>Mais antiga</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($pendingTurmas as $turma): ?>
-              <?php
-              $pendingCount = (int) ($turma['pending_count'] ?? 0);
-              $oldestPendingAt = !empty($turma['oldest_pending_at']) ? date('d/m/Y H:i', strtotime((string) $turma['oldest_pending_at'])) : 'Sem fila antiga';
-              ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td><strong><?= \Core\View::e($turma['name'] ?? '—') ?></strong></td>
-                <td><?= \Core\View::e($turma['teacher_name'] ?? '—') ?></td>
-                <td><span class="badge badge--warning"><?= $pendingCount ?> pendência<?= $pendingCount === 1 ? '' : 's' ?></span></td>
-                <td><span class="badge badge--neutral badge--code"><?= \Core\View::e($oldestPendingAt) ?></span></td>
-                <td class="td-actions"><a href="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0)) ?>" class="btn btn--sm">Detalhes</a></td>
+                <th>Turma</th>
+                <th>Docente</th>
+                <th>Pendências</th>
+                <th>Mais antiga</th>
+                <th></th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($pendingTurmas as $turma): ?>
+                <?php
+                $pendingCount = (int) ($turma['pending_count'] ?? 0);
+                $oldestPendingAt = !empty($turma['oldest_pending_at']) ? date('d/m/Y H:i', strtotime((string) $turma['oldest_pending_at'])) : 'Sem fila antiga';
+                ?>
+                <tr>
+                  <td><strong><?= \Core\View::e($turma['name'] ?? '—') ?></strong></td>
+                  <td><?= \Core\View::e($turma['teacher_name'] ?? '—') ?></td>
+                  <td><span class="badge badge--warning"><?= $pendingCount ?> pendência<?= $pendingCount === 1 ? '' : 's' ?></span></td>
+                  <td><span class="badge badge--neutral badge--code"><?= \Core\View::e($oldestPendingAt) ?></span></td>
+                  <td class="td-actions"><a href="<?= \Core\app_url('/admin/turmas/' . ($turma['id'] ?? 0)) ?>" class="btn btn--sm">Detalhes</a></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php endif; ?>
     </div>
   </section>
@@ -390,33 +398,35 @@ $closingSoonBadgeText = $closingSoonCount > 0 ? 'janela crítica' : 'ritmo está
       <?php if (empty($pendingUsers)): ?>
         <p class="empty-state">Nenhum usuário pendente no momento.</p>
       <?php else: ?>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>E-mail</th>
-              <th>Perfil</th>
-              <th>Criado em</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($pendingUsers as $user): ?>
-              <?php
-              $userRole = (string) ($user['role'] ?? '—');
-              $userRoleVariant = $roleBadgeMap[$userRole] ?? 'neutral';
-              $createdAt = !empty($user['created_at']) ? date('d/m/Y H:i', strtotime((string) $user['created_at'])) : '—';
-              ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td><strong><?= \Core\View::e($user['name'] ?? '—') ?></strong></td>
-                <td><?= \Core\View::e($user['email'] ?? '—') ?></td>
-                <td><span class="badge badge--<?= \Core\View::e($userRoleVariant) ?> badge--code"><?= \Core\View::e($userRole) ?></span></td>
-                <td><span class="badge badge--neutral badge--code"><?= \Core\View::e($createdAt) ?></span></td>
-                <td class="td-actions"><a href="<?= \Core\app_url('/admin/users/' . ($user['id'] ?? 0)) ?>" class="btn btn--sm">Detalhes</a></td>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Perfil</th>
+                <th>Criado em</th>
+                <th></th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($pendingUsers as $user): ?>
+                <?php
+                $userRole = (string) ($user['role'] ?? '—');
+                $userRoleVariant = $roleBadgeMap[$userRole] ?? 'neutral';
+                $createdAt = !empty($user['created_at']) ? date('d/m/Y H:i', strtotime((string) $user['created_at'])) : '—';
+                ?>
+                <tr>
+                  <td><strong><?= \Core\View::e($user['name'] ?? '—') ?></strong></td>
+                  <td><?= \Core\View::e($user['email'] ?? '—') ?></td>
+                  <td><span class="badge badge--<?= \Core\View::e($userRoleVariant) ?> badge--code"><?= \Core\View::e($userRole) ?></span></td>
+                  <td><span class="badge badge--neutral badge--code"><?= \Core\View::e($createdAt) ?></span></td>
+                  <td class="td-actions"><a href="<?= \Core\app_url('/admin/users/' . ($user['id'] ?? 0)) ?>" class="btn btn--sm">Detalhes</a></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php endif; ?>
     </div>
   </section>

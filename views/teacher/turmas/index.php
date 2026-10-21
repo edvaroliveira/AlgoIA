@@ -42,40 +42,42 @@ $activeTotal = array_sum(array_map(fn($turma) => (int) ($turma['active_count'] ?
       </div>
     </div>
     <div class="surface-block__body">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Turma</th>
-            <th>Chave</th>
-            <th>Ativos</th>
-            <th>Pendentes</th>
-            <th>Situação</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($turmas as $t): ?>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
             <tr>
-              <td>
-                <strong><?= \Core\View::e($t['name']) ?></strong>
-              </td>
-              <td><span class="overview-card__value overview-card__value--mono"><?= \Core\View::e($t['access_key']) ?></span></td>
-              <td><?= (int) $t['active_count'] ?></td>
-              <td><?= (int) $t['pending_count'] ?></td>
-              <td>
-                <?php if ($t['pending_count'] > 0): ?>
-                  <span class="badge badge--warning"><?= (int) $t['pending_count'] ?> pendente(s)</span>
-                <?php else: ?>
-                  <span class="badge badge--success">Fluxo normal</span>
-                <?php endif; ?>
-              </td>
-              <td class="td-actions">
-                <a href="<?= \Core\app_url('/teacher/turmas/' . $t['id']) ?>" class="btn btn--sm">Gerenciar</a>
-              </td>
+              <th>Turma</th>
+              <th>Chave</th>
+              <th>Ativos</th>
+              <th>Pendentes</th>
+              <th>Situação</th>
+              <th></th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($turmas as $t): ?>
+              <tr>
+                <td>
+                  <strong><?= \Core\View::e($t['name']) ?></strong>
+                </td>
+                <td><span class="overview-card__value overview-card__value--mono"><?= \Core\View::e($t['access_key']) ?></span></td>
+                <td><?= (int) $t['active_count'] ?></td>
+                <td><?= (int) $t['pending_count'] ?></td>
+                <td>
+                  <?php if ($t['pending_count'] > 0): ?>
+                    <span class="badge badge--warning"><?= (int) $t['pending_count'] ?> pendente(s)</span>
+                  <?php else: ?>
+                    <span class="badge badge--success">Fluxo normal</span>
+                  <?php endif; ?>
+                </td>
+                <td class="td-actions">
+                  <a href="<?= \Core\app_url('/teacher/turmas/' . $t['id']) ?>" class="btn btn--sm">Gerenciar</a>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 <?php endif; ?>

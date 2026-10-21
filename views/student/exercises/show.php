@@ -96,38 +96,40 @@ if ($successFlash):
         </div>
       </div>
       <div class="surface-block__body">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Iniciada em</th>
-              <th>Submetida em</th>
-              <th>Nota</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($attempts as $i => $att): ?>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
               <tr>
-                <td><?= $i + 1 ?></td>
-                <td><?= date('d/m/Y H:i', strtotime($att['started_at'])) ?></td>
-                <td><?= $att['submitted_at'] ? date('d/m/Y H:i', strtotime($att['submitted_at'])) : '—' ?></td>
-                <td>
-                  <?php if ($att['status'] === 'submitted'): ?>
-                    Em correção
-                  <?php else: ?>
-                    <?= $att['total_score'] !== null ? number_format((float) $att['total_score'], 1) . ' pts' : '—' ?>
-                  <?php endif; ?>
-                </td>
-                <td>
-                  <?php if ($att['status'] === 'graded'): ?>
-                    <a href="<?= \Core\app_url('/student/attempts/' . $att['id'] . '/result') ?>" class="btn btn--sm">Ver resultado</a>
-                  <?php endif; ?>
-                </td>
+                <th>#</th>
+                <th>Iniciada em</th>
+                <th>Submetida em</th>
+                <th>Nota</th>
+                <th></th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php foreach ($attempts as $i => $att): ?>
+                <tr>
+                  <td><?= $i + 1 ?></td>
+                  <td><?= date('d/m/Y H:i', strtotime($att['started_at'])) ?></td>
+                  <td><?= $att['submitted_at'] ? date('d/m/Y H:i', strtotime($att['submitted_at'])) : '—' ?></td>
+                  <td>
+                    <?php if ($att['status'] === 'submitted'): ?>
+                      Em correção
+                    <?php else: ?>
+                      <?= $att['total_score'] !== null ? number_format((float) $att['total_score'], 1) . ' pts' : '—' ?>
+                    <?php endif; ?>
+                  </td>
+                  <td>
+                    <?php if ($att['status'] === 'graded'): ?>
+                      <a href="<?= \Core\app_url('/student/attempts/' . $att['id'] . '/result') ?>" class="btn btn--sm">Ver resultado</a>
+                    <?php endif; ?>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   </div>

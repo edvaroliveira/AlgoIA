@@ -2306,6 +2306,25 @@ if (!extension_loaded('curl')) {
       check(preg_match('#<button[^>]+aria-controls="menu-lateral"[^>]+aria-expanded="false"#', $uiHome) === 1 && str_contains($uiHome, 'id="menu-lateral"'),
         'UI-03: botão do menu recolhível controla a navegação lateral');
 
+      // UI-04 — Tabelas: toda tabela dentro de um contêiner com rolagem; matriz de desempenho marcada como larga
+      $uiTables = [
+        [$jarAdmin, '/admin/users'], [$jarAdmin, '/admin/audit'], [$jarDocenteA, '/teacher/exercises'],
+        [$jarDocenteA, "/teacher/turmas/{$turmaDes['id']}/desempenho"],
+      ];
+      $uiTableBad = [];
+      foreach ($uiTables as [$uiJar, $uiPath]) {
+        $uiBody = httpAs($uiJar, 'GET', "{$base}{$uiPath}")['body'];
+        $uiOpen = preg_match_all('#<table[\s>]#', $uiBody);
+        $uiWrapped = preg_match_all('#<div class="table-scroll">\s*<table[\s>]#', $uiBody);
+        if ($uiOpen === 0 || $uiOpen !== $uiWrapped) {
+          $uiTableBad[] = "{$uiPath} ({$uiWrapped}/{$uiOpen})";
+        }
+      }
+      check($uiTableBad === [], 'UI-04: toda tabela fica dentro de .table-scroll' . ($uiTableBad ? ' (' . implode(', ', $uiTableBad) . ')' : ''));
+      $uiPerf = httpAs($jarDocenteA, 'GET', "{$base}/teacher/turmas/{$turmaDes['id']}/desempenho")['body'];
+      check(substr_count($uiPerf, 'class="table table--wide"') === 1,
+        'UI-04: matriz Aluno × Exercício do desempenho é tabela larga (rola, não empilha)');
+
       // EXC-02 — Lista de Exercícios: excluir pela grade e rótulo da coluna Turmas
       $listReady = $mkExercise($docenteA['id'], 'Pronto na lista', 'ready', ['QL1']);
       $listDraft = $mkExercise($docenteA['id'], 'Rascunho na lista', 'draft', ['QL2']);

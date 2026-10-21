@@ -97,26 +97,28 @@ $pendingTurmas = array_filter($turmas, fn($t) => $t['enrollment_status'] === 'pe
   <?php if (empty($done)): ?>
     <p class="empty-state">Nenhum exercício concluído ainda.</p>
   <?php else: ?>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Exercício</th>
-          <th>Turma</th>
-          <th>Melhor nota</th>
-          <th>Tentativas</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($done as $ex): ?>
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
           <tr>
-            <td><a href="<?= \Core\app_url('/student/exercises/' . $ex['id']) ?>"><?= \Core\View::e($ex['title']) ?></a></td>
-            <td><?= \Core\View::e($ex['turma_label'] ?? $ex['turma_name']) ?></td>
-            <td><?= number_format((float) $ex['best_score'], 1) ?></td>
-            <td><?= $ex['attempt_count'] ?></td>
+            <th>Exercício</th>
+            <th>Turma</th>
+            <th>Melhor nota</th>
+            <th>Tentativas</th>
           </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <?php foreach ($done as $ex): ?>
+            <tr>
+              <td><a href="<?= \Core\app_url('/student/exercises/' . $ex['id']) ?>"><?= \Core\View::e($ex['title']) ?></a></td>
+              <td><?= \Core\View::e($ex['turma_label'] ?? $ex['turma_name']) ?></td>
+              <td><?= number_format((float) $ex['best_score'], 1) ?></td>
+              <td><?= $ex['attempt_count'] ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
   <?php endif; ?>
 </div>
 
