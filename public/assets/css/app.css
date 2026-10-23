@@ -2249,20 +2249,42 @@ form[aria-busy="true"] { cursor: progress; }
   color: #9a6700;
 }
 
-.category-actions,
+/* Campo + botão sempre lado a lado; o campo é quem encolhe. */
 .category-inline {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.5rem;
+  max-width: 560px;
 }
 
 .category-inline .form-input {
   width: auto;
   min-width: 0;
-  flex: 1 1 180px;
+  flex: 1 1 auto;
+  padding: 0.55rem 0.8rem;
 }
 
+.category-inline .btn {
+  flex: none;
+  white-space: nowrap;
+}
+
+.category-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 360px;
+}
+
+.category-actions .category-inline {
+  flex: 1 1 300px;
+  max-width: 420px;
+}
+
+/* Cada subcategoria numa linha: [nome + Renomear] [Desativar] [selo] */
 .category-subs {
   list-style: none;
   margin: 0 0 1rem;
@@ -2271,16 +2293,43 @@ form[aria-busy="true"] { cursor: progress; }
   gap: 0.5rem;
 }
 
-.category-subs .category-inline .form-input {
-  flex: 1 1 260px;
-  max-width: 420px;
-}
-
 .category-subs li {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 560px) auto auto;
+  justify-content: start;
   align-items: center;
   gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.category-subs li > .badge {
+  justify-self: start;
+}
+
+.category-subs li:last-child {
+  border-bottom: 0;
+}
+
+/* Celular: nome + Renomear ocupam a linha; Desativar e selo vão abaixo. */
+@media (max-width: 640px) {
+  .category-subs li {
+    grid-template-columns: auto auto;
+  }
+
+  .category-subs li > .category-inline {
+    grid-column: 1 / -1;
+  }
+
+  .category-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .category-actions {
+    flex-basis: auto;
+    justify-content: flex-start;
+  }
 }
 
 .category--inactive {
