@@ -2,8 +2,10 @@
 global $session;
 $students = $students ?? [];
 $totalStudents = count($students);
-$activeStudents = count(array_filter($students, fn($student) => ($student['status'] ?? null) === 'active'));
-$pendingStudents = count(array_filter($students, fn($student) => ($student['status'] ?? null) === 'pending'));
+// Pendente = Matrícula pendente em Turma ativa (o Docente pode Ativar); conta inativa fica com o Admin.
+$isPending = fn(array $student): bool => (int) ($student['pending_enrollments'] ?? 0) > 0 && ($student['status'] ?? null) !== 'inactive';
+$activeStudents = count(array_filter($students, fn($student) => ($student['status'] ?? null) === 'active' && !$isPending($student)));
+$pendingStudents = count(array_filter($students, $isPending));
 ?>
 
 <div class="page-header">
@@ -65,15 +67,26 @@ $pendingStudents = count(array_filter($students, fn($student) => ($student['stat
                 <td><?= \Core\View::e($s['email']) ?></td>
                 <td><?= \Core\View::e($s['turma_names'] ?? '—') ?></td>
                 <td>
-                  <?php match ($s['status']) {
+                  <?php if ($isPending($s)): ?>
+                    <span class="badge badge--warning">Pendente</span>
+                    <small class="hint">em <?= \Core\View::e((string) $s['pending_turma_names']) ?></small>
+                  <?php else: match ($s['status']) {
                     'active'   => print '<span class="badge badge--success">Ativo</span>',
                     'pending'  => print '<span class="badge badge--warning">Pendente</span>',
                     'inactive' => print '<span class="badge badge--neutral">Inativo</span>',
                     default    => print '',
-                  }; ?>
+                  }; endif; ?>
                 </td>
                 <td><?= date('d/m/Y', strtotime($s['created_at'])) ?></td>
                 <td class="td-actions">
+                  <?php if ($isPending($s)): ?>
+                    <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $s['id'] . '/activate') ?>">
+                      <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                      <button type="submit" class="btn btn--primary btn--sm">Ativar</button>
+                    </form>
+                  <?php elseif ($s['status'] === 'inactive'): ?>
+                    <small class="hint">Reativação pelo Admin</small>
+                  <?php endif; ?>
                   <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $s['id'] . '/detach') ?>" data-confirm="Desvincular este aluno das suas turmas? O cadastro e o histórico serão preservados.">
                     <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                     <button type="submit" class="btn btn--danger btn--sm">Desvincular</button>
