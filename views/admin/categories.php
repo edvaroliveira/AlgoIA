@@ -14,13 +14,13 @@ $csrf = '<input type="hidden" name="_csrf_token" value="' . \Core\View::e($sessi
 
 <section class="surface-block">
   <div class="surface-block__body">
-    <form method="POST" action="<?= \Core\app_url('/admin/categorias') ?>" class="ai-filters">
+    <form method="POST" action="<?= \Core\app_url('/admin/categorias') ?>" class="form-group">
       <?= $csrf ?>
-      <div class="form-group">
-        <label class="form-label" for="new-category">Nova categoria</label>
-        <input class="form-input" type="text" id="new-category" name="name" maxlength="<?= \App\Models\Category::NAME_MAX ?>" required>
+      <label class="form-label" for="new-category">Nova categoria</label>
+      <div class="category-inline">
+        <input class="form-input" type="text" id="new-category" name="name" placeholder="Ex.: Algoritmos" maxlength="<?= \App\Models\Category::NAME_MAX ?>" required>
+        <button type="submit" class="btn btn--primary btn--sm">Criar categoria</button>
       </div>
-      <div class="form-actions"><button type="submit" class="btn btn--primary btn--sm">Criar categoria</button></div>
     </form>
   </div>
 </section>
@@ -32,7 +32,7 @@ $csrf = '<input type="hidden" name="_csrf_token" value="' . \Core\View::e($sessi
 <?php foreach ($tree as $category): ?>
   <div class="section">
     <section class="surface-block<?= $category['active'] ? '' : ' category--inactive' ?>">
-      <div class="surface-block__header">
+      <div class="surface-block__header category-header">
         <div>
           <h2 class="surface-title">
             <?= \Core\View::e($category['name']) ?>
