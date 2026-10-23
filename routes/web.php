@@ -143,6 +143,7 @@ $router->post('/teacher/questions/{id}/delete',                  'QuestionContro
 
 // Students list
 $router->get('/teacher/students', 'StudentController@index', ['teacher']);
+$router->post('/teacher/students/{id}/activate', 'StudentController@activate', ['teacher']);
 $router->post('/teacher/students/{id}/detach', 'StudentController@destroy', ['teacher']);
 $router->get('/teacher/attempts/pending', 'AttemptController@pendingTeacher', ['teacher']);
 $router->get('/teacher/attempts/{id}/result', 'AttemptController@resultTeacher', ['teacher']);

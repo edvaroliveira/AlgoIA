@@ -219,6 +219,33 @@ class Turma extends Model
   }
 
   /** Recusar vale só para Matrícula pendente; Matrícula ativa sai por desvínculo. */
+  /**
+   * Aprova todas as Matrículas pendentes do Aluno nas Turmas ativas do Docente
+   * (botão Ativar das listas de alunos). Conta inativa não é tocada: só o Admin reativa.
+   *
+   * @return array<int, array{id: int, name: string}> Turmas aprovadas
+   */
+  public function approveStudentForTeacher(int $studentId, int $teacherId): array
+  {
+    $pending = $this->db->fetchAll(
+      "SELECT t.id, t.name
+             FROM student_turma st
+             JOIN turmas t ON t.id = st.turma_id
+             WHERE st.student_id = ? AND t.teacher_id = ? AND t.active = 1 AND st.status = 'pending'
+             ORDER BY t.name",
+      [$studentId, $teacherId]
+    );
+
+    $approved = [];
+    foreach ($pending as $turma) {
+      if ($this->approveStudent($studentId, (int) $turma['id'])) {
+        $approved[] = ['id' => (int) $turma['id'], 'name' => (string) $turma['name']];
+      }
+    }
+
+    return $approved;
+  }
+
   public function rejectStudent(int $studentId, int $turmaId): bool
   {
     return $this->db->execute(

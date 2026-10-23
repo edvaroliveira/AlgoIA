@@ -300,7 +300,9 @@ class User extends Model
     return $this->db->fetchAll(
       "SELECT u.*,
                     GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', ') AS turma_names,
-                    COUNT(DISTINCT st.turma_id) AS turma_count
+                    COUNT(DISTINCT st.turma_id) AS turma_count,
+                    SUM(st.status = 'pending' AND t.active = 1) AS pending_enrollments,
+                    GROUP_CONCAT(DISTINCT CASE WHEN st.status = 'pending' AND t.active = 1 THEN t.name END ORDER BY t.name SEPARATOR ', ') AS pending_turma_names
              FROM users u
              JOIN student_turma st ON st.student_id = u.id
              JOIN turmas t ON t.id = st.turma_id
@@ -374,7 +376,9 @@ class User extends Model
   {
     return $this->db->fetchAll(
       "SELECT u.*,
-                    GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', ') AS turma_names
+                    GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', ') AS turma_names,
+                    SUM(st.status = 'pending' AND t.active = 1) AS pending_enrollments,
+                    GROUP_CONCAT(DISTINCT CASE WHEN st.status = 'pending' AND t.active = 1 THEN t.name END ORDER BY t.name SEPARATOR ', ') AS pending_turma_names
              FROM users u
              JOIN student_turma st ON st.student_id = u.id
              JOIN turmas t ON t.id = st.turma_id

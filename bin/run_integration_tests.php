@@ -550,6 +550,51 @@ check(
 );
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Ativar pelas listas de alunos — aprova só Matrículas pendentes em Turmas
+// ativas do próprio Docente; conta inativa continua com o Admin
+// ═══════════════════════════════════════════════════════════════════════════
+
+$activateA = seedScenario($pdoA);
+$activateB = seedScenario($pdoA); // outro Docente
+$activateTurmas = new App\Models\Turma($dbA);
+$pdoA->exec("INSERT INTO turmas (teacher_id, name, access_key, active) VALUES ({$activateA['teacherId']}, 'Turma Inativa IT', '" . strtoupper(bin2hex(random_bytes(3))) . "', 0)");
+$activateInactiveTurma = (int) $pdoA->lastInsertId();
+$activatePendingId = $users->create('Aluno Ativar', 'ativar.' . bin2hex(random_bytes(4)) . '@test.local', 'SenhaForte1', 'student', 'pending');
+$pdoA->exec("INSERT INTO student_turma (student_id, turma_id, status) VALUES
+  ({$activatePendingId}, {$activateA['turmaId']}, 'pending'),
+  ({$activatePendingId}, {$activateInactiveTurma}, 'pending'),
+  ({$activatePendingId}, {$activateB['turmaId']}, 'pending')");
+$activateStatus = fn(int $turmaId): string => (string) $pdoA->query("SELECT status FROM student_turma WHERE student_id = {$activatePendingId} AND turma_id = {$turmaId}")->fetchColumn();
+
+$listed = array_values(array_filter($users->getStudentsByTeacher($activateA['teacherId']), fn($s) => (int) $s['id'] === $activatePendingId));
+check(
+  count($listed) === 1 && (int) $listed[0]['pending_enrollments'] === 1 && $listed[0]['pending_turma_names'] === 'Turma IT',
+  'Ativar: lista do Docente conta só a Matrícula pendente em Turma ativa'
+);
+$approvedTurmas = $activateTurmas->approveStudentForTeacher($activatePendingId, $activateA['teacherId']);
+check(
+  array_column($approvedTurmas, 'id') === [$activateA['turmaId']]
+    && $activateStatus($activateA['turmaId']) === 'active'
+    && $users->find($activatePendingId)['status'] === 'active',
+  'Ativar: aprova a Matrícula da Turma ativa do Docente e ativa a conta pendente'
+);
+check(
+  $activateStatus($activateInactiveTurma) === 'pending' && $activateStatus($activateB['turmaId']) === 'pending',
+  'Ativar: não mexe em Turma inativa nem em Turma de outro Docente'
+);
+check(
+  $activateTurmas->approveStudentForTeacher($activatePendingId, $activateA['teacherId']) === [],
+  'Ativar: sem Matrícula pendente, nada é aprovado'
+);
+$activateInactiveId = $users->create('Aluno Inativo', 'inativo.' . bin2hex(random_bytes(4)) . '@test.local', 'SenhaForte1', 'student', 'inactive');
+$pdoA->exec("INSERT INTO student_turma (student_id, turma_id, status) VALUES ({$activateInactiveId}, {$activateA['turmaId']}, 'pending')");
+$activateTurmas->approveStudentForTeacher($activateInactiveId, $activateA['teacherId']);
+check(
+  $users->find($activateInactiveId)['status'] === 'inactive',
+  'Ativar: conta inativa (Admin) continua inativa'
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
 // RD-02/RD-03 — Tentativa sempre no contexto de uma Publicação
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -973,6 +1018,24 @@ if (!extension_loaded('curl')) {
           && $countRows("SELECT COUNT(*) FROM student_turma WHERE student_id = {$alunoPendente['id']}") === 0,
         'RP-23-03: desvincular da Turma pela interface audita detach_turma e remove só aquela Matrícula'
       );
+
+      // Ativar pela lista de alunos: Docente dono aprova; outro Docente é recusado
+      $pdoA->exec("INSERT INTO student_turma (student_id, turma_id, status) VALUES ({$alunoPendente['id']}, {$turmaA['id']}, 'pending')");
+      $activateOther = postAs($base, $jarDocenteB, "/teacher/students/{$alunoPendente['id']}/activate");
+      check(
+        $activateOther['code'] === 302
+          && $auditCount('teacher.student.approve_denied', $alunoPendente['id']) >= 1
+          && $countRows("SELECT COUNT(*) FROM student_turma WHERE student_id = {$alunoPendente['id']} AND status = 'pending'") === 1,
+        'Ativar: Docente de outra Turma não ativa o Aluno (audita approve_denied)'
+      );
+      $activateOwn = postAs($base, $jarDocenteA, "/teacher/students/{$alunoPendente['id']}/activate", ['return' => 'dashboard']);
+      check(
+        $activateOwn['code'] === 302
+          && str_ends_with($activateOwn['location'], '/teacher/dashboard')
+          && $countRows("SELECT COUNT(*) FROM student_turma WHERE student_id = {$alunoPendente['id']} AND turma_id = {$turmaA['id']} AND status = 'active'") === 1,
+        'Ativar: Docente dono ativa o Aluno pela lista e volta ao Painel'
+      );
+      postAs($base, $jarDocenteA, "/teacher/turmas/{$turmaA['id']}/detach/{$alunoPendente['id']}");
 
       // Linha 6 — Admin inativa a Turma A; Aluno A perde o acesso ao Exercício
       $admin = $mkUser('Admin HTTP', 'admin');

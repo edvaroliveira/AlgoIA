@@ -280,14 +280,26 @@ $gradingJobFailures = $gradingJobFailures ?? [];
                   <td><?= \Core\View::e($student['email']) ?></td>
                   <td><?= \Core\View::e($student['turma_names'] ?? '—') ?></td>
                   <td>
-                    <?php match ($student['status']) {
+                    <?php if ((int) ($student['pending_enrollments'] ?? 0) > 0 && $student['status'] !== 'inactive'): ?>
+                      <span class="badge badge--warning">Pendente</span>
+                      <small class="hint">em <?= \Core\View::e((string) $student['pending_turma_names']) ?></small>
+                    <?php else: match ($student['status']) {
                       'active'   => print '<span class="badge badge--success">Ativo</span>',
                       'pending'  => print '<span class="badge badge--warning">Pendente</span>',
                       'inactive' => print '<span class="badge badge--neutral">Inativo</span>',
                       default    => print '',
-                    }; ?>
+                    }; endif; ?>
                   </td>
                   <td class="td-actions">
+                    <?php if ((int) ($student['pending_enrollments'] ?? 0) > 0 && $student['status'] !== 'inactive'): ?>
+                      <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $student['id'] . '/activate') ?>">
+                        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+                        <input type="hidden" name="return" value="dashboard">
+                        <button type="submit" class="btn btn--primary btn--sm">Ativar</button>
+                      </form>
+                    <?php elseif ($student['status'] === 'inactive'): ?>
+                      <small class="hint">Reativação pelo Admin</small>
+                    <?php endif; ?>
                     <form method="POST" action="<?= \Core\app_url('/teacher/students/' . $student['id'] . '/detach') ?>" data-confirm="Desvincular este aluno das suas turmas? O cadastro e o histórico serão preservados.">
                       <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
                       <button type="submit" class="btn btn--danger btn--sm">Desvincular</button>
