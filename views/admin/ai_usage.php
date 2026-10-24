@@ -101,6 +101,7 @@ $table = static function (array $rows, string $title, string $labelHeader) use (
           <option value="grading"<?= $filters['kind'] === 'grading' ? ' selected' : '' ?>>Correção de Tentativas</option>
           <option value="practice"<?= $filters['kind'] === 'practice' ? ' selected' : '' ?>>Prática</option>
           <option value="similarity"<?= $filters['kind'] === 'similarity' ? ' selected' : '' ?>>Similaridade (juiz do banco)</option>
+          <option value="python"<?= $filters['kind'] === 'python' ? ' selected' : '' ?>>Resposta em Python</option>
         </select>
       </div>
       <div class="form-actions">
@@ -194,7 +195,7 @@ $table = static function (array $rows, string $title, string $labelHeader) use (
               <?php foreach ($recentFailures as $failure): ?>
                 <tr>
                   <td><?= date('d/m/Y H:i', strtotime((string) $failure['created_at'])) ?></td>
-                  <td><?= ['practice' => 'Prática', 'similarity' => 'Similaridade'][$failure['kind']] ?? 'Correção' ?></td>
+                  <td><?= ['practice' => 'Prática', 'similarity' => 'Similaridade', 'python' => 'Resposta em Python'][$failure['kind']] ?? 'Correção' ?></td>
                   <td><?= \Core\View::e($failure['error_category'] ?? '') ?></td>
                   <td><?= \Core\View::e($failure['teacher_name'] ?? '—') ?></td>
                   <td><?= \Core\View::e($failure['student_name'] ?? '—') ?></td>

@@ -225,9 +225,12 @@ class ExerciseController
     }
 
     $this->exercises->markReady((int) $id);
+    // Questões congeladas: a Resposta em Python de cada uma entra na fila do cron (uma geração por Questão)
+    $pythonQueued = (new \App\Services\PythonSolutionService())->queueExercise((int) $id);
     AuditService::record('teacher.exercise.complete', 'exercise', (int) $id, [
       'question_count' => $questionCount,
       'status' => 'ready',
+      'python_queued' => $pythonQueued,
     ]);
 
     global $session;

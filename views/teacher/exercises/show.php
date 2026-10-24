@@ -388,6 +388,80 @@ $isClosed = !empty($exercise['closes_at']) && strtotime((string) $exercise['clos
   </section>
 </div>
 
+<?php if (!$isDraft && !empty($questions)):
+  $pythonLabels = [
+    'pending'  => ['badge--info', 'Na fila da IA'],
+    'draft'    => ['badge--warning', 'Rascunho — revise e aprove'],
+    'approved' => ['badge--success', 'Aprovada — visível ao Aluno'],
+    'failed'   => ['badge--error', 'A IA não conseguiu gerar'],
+  ];
+  $withoutPython = count(array_filter($questions, static fn(array $q): bool =>
+    ($q['admin_review_status'] ?? 'approved') !== 'blocked' && in_array($q['python_solution_status'] ?? null, [null, 'failed'], true)));
+?>
+<div class="section" id="python">
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Resposta em Python</h2>
+        <p class="surface-copy">Código da resposta correta de cada questão. A IA gera uma vez por questão; você revisa, edita e aprova. O Aluno só vê o código aprovado, junto com a Resposta de referência (exercício fechado ou limite de tentativas atingido).</p>
+      </div>
+      <?php if ($withoutPython > 0): ?>
+        <form method="POST" action="<?= \Core\app_url('/teacher/exercises/' . $exercise['id'] . '/python') ?>" class="python-generate">
+          <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+          <button type="submit" class="btn btn--primary btn--sm">Gerar com IA (<?= $withoutPython ?>)</button>
+        </form>
+      <?php endif; ?>
+    </div>
+    <div class="surface-block__body surface-block__body--stack">
+      <?php foreach ($questions as $i => $q):
+        if (($q['admin_review_status'] ?? 'approved') === 'blocked') {
+          continue;
+        }
+        $pyStatus = $q['python_solution_status'] ?? null;
+        $pyCode = (string) ($q['python_solution'] ?? '');
+      ?>
+        <div class="question-card question-card--teacher" id="python-q<?= (int) $q['id'] ?>">
+          <div class="question-header">
+            <span class="question-num">Q<?= $i + 1 ?></span>
+            <?php if ($pyStatus !== null): ?>
+              <span class="badge <?= $pythonLabels[$pyStatus][0] ?>"><?= $pythonLabels[$pyStatus][1] ?></span>
+              <?php if ($pyStatus !== 'pending' && $pyCode !== ''): ?>
+                <small class="hint"><?= ($q['python_solution_source'] ?? '') === 'teacher' ? 'Escrita por você' : 'Gerada pela IA' ?></small>
+              <?php endif; ?>
+            <?php else: ?>
+              <span class="badge badge--neutral">Sem código</span>
+            <?php endif; ?>
+          </div>
+          <p class="question-text"><?= \Core\View::e(mb_strimwidth((string) $q['text'], 0, 160, '…')) ?></p>
+          <?php if ($pyStatus === 'pending'): ?>
+            <p class="hint">A IA gera o código em alguns minutos. Se preferir, escreva o seu abaixo: ele substitui o pedido.</p>
+          <?php elseif ($pyStatus === 'failed'): ?>
+            <p class="hint">Peça de novo ou escreva o código abaixo.</p>
+          <?php endif; ?>
+          <form method="POST" action="<?= \Core\app_url('/teacher/questions/' . $q['id'] . '/python') ?>" class="form">
+            <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+            <label class="form-label" for="python-<?= (int) $q['id'] ?>">Código Python</label>
+            <textarea class="form-input code-input" id="python-<?= (int) $q['id'] ?>" name="python_solution" rows="<?= max(6, min(24, substr_count($pyCode, "\n") + 2)) ?>"
+              maxlength="<?= \App\Services\OpenAIService::PYTHON_SOLUTION_MAX_LENGTH ?>" spellcheck="false" autocomplete="off"><?= \Core\View::e($pyCode) ?></textarea>
+            <div class="form-actions">
+              <button type="submit" name="action" value="approve" class="btn btn--primary btn--sm">Salvar e aprovar</button>
+              <button type="submit" name="action" value="draft" class="btn btn--ghost btn--sm">Salvar rascunho</button>
+            </div>
+          </form>
+          <?php if (in_array($pyStatus, ['draft', 'approved', 'failed'], true)): ?>
+            <form method="POST" action="<?= \Core\app_url('/teacher/questions/' . $q['id'] . '/python/regenerate') ?>"
+              data-confirm="Descartar este código e pedir outro à IA? Usa tokens da IA.">
+              <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+              <button type="submit" class="btn btn--ghost btn--sm">Gerar novamente com IA</button>
+            </form>
+          <?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  </section>
+</div>
+<?php endif; ?>
+
 <div class="section">
   <section class="surface-block">
     <div class="surface-block__header">

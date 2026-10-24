@@ -107,12 +107,19 @@ CREATE TABLE IF NOT EXISTS questions (
     admin_review_note    TEXT NULL,
     admin_reviewed_at    DATETIME NULL,
     admin_reviewed_by    INT UNSIGNED NULL,
+    python_solution      TEXT NULL COMMENT 'Resposta em Python; o Aluno vê só se approved (migration 035)',
+    python_solution_status ENUM('pending','draft','approved','failed') NULL,
+    python_solution_source ENUM('ai','teacher') NULL,
+    python_solution_updated_at DATETIME NULL,
+    python_solution_reviewed_by INT UNSIGNED NULL,
     created_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_questions_bank_question (bank_question_id),
+    INDEX idx_questions_python_status (python_solution_status),
     INDEX idx_questions_exercise_order (exercise_id, order_index),
     INDEX idx_questions_review (admin_review_status),
     CONSTRAINT fk_q_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
-    CONSTRAINT fk_q_admin_reviewed_by FOREIGN KEY (admin_reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+    CONSTRAINT fk_q_admin_reviewed_by FOREIGN KEY (admin_reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT fk_q_python_reviewed_by FOREIGN KEY (python_solution_reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── Tentativas ────────────────────────────────────────────────────────────────
@@ -243,6 +250,10 @@ CREATE TABLE IF NOT EXISTS bank_questions (
     expected_answer_hint TEXT NOT NULL,
     max_score            DECIMAL(4,1) NOT NULL DEFAULT 10.0,
     order_index          INT NOT NULL DEFAULT 0,
+    python_solution      TEXT NULL COMMENT 'Resposta em Python aprovada, copiada da Questão de origem (migration 035)',
+    python_solution_status ENUM('pending','draft','approved','failed') NULL,
+    python_solution_source ENUM('ai','teacher') NULL,
+    python_solution_updated_at DATETIME NULL,
     INDEX idx_bank_questions_exercise_order (bank_exercise_id, order_index),
     CONSTRAINT fk_bank_q_exercise FOREIGN KEY (bank_exercise_id) REFERENCES bank_exercises(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -386,7 +397,7 @@ CREATE TABLE IF NOT EXISTS student_achievements (
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
     id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    kind              ENUM('grading','practice','similarity') NOT NULL,
+    kind              ENUM('grading','practice','similarity','python') NOT NULL,
     teacher_id        INT UNSIGNED NULL,
     turma_id          INT UNSIGNED NULL,
     exercise_id       INT UNSIGNED NULL,

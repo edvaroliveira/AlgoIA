@@ -16,6 +16,7 @@ class AiUsageLog extends Model
   public const KIND_PRACTICE = 'practice';
   /** IA como juiz da similaridade no Banco de exercícios (mesmo modelo e preço da correção). */
   public const KIND_SIMILARITY = 'similarity';
+  public const KIND_PYTHON = 'python';
 
   public const SETTING_PRICE_INPUT  = 'ai_price_input_per_1m_usd';
   public const SETTING_PRICE_OUTPUT = 'ai_price_output_per_1m_usd';
@@ -60,7 +61,7 @@ class AiUsageLog extends Model
   public function recordSafely(array $context, string $model, int $promptTokens, int $completionTokens, int $latencyMs, bool $ok, ?string $errorCategory = null): void
   {
     try {
-      $kind = in_array($context['kind'] ?? '', [self::KIND_PRACTICE, self::KIND_SIMILARITY], true) ? (string) $context['kind'] : self::KIND_GRADING;
+      $kind = in_array($context['kind'] ?? '', [self::KIND_PRACTICE, self::KIND_SIMILARITY, self::KIND_PYTHON], true) ? (string) $context['kind'] : self::KIND_GRADING;
       $settings = $this->settings();
       $id = static fn(string $key): ?int => isset($context[$key]) && (int) $context[$key] > 0 ? (int) $context[$key] : null;
 
@@ -165,7 +166,7 @@ class AiUsageLog extends Model
       $conditions[] = "{$alias}.turma_id = ?";
       $params[] = $filters['turma_id'];
     }
-    if (in_array($filters['kind'], [self::KIND_GRADING, self::KIND_PRACTICE, self::KIND_SIMILARITY], true)) {
+    if (in_array($filters['kind'], [self::KIND_GRADING, self::KIND_PRACTICE, self::KIND_SIMILARITY, self::KIND_PYTHON], true)) {
       $conditions[] = "{$alias}.kind = ?";
       $params[] = $filters['kind'];
     }
@@ -223,6 +224,7 @@ class AiUsageLog extends Model
               COALESCE(SUM(CASE WHEN l.kind = 'grading' THEN l.cost_usd END), 0) AS grading_usd,
               COALESCE(SUM(CASE WHEN l.kind = 'practice' THEN l.cost_usd END), 0) AS practice_usd,
               COALESCE(SUM(CASE WHEN l.kind = 'similarity' THEN l.cost_usd END), 0) AS similarity_usd,
+              COALESCE(SUM(CASE WHEN l.kind = 'python' THEN l.cost_usd END), 0) AS python_usd,
               COUNT(*) AS calls,
               COALESCE(SUM(l.status = 'error'), 0) AS errors
              FROM ai_usage_logs l {$where}

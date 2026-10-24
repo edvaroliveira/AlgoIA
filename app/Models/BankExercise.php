@@ -68,7 +68,7 @@ class BankExercise extends Model
       }
 
       $questions = $this->db->fetchAll(
-        "SELECT id, text, expected_answer_hint, max_score FROM questions
+        "SELECT id, text, expected_answer_hint, max_score, python_solution, python_solution_status, python_solution_source FROM questions
                WHERE exercise_id = ? AND admin_review_status <> 'blocked'
                ORDER BY order_index, id",
         [$exerciseId]
@@ -95,9 +95,10 @@ class BankExercise extends Model
       $order = 1;
       foreach ($questions as $question) {
         $this->db->insert(
-          "INSERT INTO bank_questions (bank_exercise_id, text, expected_answer_hint, max_score, order_index)
-                 VALUES (?, ?, ?, ?, ?)",
-          [$bankId, $question['text'], $question['expected_answer_hint'], $question['max_score'], $order++]
+          "INSERT INTO bank_questions (bank_exercise_id, text, expected_answer_hint, max_score, order_index,
+                                       python_solution, python_solution_status, python_solution_source, python_solution_updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [$bankId, $question['text'], $question['expected_answer_hint'], $question['max_score'], $order++, ...self::approvedPython($question)]
         );
       }
 
@@ -461,5 +462,20 @@ class BankExercise extends Model
     unset($item);
 
     return $items;
+  }
+
+  /**
+   * Resposta em Python que viaja com a Questão: só a aprovada pelo Docente
+   * (rascunho não vai para o Banco). Colunas python_solution, _status, _source e _updated_at.
+   *
+   * @return array{0: ?string, 1: ?string, 2: ?string, 3: ?string}
+   */
+  private static function approvedPython(array $question): array
+  {
+    if (($question['python_solution_status'] ?? null) !== 'approved' || trim((string) ($question['python_solution'] ?? '')) === '') {
+      return [null, null, null, null];
+    }
+
+    return [(string) $question['python_solution'], 'approved', (string) ($question['python_solution_source'] ?? 'ai'), date('Y-m-d H:i:s')];
   }
 }

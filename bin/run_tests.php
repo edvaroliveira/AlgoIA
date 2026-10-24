@@ -109,6 +109,10 @@ $routesProp = new ReflectionProperty(\Core\Router::class, 'routes');
 $storedRoutes = $routesProp->getValue($mwRouter);
 same(['one', 'two'], $storedRoutes[0]['middleware'] ?? null, 'Router::get armazena o middleware declarado na rota');
 
+// ── Resposta em Python: normalização do código antes de guardar ─────────────
+check(App\Services\OpenAIService::normalizePythonCode("```python\nprint(1)\n```\n") === 'print(1)', 'Resposta em Python: remove a cerca de Markdown');
+check(App\Services\OpenAIService::normalizePythonCode("if x:\r\n    print(x)\r\n") === "if x:\n    print(x)", 'Resposta em Python: uniformiza quebras e preserva a indentação');
+
 // ── Core\View: allowlist de template (anti path-traversal/LFI) ───────────────
 $traversalBlocked = false;
 try {

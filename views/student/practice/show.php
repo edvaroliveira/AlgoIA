@@ -44,6 +44,8 @@ $fmt = static fn($n): string => number_format((float) $n, 1, ',', '');
   <div class="section">
   <section class="surface-block">
     <div class="surface-block__body">
+      <?php // Depois da primeira correção: a Prática não tem nota nem limite de tentativas ?>
+      <?php \Core\View::partial('partials/python_solution', ['code' => $question['python_solution'] ?? null]); ?>
       <p><strong>Suas correções</strong></p>
       <?php foreach ($history as $item):
         $reasons = \App\Models\DeductionReason::fromJson($item['deduction_reasons_json'] ?? null);

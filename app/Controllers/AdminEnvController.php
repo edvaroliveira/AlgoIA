@@ -40,6 +40,7 @@ class AdminEnvController extends AdminBaseController
       'writable'   => $file->isWritable(),
       'overridden' => $overridden,
       'bankSimilarity' => (new \App\Services\BankSimilarityService())->settings(),
+      'pythonSolutionEnabled' => (new \App\Services\PythonSolutionService())->enabled(),
     ]);
   }
 

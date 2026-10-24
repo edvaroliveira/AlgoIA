@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Models\AiUsageLog;
 use App\Models\SystemSetting;
 use App\Services\AuditService;
+use App\Services\PythonSolutionService;
 use Core\Auth;
 use Core\Request;
 use Core\View;
@@ -48,6 +49,7 @@ class AdminAiUsageController extends AdminBaseController
           'grading'  => (float) $d['grading_usd'],
           'practice' => (float) $d['practice_usd'],
           'similarity' => (float) $d['similarity_usd'],
+          'python'   => (float) $d['python_usd'],
           'calls'    => (int) $d['calls'],
           'errors'   => (int) $d['errors'],
         ], $byDay),
@@ -57,6 +59,20 @@ class AdminAiUsageController extends AdminBaseController
         'usdBrl'   => $settings['usd_brl'],
       ],
     ]);
+  }
+
+  /** POST /admin/configuracoes/python — liga ou desliga a geração da Resposta em Python pela IA. */
+  public function updatePythonSettings(): void
+  {
+    Request::validateCsrf();
+    global $session;
+
+    // Caixa desmarcada não é enviada: ausente = desligado
+    $enabled = (string) Request::post(PythonSolutionService::SETTING_ENABLED, '') === '1';
+    (new SystemSetting())->set(PythonSolutionService::SETTING_ENABLED, $enabled ? '1' : '0', (int) Auth::id());
+    AuditService::record('admin.python_settings.update', 'system_settings', null, [PythonSolutionService::SETTING_ENABLED => $enabled]);
+    $session->flash('success', $enabled ? 'Geração da Resposta em Python pela IA ligada.' : 'Geração da Resposta em Python pela IA desligada.');
+    View::redirect('/admin/configuracoes#python');
   }
 
   /** POST /admin/ia/configuracoes — preços (US$ por 1M tokens), câmbio e orçamento mensal (R$). */

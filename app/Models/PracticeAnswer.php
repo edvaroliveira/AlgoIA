@@ -58,6 +58,7 @@ class PracticeAnswer extends Model
   {
     return $this->db->fetchOne(
       "SELECT bq.id, bq.text, bq.expected_answer_hint, bq.max_score, be.title AS list_title,
+              CASE WHEN bq.python_solution_status = 'approved' THEN bq.python_solution END AS python_solution,
               (SELECT GROUP_CONCAT(bt.name ORDER BY bt.name SEPARATOR ', ')
                  FROM bank_exercise_themes bet JOIN bank_themes bt ON bt.id = bet.theme_id
                 WHERE bet.bank_exercise_id = be.id) AS themes

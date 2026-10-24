@@ -215,6 +215,7 @@ $isBest    = $bestScore !== null
           <strong>Resposta esperada:</strong>
           <p><?= nl2br(\Core\View::e($ans['expected_answer_hint'])) ?></p>
         </div>
+        <?php \Core\View::partial('partials/python_solution', ['code' => $ans['python_solution'] ?? null]); ?>
       <?php elseif (!$showReferenceAnswer && $ans['expected_answer_hint']): ?>
         <details class="hint-details">
           <summary>Resposta esperada indisponível por enquanto</summary>

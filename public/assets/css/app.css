@@ -2332,6 +2332,54 @@ form[aria-busy="true"] { cursor: progress; }
   }
 }
 
+/* Resposta em Python: código só exibido (nunca executado) e editor simples do Docente */
+.code-block {
+  margin: 0.6rem 0 0.4rem;
+  padding: 0.9rem 1rem;
+  max-height: 32rem;
+  overflow: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  tab-size: 4;
+  white-space: pre;
+  font-variant-ligatures: none; /* ">=" continua ">=", não vira "≥" */
+}
+
+.code-input {
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  tab-size: 4;
+  white-space: pre;
+  overflow-x: auto;
+  resize: vertical;
+  font-variant-ligatures: none;
+}
+
+.code-block code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+}
+
+.python-generate {
+  flex: none;
+}
+
+.python-generate .btn {
+  white-space: nowrap;
+}
+
+.python-solution summary {
+  font-weight: 700;
+}
+
 .category--inactive {
   opacity: 0.6;
 }

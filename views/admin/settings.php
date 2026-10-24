@@ -118,3 +118,31 @@ $pctValue = static fn(float $v): string => rtrim(rtrim(number_format($v, 1, '.',
     </div>
   </section>
 </div>
+
+<div class="section" id="python">
+  <section class="surface-block">
+    <div class="surface-block__header">
+      <div>
+        <h2 class="surface-title">Resposta em Python</h2>
+        <p class="surface-copy">Código da resposta correta de cada Questão, mostrado ao Aluno depois que o Docente aprova. Fica no banco de dados (não no .env).</p>
+      </div>
+    </div>
+    <div class="surface-block__body">
+      <form method="POST" action="<?= \Core\app_url('/admin/configuracoes/python') ?>" class="settings-form">
+        <input type="hidden" name="_csrf_token" value="<?= \Core\View::e($session->csrfToken()) ?>">
+        <label class="checkbox-label" for="python-ai">
+          <input type="checkbox" id="python-ai" name="python_solution_ai_enabled" value="1"<?= !empty($pythonSolutionEnabled) ? ' checked' : '' ?> aria-describedby="python-ai-help">
+          Gerar a Resposta em Python com IA
+        </label>
+        <small id="python-ai-help" class="hint">
+          Quando o Docente conclui um Exercício, o cron pede à IA o código de cada Questão, uma vez só (mesma chave e modelo da correção).
+          Questões importadas do Banco reaproveitam o código já aprovado, sem nova chamada. Desligado, os Docentes ainda podem escrever o código à mão.
+          O custo aparece em Uso da IA como “Resposta em Python”.
+        </small>
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
