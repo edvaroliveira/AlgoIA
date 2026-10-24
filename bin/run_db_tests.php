@@ -191,6 +191,8 @@ $pdo->exec("ALTER TABLE questions ADD COLUMN text TEXT DEFAULT ''");
 $pdo->exec("ALTER TABLE questions ADD COLUMN expected_answer_hint TEXT DEFAULT ''");
 $pdo->exec("ALTER TABLE questions ADD COLUMN max_score REAL DEFAULT 1.0");
 $pdo->exec("ALTER TABLE questions ADD COLUMN order_index INTEGER DEFAULT 0");
+$pdo->exec("ALTER TABLE questions ADD COLUMN python_solution TEXT NULL");
+$pdo->exec("ALTER TABLE questions ADD COLUMN python_solution_status TEXT NULL");
 
 $apNg02ExId = $rp01ActiveId;
 $pdo->exec("INSERT INTO questions (exercise_id, admin_review_status, text, order_index) VALUES ({$apNg02ExId}, 'approved', 'Q aprovada', 1)");
