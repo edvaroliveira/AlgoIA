@@ -6,6 +6,7 @@
  * - Grava cada requisição em FAKE_OPENAI_LOG, para o teste conferir o prompt.
  * - Responde 400 quando o prompt contém FALHA_SIMULADA.
  * - Juiz de similaridade do banco (prompt pede "mesma_questao"): sempre "mesma Questão".
+ * - Resposta em Python (prompt pede "resposta_python"): código fixo; INVALIDO_PYTHON → sem código.
  */
 
 declare(strict_types=1);
@@ -37,6 +38,16 @@ if (preg_match('#/v1/models/([^/]+)$#', $uri, $m) === 1) {
 if (str_contains($body, 'FALHA_SIMULADA')) {
   http_response_code(400);
   echo '{"error":{"message":"falha simulada"}}';
+  return;
+}
+
+// Resposta em Python (prompt pede "resposta_python"): código fixo; INVALIDO_PYTHON devolve JSON sem código.
+if (str_contains($body, 'resposta_python')) {
+  $code = str_contains($body, 'INVALIDO_PYTHON') ? '' : "# Maior de idade (resposta simulada)\nidade = int(input('Idade: '))\nprint(idade >= 18)";
+  echo json_encode([
+    'choices' => [['message' => ['content' => json_encode(['resposta_python' => $code])]]],
+    'usage' => ['prompt_tokens' => 400, 'completion_tokens' => 120, 'total_tokens' => 520],
+  ]);
   return;
 }
 

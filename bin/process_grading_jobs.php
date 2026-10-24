@@ -80,6 +80,17 @@ try {
   fwrite(STDERR, 'Similarity judge error: ' . $e->getMessage() . PHP_EOL);
 }
 
+// Resposta em Python das Questões na fila (Docente concluiu o Exercício ou pediu
+// "Gerar"). Uma chamada por Questão; o código fica guardado e é reaproveitado.
+try {
+  $python = (new App\Services\PythonSolutionService())->run();
+  if ($python['generated'] + $python['copied'] + $python['failed'] > 0) {
+    echo "Python solutions: {$python['generated']} generated, {$python['copied']} copied from bank, {$python['failed']} failed." . PHP_EOL;
+  }
+} catch (\Throwable $e) {
+  fwrite(STDERR, 'Python solution error: ' . $e->getMessage() . PHP_EOL);
+}
+
 // Exit != 0 quando houve falha: sem isso o cron nunca sinaliza degradação
 // da fila de correção, porque o lote "roda com sucesso" mesmo falhando tudo.
 exit($failed > 0 ? 1 : 0);

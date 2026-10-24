@@ -20,8 +20,9 @@
   var green = "#1f7a4d";
   var amber = "#c98a12";
   var blue = "#3d6f8e";
-  var kindLabel = { grading: "Correção", practice: "Prática", similarity: "Similaridade" };
-  var kindColor = { grading: green, practice: amber, similarity: blue };
+  var violet = "#6b4fa0";
+  var kindLabel = { grading: "Correção", practice: "Prática", similarity: "Similaridade", python: "Resposta em Python" };
+  var kindColor = { grading: green, practice: amber, similarity: blue, python: violet };
   var red = "#b42318";
   var usd = function (v) {
     return "US$ " + Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
@@ -58,6 +59,7 @@
         { label: "Correção", data: (data.days || []).map(function (d) { return d.grading; }), backgroundColor: green },
         { label: "Prática", data: (data.days || []).map(function (d) { return d.practice; }), backgroundColor: amber },
         { label: "Similaridade", data: (data.days || []).map(function (d) { return d.similarity || 0; }), backgroundColor: blue },
+        { label: "Resposta em Python", data: (data.days || []).map(function (d) { return d.python || 0; }), backgroundColor: violet },
       ],
     },
     options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, plugins: { tooltip: moneyTooltip } },

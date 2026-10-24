@@ -62,6 +62,10 @@ _Evitar_: Pergunta, item
 Conceitos que o Docente espera ver na resposta. Orientam a correção e só são mostrados ao Aluno depois do encerramento da Publicação.
 _Evitar_: Dica, hint, gabarito
 
+**Resposta em Python** (`python_solution`):
+Código Python da resposta correta de uma Questão. A IA gera uma vez por Questão, pelo cron, quando o Docente conclui o Exercício; o Docente revisa, edita e aprova. O Aluno só vê o código aprovado e na mesma regra da Resposta de referência (na Prática, depois da primeira correção). O código aprovado vai junto para o Banco de exercícios e na Importação, sem nova chamada à IA.
+_Evitar_: Gabarito em código, solução oficial
+
 **Publicação** (`exercise_turmas`):
 Disponibilização de um Exercício para uma Turma específica, com janela (abertura e encerramento) e limite de tentativas próprios. É a unidade que abre e encerra. "Encerrar o exercício" significa encerrar todas as suas Publicações.
 _Evitar_: Exercício aberto/fechado, liberação

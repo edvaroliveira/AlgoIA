@@ -48,6 +48,7 @@ class DashboardController
       'pendingGradingAttempts' => $pendingGradingAttempts,
       'gradingJobSummary' => $gradingJobs->operationalSummary((int) $teacherId),
       'openScoreReviews' => (new \App\Models\ScoreReview())->openForTeacher((int) $teacherId),
+      'pythonAwaiting' => (new \App\Services\PythonSolutionService())->awaitingReview((int) $teacherId),
       'gradingJobFailures' => $gradingJobs->recentFailures((int) $teacherId, 5),
     ]);
   }

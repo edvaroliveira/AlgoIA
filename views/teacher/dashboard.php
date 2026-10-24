@@ -77,6 +77,16 @@ $gradingJobFailures = $gradingJobFailures ?? [];
   </div>
 <?php endif; ?>
 
+<?php if (!empty($pythonAwaiting)):
+  $pythonTotal = array_sum(array_column($pythonAwaiting, 'total'));
+?>
+  <div class="alert alert--info" role="status">
+    <strong><?= $pythonTotal ?></strong> <?= $pythonTotal === 1 ? 'questão tem' : 'questões têm' ?> Resposta em Python esperando sua revisão:
+    <?php foreach ($pythonAwaiting as $k => $ex): ?><?= $k > 0 ? ', ' : ' ' ?><a href="<?= \Core\app_url('/teacher/exercises/' . $ex['id'] . '#python') ?>"><?= \Core\View::e($ex['title']) ?> (<?= $ex['total'] ?>)</a><?php endforeach; ?>.
+    O Aluno só vê o código depois que você aprova.
+  </div>
+<?php endif; ?>
+
 <?php if (!empty($openScoreReviews)): ?>
   <div class="section">
     <section class="surface-block">

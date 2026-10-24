@@ -50,6 +50,7 @@ $router->post('/admin/subcategorias/{id}/status', 'AdminCategoryController@statu
 $router->get('/admin/configuracoes', 'AdminEnvController@index', ['admin']);
 // Antes de {group}: o roteador usa a primeira rota que casa.
 $router->post('/admin/configuracoes/banco', 'AdminBankController@updateSettings', ['admin']);
+$router->post('/admin/configuracoes/python', 'AdminAiUsageController@updatePythonSettings', ['admin']);
 $router->post('/admin/configuracoes/{group}', 'AdminEnvController@update', ['admin']);
 $router->get('/admin/users',     'AdminUserController@users', ['admin']);
 $router->get('/admin/users/export', 'AdminUserController@exportUsers', ['admin']);
@@ -140,6 +141,9 @@ $router->post('/teacher/exercises/{id}/suggest-bank', 'BankController@suggest', 
 $router->get('/teacher/exercises/{exerciseId}/questions/create', 'QuestionController@create', ['teacher']);
 $router->post('/teacher/exercises/{exerciseId}/questions',       'QuestionController@store', ['teacher']);
 $router->post('/teacher/questions/{id}/delete',                  'QuestionController@destroy', ['teacher']);
+$router->post('/teacher/questions/{id}/python',                  'QuestionController@savePython', ['teacher']);
+$router->post('/teacher/questions/{id}/python/regenerate',       'QuestionController@regeneratePython', ['teacher']);
+$router->post('/teacher/exercises/{id}/python',                  'QuestionController@generateExercisePython', ['teacher']);
 
 // Students list
 $router->get('/teacher/students', 'StudentController@index', ['teacher']);

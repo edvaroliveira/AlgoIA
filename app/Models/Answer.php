@@ -53,6 +53,7 @@ class Answer extends Model
                     q.text AS question_text,
                     q.max_score,
                     q.expected_answer_hint,
+                    CASE WHEN q.python_solution_status = 'approved' THEN q.python_solution END AS python_solution,
                     q.order_index
              FROM attempts att
              JOIN questions q ON q.exercise_id = att.exercise_id

@@ -100,7 +100,7 @@ class BankImportService
         [$sourceId, $teacherId, Exercise::STATUS_READY, Exercise::STATUS_ACTIVE]
       );
       $questions = $exercise ? $this->db->fetchAll(
-        "SELECT text, expected_answer_hint, max_score, bank_question_id FROM questions
+        "SELECT text, expected_answer_hint, max_score, bank_question_id, python_solution, python_solution_status, python_solution_source FROM questions
                WHERE exercise_id = ? AND id IN ({$placeholders}) AND admin_review_status <> 'blocked'
                ORDER BY order_index, id",
         array_merge([$sourceId], $questionIds)
@@ -111,7 +111,7 @@ class BankImportService
         [$sourceId]
       );
       $questions = $exercise ? $this->db->fetchAll(
-        "SELECT text, expected_answer_hint, max_score, id AS bank_question_id FROM bank_questions
+        "SELECT text, expected_answer_hint, max_score, id AS bank_question_id, python_solution, python_solution_status, python_solution_source FROM bank_questions
                WHERE bank_exercise_id = ? AND id IN ({$placeholders})
                ORDER BY order_index, id",
         array_merge([$sourceId], $questionIds)
@@ -159,9 +159,12 @@ class BankImportService
   {
     $order = $firstOrder;
     foreach ($questions as $question) {
+      // Resposta em Python aprovada vem junto (sem nova chamada à IA); rascunho não.
+      $python = ($question['python_solution_status'] ?? null) === 'approved' && trim((string) ($question['python_solution'] ?? '')) !== '';
       $this->db->insert(
-        "INSERT INTO questions (exercise_id, text, expected_answer_hint, max_score, order_index, bank_question_id)
-               VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO questions (exercise_id, text, expected_answer_hint, max_score, order_index, bank_question_id,
+                                python_solution, python_solution_status, python_solution_source, python_solution_updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, " . ($python ? 'NOW()' : 'NULL') . ")",
         [
           $exerciseId,
           $question['text'],
@@ -170,6 +173,9 @@ class BankImportService
           $order++,
           // Origem no banco (dá o Tema ao progresso); de um Exercício próprio, herda a dele.
           $question['bank_question_id'] !== null ? (int) $question['bank_question_id'] : null,
+          $python ? (string) $question['python_solution'] : null,
+          $python ? 'approved' : null,
+          $python ? (string) ($question['python_solution_source'] ?? 'ai') : null,
         ]
       );
     }

@@ -595,6 +595,23 @@ check(
 );
 
 // ═══════════════════════════════════════════════════════════════════════════
+// PY-07 — Aluno só recebe a Resposta em Python aprovada
+// ═══════════════════════════════════════════════════════════════════════════
+
+$pyScenario = seedScenario($pdoA);
+$pyAnswers = new App\Models\Answer($dbA);
+$pdoA->exec("UPDATE questions SET python_solution = 'print(\"rascunho\")', python_solution_status = 'draft' WHERE id = {$pyScenario['questionId']}");
+check(
+  ($pyAnswers->findByAttempt($pyScenario['attemptId'])[0]['python_solution'] ?? null) === null,
+  'PY-07: rascunho da Resposta em Python não chega ao Aluno'
+);
+(new App\Services\PythonSolutionService($dbA))->approve($pyScenario['questionId'], $pyScenario['teacherId']);
+check(
+  ($pyAnswers->findByAttempt($pyScenario['attemptId'])[0]['python_solution'] ?? null) === 'print("rascunho")',
+  'PY-07: Resposta em Python aprovada chega ao resultado do Aluno'
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
 // RD-02/RD-03 — Tentativa sempre no contexto de uma Publicação
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -2418,6 +2435,57 @@ if (!extension_loaded('curl')) {
       $exList = httpAs($jarDocenteA, 'GET', "{$base}/teacher/exercises?category={$edId}")['body'];
       check(str_contains($exList, 'Pilha com vetor') && !str_contains($exList, 'Exercício HTTP A'), 'CAT-02: lista de Exercícios filtra por categoria');
 
+      // PY-01 — Concluir o Exercício põe a Resposta em Python de cada Questão na fila
+      $catQ = (int) $pdoA->query("SELECT id FROM questions WHERE exercise_id = {$catEx}")->fetchColumn();
+      $pyRow = fn(int $id): array => $pdoA->query("SELECT python_solution, python_solution_status, python_solution_source FROM questions WHERE id = {$id}")->fetch();
+      $pyUsage = fn(): int => $countRows("SELECT COUNT(*) FROM ai_usage_logs WHERE kind = 'python'");
+      check($pyRow($catQ)['python_solution_status'] === 'pending'
+        && str_contains(httpAs($jarDocenteA, 'GET', "{$base}/teacher/exercises/{$catEx}")['body'], 'Na fila da IA'),
+        'PY-01: concluir o Exercício põe a Questão na fila da Resposta em Python');
+
+      // PY-02 — Cron gera um rascunho por Questão; Docente é avisado
+      $pyUsageBefore = $pyUsage();
+      $runWorker();
+      $pyGenerated = $pyRow($catQ);
+      check($pyGenerated['python_solution_status'] === 'draft' && $pyGenerated['python_solution_source'] === 'ai'
+        && str_contains((string) $pyGenerated['python_solution'], 'resposta simulada') && $pyUsage() === $pyUsageBefore + 1,
+        'PY-02: cron gera o rascunho da IA e registra o uso como Resposta em Python');
+      check(str_contains(httpAs($jarDocenteA, 'GET', "{$base}/teacher/dashboard")['body'], 'esperando sua revisão'),
+        'PY-02: Painel do Docente avisa que há código esperando revisão');
+      $runWorker();
+      check($pyUsage() === $pyUsageBefore + 1, 'PY-02: Questão com código não volta à IA (uma geração por Questão)');
+
+      // PY-03 — Só o Docente dono edita; aprovar deixa o código visível
+      $r = postAs($base, $jarDocenteB, "/teacher/questions/{$catQ}/python", ['python_solution' => 'print(1)', 'action' => 'approve']);
+      check($r['code'] === 403 && $pyRow($catQ)['python_solution_status'] === 'draft', 'PY-03: outro Docente não altera a Resposta em Python');
+      postAs($base, $jarDocenteA, "/teacher/questions/{$catQ}/python", ['python_solution' => "pilha = []\npilha.append(1)\nprint(pilha)", 'action' => 'approve']);
+      $pyApproved = $pyRow($catQ);
+      check($pyApproved['python_solution_status'] === 'approved' && $pyApproved['python_solution_source'] === 'teacher'
+        && $pyApproved['python_solution'] === "pilha = []\npilha.append(1)\nprint(pilha)"
+        && $countRows("SELECT COUNT(*) FROM audit_logs WHERE action = 'teacher.question.python_approve' AND entity_id = {$catQ}") === 1,
+        'PY-03: Docente edita e aprova o código (auditado)');
+      check(!str_contains(httpAs($jarDocenteA, 'GET', "{$base}/teacher/dashboard")['body'], 'esperando sua revisão'),
+        'PY-03: aprovado, o aviso some do Painel');
+
+      // PY-04 — Resposta inválida da IA vira falha e não volta sozinha à IA
+      $pyBad = $mkExercise($docenteA['id'], 'Exercicio Python invalido', 'ready', ['Questao INVALIDO_PYTHON']);
+      postAs($base, $jarDocenteA, "/teacher/exercises/{$pyBad['id']}/python");
+      $runWorker();
+      $pyAfterBad = $pyUsage();
+      $runWorker();
+      check($pyRow($pyBad['questions'][0])['python_solution_status'] === 'failed' && $pyUsage() === $pyAfterBad,
+        'PY-04: resposta sem código vira falha e o cron não insiste');
+
+      // PY-05 — Admin desliga a IA: a fila espera; Docente ainda pode escrever à mão
+      postAs($base, $jarAdmin, '/admin/configuracoes/python', []);
+      postAs($base, $jarDocenteA, "/teacher/questions/{$pyBad['questions'][0]}/python/regenerate");
+      $runWorker();
+      check($pyRow($pyBad['questions'][0])['python_solution_status'] === 'pending' && $pyUsage() === $pyAfterBad,
+        'PY-05: com a IA desligada nas Configurações, a Questão espera na fila sem chamar a IA');
+      postAs($base, $jarDocenteA, "/teacher/questions/{$pyBad['questions'][0]}/python", ['python_solution' => 'print(42)', 'action' => 'draft']);
+      check($pyRow($pyBad['questions'][0])['python_solution_status'] === 'draft', 'PY-05: Docente salva o próprio código como rascunho');
+      postAs($base, $jarAdmin, '/admin/configuracoes/python', ['python_solution_ai_enabled' => '1']);
+
       // CAT-03 — Importar herda; Sugerir copia
       postAs($base, $jarDocenteA, "/teacher/exercises/{$catEx}/suggest-bank");
       $catBankItem = (int) $pdoA->query("SELECT id FROM bank_exercises WHERE source_exercise_id = {$catEx}")->fetchColumn();
@@ -2432,6 +2500,10 @@ if (!extension_loaded('curl')) {
       check($countRows("SELECT COUNT(*) FROM exercises WHERE id = {$newFromBank} AND category_id = {$edId}") === 1
         && $countRows("SELECT COUNT(*) FROM exercise_themes WHERE exercise_id = {$newFromBank} AND theme_id = {$pilhas}") === 1,
         'CAT-03: Rascunho novo importado do banco herda a classificação');
+      $pyImported = (int) $pdoA->query("SELECT id FROM questions WHERE exercise_id = {$newFromBank}")->fetchColumn();
+      check($countRows("SELECT COUNT(*) FROM bank_questions WHERE id = {$catBankQ} AND python_solution_status = 'approved' AND python_solution LIKE 'pilha%'") === 1
+        && $pyRow($pyImported)['python_solution_status'] === 'approved' && $pyUsage() === $pyAfterBad,
+        'PY-06: código aprovado vai para o Banco e chega aprovado na Importação, sem nova chamada à IA');
       $otherDraft = $mkExercise($docenteB['id'], 'Rascunho de outra categoria', 'draft', ['QO']);
       $pdoA->exec("UPDATE exercises SET category_id = {$catBanco['id']} WHERE id = {$otherDraft['id']}");
       $pdoA->exec("INSERT INTO exercise_themes (exercise_id, theme_id) VALUES ({$otherDraft['id']}, {$catBanco['subs']['Vetores']})");
